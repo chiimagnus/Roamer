@@ -1,0 +1,162 @@
+version = 1
+current_task_id = "P2-T1"
+
+[[tasks]]
+id = "P1-T1"
+title = "固定 SwiftPM package 与 CLI 边界"
+status = "completed"
+plan = "plan-p1.md#p1-t1"
+commit = "fa33788"
+note = ""
+
+[[tasks]]
+id = "P1-T2"
+title = "固定 Simulator lifecycle 与 screenshot"
+status = "completed"
+plan = "plan-p1.md#p1-t2"
+commit = "fa33788"
+note = ""
+
+[[tasks]]
+id = "P1-T3"
+title = "固定 Simulator HID：Home / Pose / Gaze / Click"
+status = "completed"
+plan = "plan-p1.md#p1-t3"
+commit = "fa33788"
+note = ""
+
+[[tasks]]
+id = "P1-T4"
+title = "删除旧路径并验证 host 无干扰"
+status = "completed"
+plan = "plan-p1.md#p1-t4"
+commit = "fa33788"
+note = ""
+
+[[tasks]]
+id = "P2-T1"
+title = "还原 Manipulator state machine 与真实 right-hand pose"
+status = "in_progress"
+plan = "plan-p2.md#p2-t1"
+commit = ""
+note = "当前执行点：继续还原真实 right-hand pose / manipulation 状态机。"
+
+[[tasks]]
+id = "P2-T2"
+title = "在 RoamerCore 实现 right-hand drag"
+status = "pending"
+plan = "plan-p2.md#p2-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T3"
+title = "接入 roamer drag 并做横向真实验收"
+status = "pending"
+plan = "plan-p2.md#p2-t3"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T4"
+title = "验证纵向 drag，并决定是否需要独立 scroll"
+status = "pending"
+plan = "plan-p2.md#p2-t4"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T1"
+title = "还原 Simulator keyboard transport"
+status = "pending"
+plan = "plan-p3.md#p3-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T2"
+title = "实现 roamer key"
+status = "pending"
+plan = "plan-p3.md#p3-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T3"
+title = "实现 roamer type"
+status = "pending"
+plan = "plan-p3.md#p3-t3"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T4"
+title = "真实文本字段验收"
+status = "pending"
+plan = "plan-p3.md#p3-t4"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P4-T1"
+title = "统一 Simulator 术语与源码命名"
+status = "pending"
+plan = "plan-p4.md#p4-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P4-T2"
+title = "收紧 private API fail-fast 与输入边界"
+status = "pending"
+plan = "plan-p4.md#p4-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P4-T3"
+title = "建立发布前真实 Simulator 回归"
+status = "pending"
+plan = "plan-p4.md#p4-t3"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P4-T4"
+title = "完成版本与用户文档"
+status = "pending"
+plan = "plan-p4.md#p4-t4"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P5-T1"
+title = "生成可发布 artifact"
+status = "pending"
+plan = "plan-p5.md#p5-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P5-T2"
+title = "创建 tag 与 GitHub Release"
+status = "pending"
+plan = "plan-p5.md#p5-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P5-T3"
+title = "从 GitHub Release 回下载并做最终验收"
+status = "pending"
+plan = "plan-p5.md#p5-t3"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P5-T4"
+title = "发布后仓库收尾"
+status = "pending"
+plan = "plan-p5.md#p5-t4"
+commit = ""
+note = ""
