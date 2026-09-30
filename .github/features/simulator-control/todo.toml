@@ -66,6 +66,38 @@ commit = ""
 note = ""
 
 [[tasks]]
+id = "P2-T5"
+title = "实现长按和双击"
+status = "pending"
+plan = "plan-p2.md#p2-t5"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T6"
+title = "扩展完整 6DoF 头部姿态并实现 Digital Crown"
+status = "pending"
+plan = "plan-p2.md#p2-t6"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T7"
+title = "支持左手 / 右手选择"
+status = "pending"
+plan = "plan-p2.md#p2-t7"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T8"
+title = "实现双手缩放和旋转"
+status = "pending"
+plan = "plan-p2.md#p2-t8"
+commit = ""
+note = ""
+
+[[tasks]]
 id = "P3-T1"
 title = "还原 Simulator keyboard transport"
 status = "pending"

@@ -56,6 +56,12 @@ P2/P3 完成后再加入：
 
 ```bash
 roamer drag
+roamer swipe          # 若 P2 证明需要单独暴露
+roamer long-press
+roamer double-click
+roamer crown
+roamer magnify
+roamer rotate
 roamer key
 roamer type
 ```

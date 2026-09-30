@@ -1,6 +1,6 @@
-# Plan P2 — 真正的 Drag / Scroll
+# Plan P2 — 完整空间交互
 
-目标：还原 visionOS Simulator 的真实 right-hand manipulation，实现连续 drag。
+目标：在现有 gaze / click 基础上，补齐 visionOS App 常用的空间交互：drag、swipe/scroll、长按、双击、完整头部姿态、Digital Crown、左右手和双手缩放/旋转。
 
 禁止：
 
@@ -119,4 +119,87 @@ roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 
 只有 drag 无法覆盖实际滚动需求时，才研究独立 `roamer scroll`。
 
+如果 drag 已稳定，增加 `roamer swipe` 作为更易用的高层快捷命令；它只能复用 drag，不新增另一套 HID 实现。
+
 历史上错误猜测 `IndigoHIDMessageForScrollEvent` ABI 曾导致 SurfBoard 崩溃，因此必须先还原真实 ABI，再进入正式代码。
+
+## P2-T5 实现长按和双击
+
+新增高层命令：
+
+```bash
+roamer long-press <x-px> <y-px> [duration-ms]
+roamer double-click <x-px> <y-px>
+```
+
+要求：
+
+- `long-press` = gaze → pinch down → 保持 → pinch up；
+- `double-click` = 两次独立 click，间隔受控；
+- 复用现有 pinch message，不新增 transport；
+- 中途失败必须确保最终 release，不留下持续 pinching 状态；
+- 在真实 visionOS LongPressGesture / double-tap 目标上验收。
+
+## P2-T6 扩展为完整 6DoF 头部姿态，并实现 Digital Crown
+
+当前 `roamer pose` 只有 yaw，不足以覆盖空间 App。
+
+目标：
+
+- position：x / y / z；
+- rotation：yaw / pitch / roll；
+- 支持只修改部分分量，并保留其它当前 pose；
+- 参数单位明确：position 用米，rotation 用度。
+
+同时新增：
+
+```bash
+roamer crown <delta>
+```
+
+`DigitalCrown` 已存在直接 Simulator HID builder，不通过 Device Hub。
+
+验收：
+
+- 上下看、左右转头、侧倾；
+- 前后 / 左右 / 上下移动；
+- Digital Crown 对 Simulator 产生真实系统级效果；
+- 全程 macOS frontmost App 不变。
+
+## P2-T7 支持左手 / 右手选择
+
+当前 click / drag 默认使用右手。Roamer 应允许需要时指定：
+
+```text
+--hand left|right
+```
+
+适用于：
+
+- click；
+- long-press；
+- drag；
+- 后续两手手势。
+
+默认保持 `right`，避免破坏现有行为。
+
+必须验证至少一个左手 pinch 和一个左手 drag 真正进入 Simulator。
+
+## P2-T8 实现双手缩放和旋转
+
+为 3D / spatial App 增加常见双手 manipulation：
+
+```bash
+roamer magnify <x-px> <y-px> <scale> [duration-ms]
+roamer rotate <x-px> <y-px> <degrees> [duration-ms]
+```
+
+要求：
+
+- 使用左右手真实 pose，不用 mouse/trackpad 模拟；
+- gaze 只负责选中目标；
+- scale / angle 在 duration 内连续变化；
+- pinch release 后状态稳定；
+- 在真实支持 magnify / rotate 的 visionOS 目标上验收。
+
+若 Xcode 27 的 Simulator 无法通过当前 Paloma transport 可靠表达其中某项，必须用运行证据标记为明确限制，而不是用 host GUI 补洞。

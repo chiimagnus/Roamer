@@ -9,7 +9,8 @@
 - 管理 Simulator；
 - 截图；
 - 控制 Home、头部姿态、视线和点击；
-- 后续支持拖动、键盘和文本输入；
+- 支持拖动、长按、双击、左右手、完整头部姿态和常见双手空间手势；
+- 支持 Digital Crown、键盘和文本输入；
 - 全程不打扰用户正在使用的 macOS。
 
 ## 产品身份
@@ -74,12 +75,15 @@ roamer click <x-px> <y-px>
 
 ## 还要完成
 
-1. 真正的 right-hand drag；
-2. 必要时单独实现 scroll；
-3. Simulator keyboard；
-4. UTF-8 text input；
-5. private API fail-fast 与完整回归；
-6. `v0.1.0` release。
+1. 真正的 drag / swipe / scroll；
+2. 长按和双击；
+3. 完整 6DoF 头部姿态；
+4. Digital Crown；
+5. 左右手选择和双手缩放 / 旋转；
+6. Simulator keyboard；
+7. UTF-8 text input；
+8. private API fail-fast 与完整回归；
+9. `v0.1.0` release。
 
 ## 不做
 
@@ -94,6 +98,10 @@ roamer click <x-px> <y-px>
 - MCP；
 - 浏览器控制；
 - OCR / Computer Use；
+- Siri / 语音输入；
+- game controller、mouse、trackpad passthrough；
+- 对外暴露 raw hand skeleton / raw HID 调试接口；
+- 为了 API 齐全而暴露无明确 App 操作场景的硬件按钮；
 - host GUI fallback。
 
 ## 完成标准
@@ -102,7 +110,9 @@ roamer click <x-px> <y-px>
 
 - `roamer` 是唯一正式入口；
 - lifecycle / screenshot / home / pose / gaze / click 保持可用；
-- drag 能真实驱动 visionOS manipulation；
+- drag / long-press / double-click 能真实驱动 visionOS interaction；
+- pose 支持完整 6DoF，Digital Crown 可直接控制 Simulator；
+- 左右手与双手缩放 / 旋转可用于需要这些输入的 visionOS App；
 - keyboard / text 能直接输入 Simulator；
 - 错误参数和 private API 缺失明确失败；
 - 不移动 macOS 鼠标，不改变 frontmost App；
