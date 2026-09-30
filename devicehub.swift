@@ -42,8 +42,9 @@ private func deviceHubWindow(for pid: pid_t) -> DeviceHubWindow {
             let layer = info[kCGWindowLayer as String] as? Int,
             layer == 0,
             let number = info[kCGWindowNumber as String] as? UInt32,
-            let boundsDict = info[kCGWindowBounds as String] as? CFDictionary,
-            let bounds = CGRect(dictionaryRepresentation: boundsDict),
+            let boundsValue = info[kCGWindowBounds as String],
+            CFGetTypeID(boundsValue as CFTypeRef) == CFDictionaryGetTypeID(),
+            let bounds = CGRect(dictionaryRepresentation: boundsValue as! CFDictionary),
             bounds.width > 400,
             bounds.height > 300
         else {
@@ -187,7 +188,10 @@ private func globalPoint(pixelX: CGFloat, pixelY: CGFloat, in window: DeviceHubW
 }
 
 private func mouseSource() -> CGEventSource {
-    CGEventSource(stateID: .hidSystemState) ?? fail("无法创建 CGEventSource。")
+    guard let source = CGEventSource(stateID: .hidSystemState) else {
+        fail("无法创建 CGEventSource。")
+    }
+    return source
 }
 
 private func postMouse(type: CGEventType, point: CGPoint, source: CGEventSource) {
