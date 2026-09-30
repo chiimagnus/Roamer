@@ -12,4 +12,4 @@ udid=$(booted_avp_udid)
 set -- $(avp_display_geometry "$udid")
 width=$1
 height=$2
-exec /usr/bin/swift "$SCRIPT_DIR/guest_hid.swift" "$udid" pinch-pixel "$x" "$y" "$width" "$height"
+exec /usr/bin/swift "$SCRIPT_DIR/guest_hid.swift" "$udid" click-pixel "$x" "$y" "$width" "$height"

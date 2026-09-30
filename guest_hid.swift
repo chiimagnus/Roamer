@@ -153,10 +153,6 @@ private typealias ButtonBuilder = @convention(c) (
     Int32
 ) -> UnsafeMutableRawPointer?
 
-private typealias CrownBuilder = @convention(c) (
-    Double
-) -> UnsafeMutableRawPointer?
-
 private func writeBytes<T>(_ value: T, to message: UnsafeMutableRawPointer, offset: Int) {
     var copy = value
     withUnsafeBytes(of: &copy) { bytes in
@@ -244,7 +240,7 @@ private func makePalomaCollection(
     writeBytes(directionY, to: message, offset: 0x5b)
     writeBytes(directionZ, to: message, offset: 0x5f)
 
-    // Left/right hand poses use identity orientation until we need explicit hand translation.
+    // Left/right hand poses stay at identity for gaze and pinch selection.
     writeBytes(Float(1), to: message, offset: 0x83)
     writeBytes(Float(1), to: message, offset: 0xa3)
     return message
@@ -259,7 +255,7 @@ private func symbol<T>(_ handle: UnsafeMutableRawPointer, _ name: String, as typ
 
 private let args = Array(CommandLine.arguments.dropFirst())
 guard args.count >= 2 else {
-    fail("用法: guest_hid.swift <simulator-udid> <home|crown|pose|gaze|pinch|gaze-pixel|pinch-pixel|drag-pixel> [参数]")
+    fail("用法: guest_hid.swift <simulator-udid> <home|pose|gaze-pixel|click-pixel> [参数]")
 }
 
 let udid = args[0]
@@ -286,17 +282,6 @@ case "home":
     send(up, client: client)
     print("guest home: ok")
 
-case "crown":
-    guard args.count == 3, let delta = Double(args[2]) else {
-        fail("用法: guest_hid.swift <udid> crown <delta>")
-    }
-    let build = symbol(simulatorKit, "IndigoHIDMessageForDigitalCrownEvent", as: CrownBuilder.self)
-    guard let message = build(delta) else {
-        fail("无法构造 Digital Crown 事件")
-    }
-    send(message, client: client)
-    print("guest crown: ok")
-
 case "pose":
     guard args.count == 3, let yaw = Double(args[2]) else {
         fail("用法: guest_hid.swift <udid> pose <yaw-deg>")
@@ -304,57 +289,7 @@ case "pose":
     send(makePalomaPose(yawDegrees: yaw), client: client)
     print("guest pose: ok")
 
-case "gaze":
-    guard args.count == 4, let yaw = Double(args[2]), let pitch = Double(args[3]) else {
-        fail("用法: guest_hid.swift <udid> gaze <yaw-deg> <pitch-deg>")
-    }
-    send(
-        makePalomaCollection(
-            yawDegrees: yaw,
-            pitchDegrees: pitch,
-            pinchingLeft: false,
-            touchingLeft: false
-        ),
-        client: client
-    )
-    print("guest gaze: ok")
-
-case "pinch":
-    guard args.count == 4, let yaw = Double(args[2]), let pitch = Double(args[3]) else {
-        fail("用法: guest_hid.swift <udid> pinch <yaw-deg> <pitch-deg>")
-    }
-    send(
-        makePalomaCollection(
-            yawDegrees: yaw,
-            pitchDegrees: pitch,
-            pinchingLeft: false,
-            touchingLeft: false
-        ),
-        client: client
-    )
-    usleep(50_000)
-    send(
-        makePalomaCollection(
-            yawDegrees: yaw,
-            pitchDegrees: pitch,
-            pinchingLeft: true,
-            touchingLeft: true
-        ),
-        client: client
-    )
-    usleep(80_000)
-    send(
-        makePalomaCollection(
-            yawDegrees: yaw,
-            pitchDegrees: pitch,
-            pinchingLeft: false,
-            touchingLeft: false
-        ),
-        client: client
-    )
-    print("guest pinch: ok")
-
-case "gaze-pixel", "pinch-pixel":
+case "gaze-pixel", "click-pixel":
     guard
         args.count == 6,
         let x = Double(args[2]),
@@ -391,8 +326,9 @@ case "gaze-pixel", "pinch-pixel":
             makePalomaCollection(
                 yawDegrees: angle.yaw,
                 pitchDegrees: angle.pitch,
-                pinchingLeft: true,
-                touchingLeft: true
+                pinchingLeft: false,
+                touchingLeft: false,
+                pinchingRight: true
             ),
             client: client
         )
@@ -406,73 +342,8 @@ case "gaze-pixel", "pinch-pixel":
             ),
             client: client
         )
-        print("guest pinch pixel: ok")
+        print("guest click pixel: ok")
     }
-
-case "drag-pixel":
-    guard
-        args.count == 9,
-        let fromX = Double(args[2]),
-        let fromY = Double(args[3]),
-        let toX = Double(args[4]),
-        let toY = Double(args[5]),
-        let durationMS = Double(args[6]),
-        let width = Double(args[7]),
-        let height = Double(args[8])
-    else {
-        fail("用法: guest_hid.swift <udid> drag-pixel <from-x> <from-y> <to-x> <to-y> <duration-ms> <width> <height>")
-    }
-    let start = screenAngles(x: fromX, y: fromY, width: width, height: height)
-    send(
-        makePalomaCollection(
-            yawDegrees: start.yaw,
-            pitchDegrees: start.pitch,
-            pinchingLeft: false,
-            touchingLeft: false
-        ),
-        client: client
-    )
-    usleep(50_000)
-    send(
-        makePalomaCollection(
-            yawDegrees: start.yaw,
-            pitchDegrees: start.pitch,
-            pinchingLeft: true,
-            touchingLeft: true
-        ),
-        client: client
-    )
-
-    let duration = max(80, durationMS)
-    let steps = max(6, Int(duration / 16))
-    for step in 1...steps {
-        let t = Double(step) / Double(steps)
-        let x = fromX + (toX - fromX) * t
-        let y = fromY + (toY - fromY) * t
-        let angle = screenAngles(x: x, y: y, width: width, height: height)
-        send(
-            makePalomaCollection(
-                yawDegrees: angle.yaw,
-                pitchDegrees: angle.pitch,
-                pinchingLeft: true,
-                touchingLeft: true
-            ),
-            client: client
-        )
-        usleep(useconds_t(duration * 1000 / Double(steps)))
-    }
-
-    let end = screenAngles(x: toX, y: toY, width: width, height: height)
-    send(
-        makePalomaCollection(
-            yawDegrees: end.yaw,
-            pitchDegrees: end.pitch,
-            pinchingLeft: false,
-            touchingLeft: false
-        ),
-        client: client
-    )
-    print("guest drag pixel: ok")
 
 default:
     fail("未知 guest HID 命令: " + command)
