@@ -20,7 +20,7 @@
 
 - P2-T1
   - `Sources/RoamerCore/Input/IndigoMessages.swift`
-  - `Sources/RoamerCore/Input/GuestHIDController.swift`
+  - `Sources/RoamerCore/Input/SimulatorHIDController.swift`
   - `Sources/RoamerCore/Runtime/PrivateRuntime.swift`
   - Xcode 27 `VisionDeviceKitExtension`
 - P2-T2
@@ -51,39 +51,39 @@
 
 - 任务：`P2-T4`
 - 严重级别：`Low`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`.github/features/simulator-control/plan-p2.md:P2-T4`
 - 摘要：`roamer swipe 是 drag 的重复别名`
 - 风险：`增加 CLI 面积和后续测试/文档维护，但没有新增 Simulator 交互能力。`
 - 预期修复：`删除 swipe 命令计划；用户需要 swipe 时直接用 drag 的起终点和短 duration 表达。`
 - 验证：`idea/plan/help 中不再出现 roamer swipe，drag 契约足以表达同一行为`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`plan-p2/plan-p4/idea 已删除 swipe 命令计划；短 duration 的 drag 直接表达 swipe。`
 
 
 ## 发现 F-03
 
 - 任务：`P2-T6`
 - 严重级别：`Low`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`Xcode 27 SimVirtualHeadsetRemoteService getPose:/setPose:`
 - 摘要：`plan 继续扩展手工 Paloma pose，而平台已有直接 pose service`
 - 风险：`继续扩写 raw pose packet 会复制 Xcode 已有能力并增加 ABI 魔法字节；当前 runtime 已暴露 getPose:/setPose:。`
 - 预期修复：`P2-T6 优先验证并使用 SimVirtualHeadsetRemoteService getPose/setPose；验证通过后删除 IndigoMessages.pose 的手工 packet，不保留双轨。`
 - 验证：`getPose→setPose 原值 round-trip；6DoF 实际视角变化；旧 raw pose builder 无引用并删除`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`运行对照证明 Paloma pose 会真实改变 Simulator screenshot，而 SimVirtualHeadsetRemoteService.getPose 与其状态不等价；plan-p2 已明确 production 继续单一路径 Paloma，不引入第二 transport。`
 
 
 ## 发现 F-02
 
 - 任务：`P2-T8`
 - 严重级别：`Medium`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`.github/features/simulator-control/plan-p2.md:P2-T8`
 - 摘要：`双手 magnify/rotate 被写成必达功能但缺少 App-facing HID 证据`
 - 风险：`当前证据只有 Device Hub/插件中的 magnification UI 字符串，不能证明 Paloma transport 能向 visionOS App 注入双手缩放/旋转；把它列为完成标准会制造无证据 scope。`
 - 预期修复：`改成能力验证任务：只有运行证据证明 App-facing 两手 manipulation 可表达时才暴露 magnify/rotate；否则记录明确限制，不阻塞 v0.1。`
 - 验证：`真实支持双手手势的 visionOS 目标出现预期 UI 变化；若无法表达则保留证据并不新增命令`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`plan-p2 已改为 capability-first：只有真实 App-facing 双手 manipulation 证据成立才暴露 magnify/rotate；否则记录限制且不阻塞 v0.1。`
 
 
 ## 发现 F-01

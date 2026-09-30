@@ -22,7 +22,7 @@
   - `Sources/RoamerCore/Simulator/SimulatorService.swift`
   - `Sources/RoamerCore/Support/ProcessRunner.swift`
 - P1-T3
-  - `Sources/RoamerCore/Input/GuestHIDController.swift`
+  - `Sources/RoamerCore/Input/SimulatorHIDController.swift`
   - `Sources/RoamerCore/Input/IndigoMessages.swift`
   - `Sources/RoamerCore/Input/ScreenProjection.swift`
   - `Sources/RoamerCore/Runtime/PrivateRuntime.swift`
@@ -102,21 +102,30 @@
 
 ## 修复日志
 
-- <fill after fixes>
+- `06594db`：AVP 识别改用 `deviceTypeIdentifier`，删除 status 的无用字段与重复查询。
+- `06594db`：`GuestHIDController` → `SimulatorHIDController`，同步 queue label。
+- `06594db`：截图像素坐标改为半开区间并补边界测试。
+- F-04 被更强运行证据推翻：Paloma pose 会真实改变 Simulator 画面，`SimVirtualHeadsetRemoteService.getPose` 不是该状态的等价 oracle。
 
 ## 验证日志
 
-- `<command>` -> `PASS | FAIL`
+- `swift test` -> PASS（4 tests）
+- `swift build -c release` -> PASS
+- `.build/release/roamer status` -> PASS，识别 `28DABA38-C30B-44B1-9C2B-65D50F7FCC55`
+- `roamer pose 0` / `pose 15` + screenshot -> PASS，整体空间视角明确变化
+- HappyPianist `roamer click 2290 690` -> PASS，进入乐谱页面
+- click/pose 前后 frontmost App -> PASS，均保持 `zed`
+- `rg guest Sources Tests` -> PASS，无旧 guest 命名
 
 ## Gate（是否允许进入下一阶段）
 
-- 结论：`Go | No-Go`
-- 理由：`<一句话>`
+- 结论：`Go`
+- 理由：P1 所有任务的当前实现、真实 Simulator 行为、build/test 与清理项均通过。
 
 ## 最终状态与剩余风险
 
-- 当前状态：`Open | Resolved`
-- 剩余风险：`<if any>`
+- 当前状态：`Resolved`
+- 剩余风险：完整 6DoF 与非零 pose 下的 screenshot→gaze 坐标语义属于 P2，不属于 P1 基线。
 
 ## 审计约束
 
