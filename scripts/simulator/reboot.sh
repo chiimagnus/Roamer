@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-. "$SCRIPT_DIR/_common.sh"
+AVP_SIMULATOR_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+. "$AVP_SIMULATOR_ROOT/lib/simulator.sh"
+
 udid=$(booted_avp_udid)
 xcrun simctl shutdown "$udid"
 xcrun simctl boot "$udid"
