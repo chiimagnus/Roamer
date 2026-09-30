@@ -2,8 +2,6 @@
 
 Roamer 是一个直接操作 Apple Vision Pro Simulator guest 的 macOS CLI。
 
-目标发布仓库：`chiimagnus/roamer`。
-
 ## 当前能力
 
 ```bash
