@@ -14,16 +14,16 @@ id = "P1-T2"
 title = "固定 Simulator lifecycle 与 screenshot"
 status = "completed"
 plan = "plan-p1.md#p1-t2"
-commit = "fa33788"
-note = ""
+commit = "06594db"
+note = "基线审计清理：按 deviceTypeIdentifier 识别 AVP，移除 status 冗余字段/查询。"
 
 [[tasks]]
 id = "P1-T3"
 title = "固定 Simulator HID：Home / Pose / Gaze / Click"
 status = "completed"
 plan = "plan-p1.md#p1-t3"
-commit = "fa33788"
-note = ""
+commit = "06594db"
+note = "基线审计清理：统一 SimulatorHIDController；修正截图像素半开边界；pose/click 真实回归通过。"
 
 [[tasks]]
 id = "P1-T4"
@@ -39,7 +39,7 @@ title = "还原 Manipulator state machine 与真实 right-hand pose"
 status = "in_progress"
 plan = "plan-p2.md#p2-t1"
 commit = ""
-note = "当前执行点：继续还原真实 right-hand pose / manipulation 状态机。"
+note = "基线审计通过后继续：重点确认 head pose 与 gaze/hand manipulation 的坐标关系。"
 
 [[tasks]]
 id = "P2-T2"

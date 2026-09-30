@@ -2,19 +2,16 @@
 
 目标：在不扩功能的前提下，把 Roamer 收口到可发布质量。
 
-## P4-T1 统一 Simulator 术语与源码命名
+## P4-T1 最终术语与死代码扫描
 
-用户可见文案统一使用：
+基础清理不延后到本任务：旧 `GuestHIDController` 等遗留命名已经在执行前审计中清理。
 
-- AVP Simulator；
-- visionOS Simulator；
-- Simulator HID；
-- Simulator screenshot；
-- Simulator input。
+本任务只做发布前最后核销：
 
-清理旧虚拟化术语。
-
-HID controller 类型和文件在发布前统一命名为 `SimulatorHIDController`。
+- 用户文案统一使用 AVP Simulator / visionOS Simulator；
+- 无被新实现取代的旧 helper、旧命令 alias、双轨 transport；
+- 无为了未来版本保留的兼容分支；
+- production 源码不包含 host GUI fallback。
 
 ## P4-T2 收紧 private API fail-fast 与输入边界
 
@@ -56,12 +53,11 @@ P2/P3 完成后再加入：
 
 ```bash
 roamer drag
-roamer swipe          # 若 P2 证明需要单独暴露
 roamer long-press
 roamer double-click
 roamer crown
-roamer magnify
-roamer rotate
+roamer magnify         # 仅 P2-T8 证实 capability 后
+roamer rotate          # 仅 P2-T8 证实 capability 后
 roamer key
 roamer type
 ```

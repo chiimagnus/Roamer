@@ -1,6 +1,6 @@
 # Plan P1 — SwiftPM CLI 基线
 
-**状态：已完成。**
+**状态：已完成；执行前审计重新验证了 pose 的真实画面变化。**
 
 目标：把已经跑通的实验能力收口为单一 SwiftPM CLI，并删除旧 shell / host GUI 路径。
 
@@ -24,18 +24,18 @@ swift build -c release
 
 ## P1-T2 固定 Simulator lifecycle 与 screenshot
 
-`SimulatorService` 已负责：
+`SimulatorService` 负责：
 
-- 找到唯一 booted Apple Vision Pro Simulator；
+- 按 `deviceTypeIdentifier` 找到唯一 booted Apple Vision Pro Simulator；
 - display geometry；
 - launch / terminate / reboot；
 - screenshot。
 
-无目标或多个 booted AVP 时直接失败。
+`status` 只输出选中的 AVP UDID，不再保存未使用的 name/runtime/state，也不二次列出所有 booted devices。无目标或多个 booted AVP 时直接失败。
 
-## P1-T3 固定 Simulator HID：Home / Pose / Gaze / Click
+## P1-T3 固定 Simulator 输入：Home / Pose / Gaze / Click
 
-已完成：
+已真实验证：
 
 ```bash
 roamer home
@@ -44,9 +44,11 @@ roamer gaze <x-px> <y-px>
 roamer click <x-px> <y-px>
 ```
 
-`gaze` / `click` 使用 Simulator screenshot pixel。
+`pose 0` 与 `pose 15` 的 Simulator screenshot 出现明确整体视角变化，证明 Paloma pose 路径真实生效。
 
-`click` 已在 HappyPianist 中真实触发“诊断”按钮。
+`SimVirtualHeadsetRemoteService.getPose` 仍返回 identity，说明它不是 Paloma pose 的等价状态源，不能作为这条 HID 路径的成功 oracle。
+
+`gaze` / `click` 使用 Simulator screenshot pixel，`click` 已在 HappyPianist 中真实触发控件。
 
 ## P1-T4 删除旧路径并验证 host 无干扰
 

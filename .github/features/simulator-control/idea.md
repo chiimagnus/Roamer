@@ -75,15 +75,16 @@ roamer click <x-px> <y-px>
 
 ## 还要完成
 
-1. 真正的 drag / swipe / scroll；
+1. 真正的 drag，并仅在必要时增加独立 scroll；
 2. 长按和双击；
 3. 完整 6DoF 头部姿态；
 4. Digital Crown；
-5. 左右手选择和双手缩放 / 旋转；
-6. Simulator keyboard；
-7. UTF-8 text input；
-8. private API fail-fast 与完整回归；
-9. `v0.1.0` release。
+5. 左右手选择；
+6. 验证双手缩放 / 旋转能力；
+7. Simulator keyboard 与快捷键组合；
+8. 在直接 Simulator transport 能力范围内实现 text input；
+9. private API fail-fast 与完整回归；
+10. `v0.1.0` release。
 
 ## 不做
 
@@ -112,8 +113,10 @@ roamer click <x-px> <y-px>
 - lifecycle / screenshot / home / pose / gaze / click 保持可用；
 - drag / long-press / double-click 能真实驱动 visionOS interaction；
 - pose 支持完整 6DoF，Digital Crown 可直接控制 Simulator；
-- 左右手与双手缩放 / 旋转可用于需要这些输入的 visionOS App；
-- keyboard / text 能直接输入 Simulator；
+- 左右手可用于 click / long-press / drag；
+- 双手缩放 / 旋转只有在 Xcode 27 Simulator 运行证据证明可表达时才进入 v0.1；
+- keyboard 支持单键和常用 modifier/chord；
+- text input 只承诺已由直接 Simulator transport 证明可可靠输入的字符范围；
 - 错误参数和 private API 缺失明确失败；
 - 不移动 macOS 鼠标，不改变 frontmost App；
 - tests、release build、真实 Simulator 回归通过；
