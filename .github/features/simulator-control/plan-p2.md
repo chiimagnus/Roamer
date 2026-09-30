@@ -1,23 +1,19 @@
-# Plan P2 - 实现真正的 visionOS Drag / Scroll
+# Plan P2 — 真正的 Drag / Scroll
 
-**Goal:** 还原 Xcode 27 Paloma Manipulator 的真实 hand pose 状态机，实现由 right-hand 3D pose 驱动的 Simulator drag，并在真实 SwiftUI ScrollView / carousel 中验证连续 manipulation。
+目标：还原 visionOS Simulator 的真实 right-hand manipulation，实现连续 drag。
 
-**Non-goals:** 不使用 macOS drag；不激活 Device Hub；不通过“pinch + 移动 gaze”伪造 drag；不凭猜测恢复曾导致 SurfBoard 崩溃的 Scroll HID ABI；不 build 专门测试 App。
+禁止：
 
-**Approach:** 所有未知 ABI 先作为最小研究实验取证；只有真实 Simulator manipulation 成功后才进入 RoamerCore 和 CLI。正式实现继续复用现有 `PrivateRuntime` 与 HID transport，不建立第二条发送链。
-
-**Acceptance:** `roamer drag` 可以在真实横向和纵向可滚动目标中产生连续拖动；若 scroll 需要独立 HID，则其 ABI 必须先被证实；整个过程不改变 macOS 鼠标/focus，不导致 visionOS / SurfBoard 崩溃。
-
----
+- 用 macOS drag；
+- 激活 Device Hub；
+- 用“pinch + 移动 gaze”冒充 drag；
+- 猜测 Scroll HID ABI 后直接进入正式代码。
 
 ## P2-T1 还原 Manipulator state machine 与真实 right-hand pose
 
-**Research anchors:**
-- Xcode 27 `VisionDeviceKitExtension`
-- SimulatorKit / CoreSimulator private runtime
-- 已确认的 Paloma Manipulator metadata / disassembly
+当前任务。
 
-### 已知事实
+已确认：
 
 ```text
 Manipulator
@@ -42,7 +38,7 @@ Options
   rightPivotPosition @ 16
 ```
 
-状态机已观察到：
+已观察到状态：
 
 - `handHover`
 - `pinchStarted`
@@ -50,128 +46,77 @@ Options
 - `pinchContinuingHorizontal`
 - `pinchEnded`
 
-### 要回答的问题
+还要确认：
 
-必须用 runtime/disassembly 证据回答：
+1. gaze hit 如何得到 right-hand 初始 pose；
+2. `inverseProjMatrix` 的来源和布局；
+3. `rightPivotPosition` 如何参与移动；
+4. pinch continuing 时 hand pose 如何变化；
+5. pinch ended 如何结束 manipulation。
 
-1. gaze hit 如何生成 right-hand hover / initial pose；
-2. `inverseProjMatrix` 的来源与布局；
-3. `rightPivotPosition` 如何参与 hand translation；
-4. pinch continuing 时 horizontal / vertical pose 如何更新；
-5. pinch ended 时最终 serialized message 如何结束 manipulation。
-
-### Stop condition
-
-只有当上述模型能够解释：
+完成条件：
 
 ```text
-hover → pinch started → continuous pose updates → pinch ended
+hover
+→ pinch started
+→ 连续 hand pose
+→ pinch ended
 ```
 
-并能构造出真实可工作的 event sequence，才进入 P2-T2。
+必须能解释并真实驱动 Simulator；只找到 offset 或成功发送消息不算完成。
 
-仅发现 offset、symbol 或“消息发送成功”都不算完成。
-
-### Evidence
-
-研究代码优先留在 `/tmp`；若没有 production code 变更，在 todo 中记录 no-commit reason 和关键证据。
-
----
+研究实验优先留在 `/tmp`。
 
 ## P2-T2 在 RoamerCore 实现 right-hand drag
 
-**Files:**
-- Update: `Sources/RoamerCore/Input/IndigoMessages.swift`
-- Update: `Sources/RoamerCore/Input/`
-- Update if needed: `Sources/RoamerCore/Input/ScreenProjection.swift`
-- Update if needed: `Sources/RoamerCore/Runtime/PrivateRuntime.swift`
-- Tests: `Tests/RoamerCoreTests/**`
+修改 `Sources/RoamerCore/Input/`，复用现有 HID transport。
 
-### Required sequence
+目标序列：
 
 ```text
 gaze(from)
-→ establish right-hand hover / initial pose
-→ right pinch down
-→ N continuous right-hand pose samples
-→ right pinch up
+→ right-hand hover
+→ pinch down
+→ N 个连续 hand pose
+→ pinch up
 ```
 
-### Invariants
+要求：
 
-- gaze 只负责 target acquisition；
-- 拖动位移来自 hand pose，不来自 gaze 移动；
-- duration 映射为连续 sample sequence；
-- 任何构造/发送错误都不能留下“永远 pinching”的 Simulator 状态；
-- 无法构造真实 pose 时明确失败，不做 host fallback。
+- 位移来自 hand pose，不来自 gaze；
+- duration 决定连续 sample；
+- 失败时不能留下持续 pinching 状态；
+- 无法构造真实 pose 时直接失败。
 
-### Unit-level verification
+为可纯函数验证的几何和 sample 逻辑补单元测试。
 
-只对可纯函数验证的部分做 unit test：
+## P2-T3 接入 `roamer drag` 并做横向验收
 
-- screenshot pixel / normalized drag vector；
-- duration / sample count 边界；
-- hand translation 或 pose math（若实现为纯函数）。
-
-真正 manipulation 仍必须由 P2-T3/P2-T4 的 Simulator 证据证明。
-
----
-
-## P2-T3 接入 `roamer drag` 并做横向真实验收
-
-**Files:**
-- Update: `Sources/RoamerCLI/CLI.swift`
-- Update: `README.md`
-
-### Contract
+命令：
 
 ```bash
 roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 ```
 
-坐标全部来自 Simulator screenshot pixel。
+主验收目标：HappyPianist Book Flow。
 
-### Primary acceptance target
+必须证明：
 
-HappyPianist Book Flow 横向区域。
+- 产生连续横向移动；
+- 不是一次 click / selection；
+- before / after screenshot 明确不同；
+- macOS frontmost App 不变。
 
-### Required evidence
+## P2-T4 验证纵向 drag，并决定是否需要 scroll
 
-- drag 前 screenshot；
-- 必要时 drag 中 screenshot；
-- drag 后 screenshot；
-- viewport / folio 连续横向变化；
-- 变化不是一次 click 导致的 selection；
-- macOS frontmost 前后相同；
-- 没有 host mouse movement 路径。
+在真实纵向 ScrollView 验证：
 
----
-
-## P2-T4 验证纵向 drag，并决定是否需要独立 scroll
-
-### Vertical acceptance
-
-选择当前已安装 visionOS App 中已有的纵向可滚动目标：
-
-- 上拖有效；
-- 下拖有效；
-- release 后状态稳定；
-- 极端坐标 / 非法 duration 明确失败；
+- 上拖；
+- 下拖；
+- release 后稳定；
+- 非法坐标 / duration 明确失败；
 - visionOS Simulator 不崩溃。
 
-### Scroll decision
+只有 drag 无法覆盖实际滚动需求时，才研究独立 `roamer scroll`。
 
-只有真实证据表明 ScrollView 需要独立 wheel/scroll HID 时，才研究并加入：
-
-```text
-roamer scroll ...
-```
-
-如果 drag 已经覆盖实际 ScrollView 使用场景，则不为了“API 看起来完整”再造 `scroll` 命令。
-
-若需要独立 scroll：
-
-- 先还原真实 `IndigoHIDMessageForScrollEvent` ABI；
-- 用隔离实验确认不会导致 SurfBoard 崩溃；
-- 再进入 RoamerCore；
-- 不复用历史错误 ABI 猜测。
+历史上错误猜测 `IndigoHIDMessageForScrollEvent` ABI 曾导致 SurfBoard 崩溃，因此必须先还原真实 ABI，再进入正式代码。

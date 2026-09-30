@@ -19,12 +19,12 @@ enum ScreenProjection {
             geometry.width > 0,
             geometry.height > 0
         else {
-            throw RoamerError.message("guest display 坐标或尺寸无效")
+            throw RoamerError.message("Simulator display 坐标或尺寸无效")
         }
 
         guard x >= 0, x <= geometry.width, y >= 0, y <= geometry.height else {
             throw RoamerError.message(
-                "坐标超出 guest screenshot：x=\(x), y=\(y), size=\(Int(geometry.width))x\(Int(geometry.height))"
+                "坐标超出 Simulator screenshot：x=\(x), y=\(y), size=\(Int(geometry.width))x\(Int(geometry.height))"
             )
         }
 

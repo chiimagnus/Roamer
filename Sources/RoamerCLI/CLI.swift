@@ -61,7 +61,7 @@ struct CLI {
             let device = try simulator.bootedAVP()
             let input = try GuestHIDController(udid: device.udid)
             try input.home()
-            print("guest home: ok")
+            print("simulator home: ok")
 
         case "pose":
             try requireCount(rest, 1, usage: "roamer pose <yaw-deg>")
@@ -69,7 +69,7 @@ struct CLI {
             let device = try simulator.bootedAVP()
             let input = try GuestHIDController(udid: device.udid)
             try input.pose(yawDegrees: yaw)
-            print("guest pose: ok")
+            print("simulator pose: ok")
 
         case "gaze":
             try requireCount(rest, 2, usage: "roamer gaze <x-px> <y-px>")
@@ -79,7 +79,7 @@ struct CLI {
             let geometry = try simulator.displayGeometry(for: device)
             let input = try GuestHIDController(udid: device.udid)
             try input.gaze(x: x, y: y, geometry: geometry)
-            print("guest gaze pixel: ok")
+            print("simulator gaze: ok")
 
         case "click":
             try requireCount(rest, 2, usage: "roamer click <x-px> <y-px>")
@@ -89,7 +89,7 @@ struct CLI {
             let geometry = try simulator.displayGeometry(for: device)
             let input = try GuestHIDController(udid: device.udid)
             try input.click(x: x, y: y, geometry: geometry)
-            print("guest click pixel: ok")
+            print("simulator click: ok")
 
         default:
             throw RoamerError.message("未知命令：\(command)\n\n\(Self.help)")
@@ -114,7 +114,7 @@ struct CLI {
     }
 
     static let help = """
-    roamer — 直接操作 Apple Vision Pro Simulator guest
+    roamer — 直接控制 Apple Vision Pro Simulator
 
     用法:
       roamer status
@@ -127,7 +127,7 @@ struct CLI {
       roamer gaze <x-px> <y-px>
       roamer click <x-px> <y-px>
 
-    gaze/click 坐标来自 roamer screenshot 生成的 guest PNG。
+    gaze/click 坐标来自 roamer screenshot 生成的 Simulator 图片。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。
     """
 }

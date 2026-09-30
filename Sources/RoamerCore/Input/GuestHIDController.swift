@@ -93,10 +93,10 @@ package final class GuestHIDController {
         }
 
         if semaphore.wait(timeout: .now() + 5) == .timedOut {
-            throw RoamerError.message("guest HID 发送超时")
+            throw RoamerError.message("Simulator HID 发送超时")
         }
         if let error = box.error {
-            throw RoamerError.message("guest HID 发送失败：\(error)")
+            throw RoamerError.message("Simulator HID 发送失败：\(error)")
         }
     }
 }

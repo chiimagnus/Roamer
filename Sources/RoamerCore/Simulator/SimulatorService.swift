@@ -93,7 +93,7 @@ package struct SimulatorService: Sendable {
         }
 
         guard let width, let height, width > 0, height > 0 else {
-            throw RoamerError.message("无法读取 AVP guest display 尺寸。")
+            throw RoamerError.message("无法读取 AVP Simulator display 尺寸。")
         }
 
         return DisplayGeometry(width: width, height: height)

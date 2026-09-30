@@ -90,7 +90,7 @@ final class PrivateRuntime {
             let initialized = unsafeBitCast(allocated, to: LegacyHIDClientMessaging.self)
                 .initWithDevice(device, error: &initError)
         else {
-            throw RoamerError.message("无法连接 guest HID：\(String(describing: initError))")
+            throw RoamerError.message("无法连接 Simulator HID：\(String(describing: initError))")
         }
 
         return unsafeBitCast(initialized, to: LegacyHIDClientMessaging.self)

@@ -1,45 +1,61 @@
 # Roamer
 
-Roamer 是一个直接操作 Apple Vision Pro Simulator guest 的 macOS CLI。
+Roamer 是一个直接控制 Apple Vision Pro Simulator 的 macOS CLI。
 
-## 当前能力
-
-```bash
-roamer status
-roamer screenshot /tmp/avp.png
-roamer launch com.example.visionapp
-roamer terminate com.example.visionapp
-roamer reboot
-
-roamer home
-roamer pose 15
-roamer gaze 2690 780
-roamer click 2690 780
-```
-
-`gaze` / `click` 使用 guest screenshot pixel 坐标，不是 macOS 屏幕坐标。
-
-Roamer 直接使用 CoreSimulator / SimulatorKit guest transport，不通过 Device Hub 输入，不移动 macOS 系统鼠标，也不抢 macOS focus。
+它通过 Simulator 自身的输入通道操作 visionOS，不依赖 Device Hub 前台交互，也不会移动 macOS 鼠标或抢占当前焦点。
 
 ## 构建
 
-需要安装 Xcode，并启动一个 Apple Vision Pro Simulator。
+需要 macOS 14+、Xcode，以及一个已经启动的 Apple Vision Pro Simulator。
 
 ```bash
 swift build -c release
 .build/release/roamer --help
 ```
 
-开发时也可以直接：
+开发时也可以直接运行：
 
 ```bash
 swift run roamer status
 ```
 
-## 当前验证环境
+## 命令
 
+```bash
+roamer status
+roamer screenshot [path]
+
+roamer launch <bundle-id>
+roamer terminate <bundle-id>
+roamer reboot
+
+roamer home
+roamer pose <yaw-deg>
+roamer gaze <x-px> <y-px>
+roamer click <x-px> <y-px>
+```
+
+`gaze` 和 `click` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。
+
+例如：
+
+```bash
+roamer screenshot /tmp/avp.png
+roamer click 2690 780
+```
+
+## 当前限制
+
+Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新可能改变这些接口；能力不可用时，Roamer 会直接报错，不会回退到 Device Hub 或 macOS 输入。
+
+当前验证环境：
+
+- Apple Silicon Mac
 - Xcode 27
 - visionOS 27 Simulator
-- Apple Silicon Mac
 
-Roamer 使用 Xcode private API。Xcode 更新可能改变私有 class / symbol / ABI；缺失时应直接失败，不会回退到 macOS 鼠标或 Device Hub 自动化。
+目前尚不支持 drag、键盘输入和文本输入。
+
+## License
+
+AGPL-3.0。见 `LICENSE`。
