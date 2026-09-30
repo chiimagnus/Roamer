@@ -1,9 +1,15 @@
 #!/bin/sh
 set -eu
-if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-  echo "用法: gaze.sh <x-px> <y-px> [hold-ms]" >&2
+if [ "$#" -ne 2 ]; then
+  echo '用法: gaze.sh <x-px> <y-px>  # 坐标来自 screenshot.sh 生成的 guest PNG' >&2
   exit 2
 fi
+x=$1
+y=$2
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/_common.sh"
-run_devicehub gaze "$@"
+udid=$(booted_avp_udid)
+set -- $(avp_display_geometry "$udid")
+width=$1
+height=$2
+exec /usr/bin/swift "$SCRIPT_DIR/guest_hid.swift" "$udid" gaze-pixel "$x" "$y" "$width" "$height"
