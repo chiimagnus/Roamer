@@ -23,10 +23,6 @@ struct CLI {
             try requireCount(rest, 0, usage: "roamer status")
             let device = try simulator.bootedAVP()
             print("UDID=\(device.udid)")
-            print(
-                try simulator.bootedDevicesDescription()
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-            )
 
         case "screenshot":
             guard rest.count <= 1 else {
@@ -59,7 +55,7 @@ struct CLI {
         case "home":
             try requireCount(rest, 0, usage: "roamer home")
             let device = try simulator.bootedAVP()
-            let input = try GuestHIDController(udid: device.udid)
+            let input = try SimulatorHIDController(udid: device.udid)
             try input.home()
             print("simulator home: ok")
 
@@ -67,7 +63,7 @@ struct CLI {
             try requireCount(rest, 1, usage: "roamer pose <yaw-deg>")
             let yaw = try parseDouble(rest[0], name: "yaw")
             let device = try simulator.bootedAVP()
-            let input = try GuestHIDController(udid: device.udid)
+            let input = try SimulatorHIDController(udid: device.udid)
             try input.pose(yawDegrees: yaw)
             print("simulator pose: ok")
 
@@ -77,7 +73,7 @@ struct CLI {
             let y = try parseDouble(rest[1], name: "y")
             let device = try simulator.bootedAVP()
             let geometry = try simulator.displayGeometry(for: device)
-            let input = try GuestHIDController(udid: device.udid)
+            let input = try SimulatorHIDController(udid: device.udid)
             try input.gaze(x: x, y: y, geometry: geometry)
             print("simulator gaze: ok")
 
@@ -87,7 +83,7 @@ struct CLI {
             let y = try parseDouble(rest[1], name: "y")
             let device = try simulator.bootedAVP()
             let geometry = try simulator.displayGeometry(for: device)
-            let input = try GuestHIDController(udid: device.udid)
+            let input = try SimulatorHIDController(udid: device.udid)
             try input.click(x: x, y: y, geometry: geometry)
             print("simulator click: ok")
 

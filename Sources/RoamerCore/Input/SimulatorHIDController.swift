@@ -5,7 +5,7 @@ private final class SendErrorBox: @unchecked Sendable {
     var error: Error?
 }
 
-package final class GuestHIDController {
+package final class SimulatorHIDController {
     private let client: LegacyHIDClientMessaging
     private let messages: IndigoMessages
 
@@ -81,7 +81,7 @@ package final class GuestHIDController {
     private func send(_ message: UnsafeMutableRawPointer) throws {
         let semaphore = DispatchSemaphore(value: 0)
         let box = SendErrorBox()
-        let queue = DispatchQueue(label: "roamer.guest-hid")
+        let queue = DispatchQueue(label: "roamer.simulator-hid")
 
         client.send(
             withMessage: message,

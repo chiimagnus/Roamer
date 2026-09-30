@@ -2,8 +2,6 @@ import Foundation
 
 package struct SimulatorDevice: Sendable {
     package let udid: String
-    package let name: String
-    package let runtimeIdentifier: String
 }
 
 package struct DisplayGeometry: Sendable, Equatable {
@@ -16,10 +14,8 @@ private struct SimctlList: Decodable {
 }
 
 private struct SimctlDevice: Decodable {
-    let state: String
-    let name: String
     let udid: String
-    let isAvailable: Bool?
+    let deviceTypeIdentifier: String
 }
 
 package struct SimulatorService: Sendable {
@@ -43,20 +39,14 @@ package struct SimulatorService: Sendable {
             throw RoamerError.message("无法解析 simctl device 列表：\(error)")
         }
 
-        let matches = inventory.devices.flatMap { runtime, devices in
+        let matches = inventory.devices.values.flatMap { devices in
             devices.compactMap { device -> SimulatorDevice? in
-                guard
-                    device.name == "Apple Vision Pro",
-                    device.state == "Booted",
-                    device.isAvailable != false
-                else {
+                guard device.deviceTypeIdentifier.hasPrefix(
+                    "com.apple.CoreSimulator.SimDeviceType.Apple-Vision-Pro"
+                ) else {
                     return nil
                 }
-                return SimulatorDevice(
-                    udid: device.udid,
-                    name: device.name,
-                    runtimeIdentifier: runtime
-                )
+                return SimulatorDevice(udid: device.udid)
             }
         }
 
@@ -70,9 +60,6 @@ package struct SimulatorService: Sendable {
         return matches[0]
     }
 
-    package func bootedDevicesDescription() throws -> String {
-        try ProcessRunner.run(xcrun, ["simctl", "list", "devices", "booted"]).stdout
-    }
 
     package func displayGeometry(for device: SimulatorDevice) throws -> DisplayGeometry {
         let output = try ProcessRunner.run(
