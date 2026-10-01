@@ -158,7 +158,7 @@ roamer pose <x> <y> <z> <yaw> <pitch> <roll>
 - rotation：度；
 - 当前未发布的 `roamer pose <yaw>` 直接被新契约替换，不保留兼容 alias。
 
-继续沿现有、无额外插件加载的 Paloma pose 路径扩展 6DoF。`SimVirtualHeadsetRemoteService.getPose/setPose` 虽可 round-trip，但加载 `VisionDeviceKitExtension` 会产生大量 duplicate-class warning，且它的 pose 状态与 Paloma HID 不等价，因此不进入 production，也不保留第二条 pose transport。
+继续沿 Paloma HID 路径扩展 6DoF，但 production 不再手写 Paloma 二进制布局。历史 crash report 已证明非法 Indigo HID 会让 `backboardd` 在 `SimHIDVirtualServiceManager` / IOHID provenance 路径崩溃并造成 guest 重启，因此 `pose` 与 `collection` 必须通过 Xcode 27 `XROS.simdeviceui` 导出的 `IndigoHIDMessageForPalomaPose` / `IndigoHIDMessageForPalomaCollection` 官方 builder 构造；Swift 仅通过最小 C ABI shim 调用，不保留 raw packet 双轨。`SimVirtualHeadsetRemoteService.getPose/setPose` 虽可 round-trip，但其 pose 状态与 Paloma HID 不等价，因此不作为 pose transport。
 
 同时新增：
 
