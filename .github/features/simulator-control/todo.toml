@@ -1,5 +1,5 @@
 version = 1
-current_task_id = ""
+current_task_id = "P3-T2"
 
 [[tasks]]
 id = "P1-T1"
@@ -102,18 +102,18 @@ note = "正式 magnify/rotate 已通过 SwiftUI 手势探针真实 Simulator 验
 [[tasks]]
 id = "P3-T1"
 title = "还原 Simulator keyboard transport"
-status = "pending"
+status = "completed"
 plan = "plan-p3.md#p3-t1"
-commit = ""
-note = ""
+commit = "89f6cfd"
+note = "KeyboardArbitrary 已真实验证；A/Return/Escape/Delete/Tab/Space/四方向键均成对 down/up；Shift/Control/Option 生效；Command 与直接 Unicode 在 Xcode 27 AVP Simulator 不支持。"
 
 [[tasks]]
 id = "P3-T2"
 title = "实现 roamer key"
-status = "pending"
+status = "in_progress"
 plan = "plan-p3.md#p3-t2"
 commit = ""
-note = ""
+note = "开始实现 roamer key；仅暴露已真实验证的键与 modifier，Command 明确报不支持。"
 
 [[tasks]]
 id = "P3-T3"
