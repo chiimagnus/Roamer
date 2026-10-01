@@ -47,28 +47,22 @@ final class IndigoMessages {
     }
 
     func collection(
-        yawDegrees: Double,
-        pitchDegrees: Double,
+        gazeRay: GazeRay,
         pinchingRight: Bool,
         rightHandPose: HandPose = .selection
     ) throws -> UnsafeMutableRawPointer {
-        let yaw = yawDegrees * .pi / 180
-        let pitch = pitchDegrees * .pi / 180
-        let directionX = Float(sin(yaw) * cos(pitch))
-        let directionY = Float(sin(pitch))
-        let directionZ = Float(-cos(yaw) * cos(pitch))
         let build = try runtime.xrosSymbol("IndigoHIDMessageForPalomaCollection")
 
         guard
             let message = RoamerBuildPalomaCollection(
                 build,
                 302,
-                0,
-                0,
-                0,
-                directionX,
-                directionY,
-                directionZ,
+                gazeRay.originX,
+                gazeRay.originY,
+                gazeRay.originZ,
+                gazeRay.directionX,
+                gazeRay.directionY,
+                gazeRay.directionZ,
                 pinchingRight,
                 rightHandPose.x,
                 rightHandPose.y,

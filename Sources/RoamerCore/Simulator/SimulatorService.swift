@@ -2,6 +2,7 @@ import Foundation
 
 package struct SimulatorDevice: Sendable {
     package let udid: String
+    package let dataPath: String
 }
 
 package struct DisplayGeometry: Sendable, Equatable {
@@ -15,13 +16,18 @@ private struct SimctlList: Decodable {
 
 private struct SimctlDevice: Decodable {
     let udid: String
+    let dataPath: String
     let deviceTypeIdentifier: String
 }
 
 package struct SimulatorService: Sendable {
     private let xcrun = "/usr/bin/xcrun"
+    private let stateStore: SimulatorStateStore
 
-    package init() {}
+    package init() {
+        stateStore = SimulatorStateStore()
+    }
+
 
     package func bootedAVP() throws -> SimulatorDevice {
         let result = try ProcessRunner.run(
@@ -46,7 +52,10 @@ package struct SimulatorService: Sendable {
                 ) else {
                     return nil
                 }
-                return SimulatorDevice(udid: device.udid)
+                return SimulatorDevice(
+                    udid: device.udid,
+                    dataPath: device.dataPath
+                )
             }
         }
 
@@ -104,6 +113,44 @@ package struct SimulatorService: Sendable {
         _ = try ProcessRunner.run(xcrun, ["simctl", "shutdown", device.udid])
         _ = try ProcessRunner.run(xcrun, ["simctl", "boot", device.udid])
         _ = try ProcessRunner.run(xcrun, ["simctl", "bootstatus", device.udid, "-b"])
+    }
+
+    package func headPose(for device: SimulatorDevice) throws -> HeadPose {
+        try stateStore.loadHeadPose(
+            udid: device.udid,
+            bootIdentifier: try bootIdentifier(for: device)
+        )
+    }
+
+    package func saveHeadPose(
+        _ headPose: HeadPose,
+        for device: SimulatorDevice
+    ) throws {
+        try stateStore.saveHeadPose(
+            headPose,
+            udid: device.udid,
+            bootIdentifier: try bootIdentifier(for: device)
+        )
+    }
+
+    private func bootIdentifier(for device: SimulatorDevice) throws -> String {
+        let bootstrapPath = URL(fileURLWithPath: device.dataPath)
+            .appendingPathComponent("var/run/launchd_bootstrap.plist")
+            .path
+        let attributes: [FileAttributeKey: Any]
+        do {
+            attributes = try FileManager.default.attributesOfItem(atPath: bootstrapPath)
+        } catch {
+            throw RoamerError.message("无法读取 AVP Simulator boot 标识：\(error)")
+        }
+
+        guard
+            let inode = attributes[.systemFileNumber] as? NSNumber,
+            let creationDate = attributes[.creationDate] as? Date
+        else {
+            throw RoamerError.message("AVP Simulator boot 标识不完整。")
+        }
+        return "\(inode.uint64Value):\(creationDate.timeIntervalSince1970)"
     }
 
     package func screenshot(_ path: String, from device: SimulatorDevice) throws {

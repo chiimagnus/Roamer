@@ -87,6 +87,38 @@ final class HeadPoseTests: XCTestCase {
         XCTAssertEqual(pose.z, 0.3, accuracy: 0.0001)
     }
 
+    func testIdentityPoseKeepsCenterGazeForward() {
+        let ray = HeadPose.identity.gazeRay(
+            for: GazeAngles(yaw: 0, pitch: 0)
+        )
+
+        XCTAssertEqual(ray.originX, 0, accuracy: 0.0001)
+        XCTAssertEqual(ray.originY, 0, accuracy: 0.0001)
+        XCTAssertEqual(ray.originZ, 0, accuracy: 0.0001)
+        XCTAssertEqual(ray.directionX, 0, accuracy: 0.0001)
+        XCTAssertEqual(ray.directionY, 0, accuracy: 0.0001)
+        XCTAssertEqual(ray.directionZ, -1, accuracy: 0.0001)
+    }
+
+    func testYawAndTranslationTransformCenterGazeToWorldSpace() throws {
+        let pose = try HeadPose.make(
+            x: 0.1,
+            y: -0.2,
+            z: 0.3,
+            yawDegrees: 90,
+            pitchDegrees: 0,
+            rollDegrees: 0
+        )
+        let ray = pose.gazeRay(for: GazeAngles(yaw: 0, pitch: 0))
+
+        XCTAssertEqual(ray.originX, 0.1, accuracy: 0.0001)
+        XCTAssertEqual(ray.originY, -0.2, accuracy: 0.0001)
+        XCTAssertEqual(ray.originZ, 0.3, accuracy: 0.0001)
+        XCTAssertEqual(ray.directionX, -1, accuracy: 0.0001)
+        XCTAssertEqual(ray.directionY, 0, accuracy: 0.0001)
+        XCTAssertEqual(ray.directionZ, 0, accuracy: 0.0001)
+    }
+
     func testRejectsNonFiniteValues() {
         XCTAssertThrowsError(
             try HeadPose.make(

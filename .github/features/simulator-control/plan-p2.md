@@ -157,6 +157,8 @@ roamer pose <x> <y> <z> <yaw> <pitch> <roll>
 - position：米；
 - rotation：度；
 - 当前未发布的 `roamer pose <yaw>` 直接被新契约替换，不保留兼容 alias。
+- 为保证独立 CLI 调用下的 screenshot 像素坐标仍可映射到当前世界 gaze，Roamer 仅保存最近一次完整绝对 HeadPose；状态按 Simulator UDID + boot session 隔离，设备重启后自动回到 identity。它不用于“省略参数沿用旧值”，也不是兼容状态。
+- screenshot-space gaze ray 需要乘当前 HeadPose orientation 并带上 position；Paloma manipulation 的 `rightHandPose` 则保持其原有相对手部轨迹，不再额外乘 HeadPose，否则非零 pose 下 drag 会失效。
 
 继续沿 Paloma HID 路径扩展 6DoF，但 production 不再手写 Paloma 二进制布局。历史 crash report 已证明非法 Indigo HID 会让 `backboardd` 在 `SimHIDVirtualServiceManager` / IOHID provenance 路径崩溃并造成 guest 重启，因此 `pose` 与 `collection` 必须通过 Xcode 27 `XROS.simdeviceui` 导出的 `IndigoHIDMessageForPalomaPose` / `IndigoHIDMessageForPalomaCollection` 官方 builder 构造；Swift 仅通过最小 C ABI shim 调用，不保留 raw packet 双轨。`SimVirtualHeadsetRemoteService.getPose/setPose` 虽可 round-trip，但其 pose 状态与 Paloma HID 不等价，因此不作为 pose transport。
 

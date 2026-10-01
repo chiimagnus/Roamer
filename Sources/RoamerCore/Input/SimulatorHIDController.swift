@@ -8,12 +8,14 @@ private final class SendErrorBox: @unchecked Sendable {
 package final class SimulatorHIDController {
     private let client: LegacyHIDClientMessaging
     private let messages: IndigoMessages
+    private let headPose: HeadPose
 
-    package init(udid: String) throws {
+    package init(udid: String, headPose: HeadPose = .identity) throws {
         let runtime = try PrivateRuntime()
         let device = try runtime.resolveDevice(udid: udid)
         client = try runtime.makeLegacyHIDClient(device: device)
         messages = IndigoMessages(runtime: runtime)
+        self.headPose = headPose
     }
 
     package func home() throws {
@@ -22,6 +24,7 @@ package final class SimulatorHIDController {
         try send(messages.homeButton(eventType: 2))
     }
 
+    @discardableResult
     package func pose(
         x: Double,
         y: Double,
@@ -29,7 +32,7 @@ package final class SimulatorHIDController {
         yawDegrees: Double,
         pitchDegrees: Double,
         rollDegrees: Double
-    ) throws {
+    ) throws -> HeadPose {
         let pose = try HeadPose.make(
             x: x,
             y: y,
@@ -39,6 +42,7 @@ package final class SimulatorHIDController {
             rollDegrees: rollDegrees
         )
         try send(messages.pose(pose))
+        return pose
     }
 
     package func gaze(
@@ -49,8 +53,7 @@ package final class SimulatorHIDController {
         let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
         try send(
             messages.collection(
-                yawDegrees: angles.yaw,
-                pitchDegrees: angles.pitch,
+                gazeRay: headPose.gazeRay(for: angles),
                 pinchingRight: false
             )
         )
@@ -116,10 +119,10 @@ package final class SimulatorHIDController {
             throw RoamerError.message("无法生成 drag hand trajectory")
         }
 
+        let gazeRay = headPose.gazeRay(for: start)
         try send(
             messages.collection(
-                yawDegrees: start.yaw,
-                pitchDegrees: start.pitch,
+                gazeRay: gazeRay,
                 pinchingRight: false,
                 rightHandPose: firstPose
             )
@@ -130,8 +133,7 @@ package final class SimulatorHIDController {
         do {
             try send(
                 messages.collection(
-                    yawDegrees: start.yaw,
-                    pitchDegrees: start.pitch,
+                    gazeRay: gazeRay,
                     pinchingRight: true,
                     rightHandPose: firstPose
                 )
@@ -143,8 +145,7 @@ package final class SimulatorHIDController {
                 releasePose = pose
                 try send(
                     messages.collection(
-                        yawDegrees: start.yaw,
-                        pitchDegrees: start.pitch,
+                        gazeRay: gazeRay,
                         pinchingRight: true,
                         rightHandPose: pose
                     )
@@ -154,8 +155,7 @@ package final class SimulatorHIDController {
 
             try send(
                 messages.collection(
-                    yawDegrees: start.yaw,
-                    pitchDegrees: start.pitch,
+                    gazeRay: gazeRay,
                     pinchingRight: false,
                     rightHandPose: lastPose
                 )
@@ -163,8 +163,7 @@ package final class SimulatorHIDController {
         } catch {
             try? send(
                 messages.collection(
-                    yawDegrees: start.yaw,
-                    pitchDegrees: start.pitch,
+                    gazeRay: gazeRay,
                     pinchingRight: false,
                     rightHandPose: releasePose
                 )
@@ -177,10 +176,10 @@ package final class SimulatorHIDController {
         at angles: GazeAngles,
         holdMilliseconds: Double
     ) throws {
+        let gazeRay = headPose.gazeRay(for: angles)
         try send(
             messages.collection(
-                yawDegrees: angles.yaw,
-                pitchDegrees: angles.pitch,
+                gazeRay: gazeRay,
                 pinchingRight: false
             )
         )
@@ -190,8 +189,7 @@ package final class SimulatorHIDController {
         do {
             try send(
                 messages.collection(
-                    yawDegrees: angles.yaw,
-                    pitchDegrees: angles.pitch,
+                    gazeRay: gazeRay,
                     pinchingRight: true
                 )
             )
@@ -199,8 +197,7 @@ package final class SimulatorHIDController {
             Thread.sleep(forTimeInterval: holdMilliseconds / 1000)
             try send(
                 messages.collection(
-                    yawDegrees: angles.yaw,
-                    pitchDegrees: angles.pitch,
+                    gazeRay: gazeRay,
                     pinchingRight: false
                 )
             )
@@ -208,8 +205,7 @@ package final class SimulatorHIDController {
             if isPinching {
                 try? send(
                     messages.collection(
-                        yawDegrees: angles.yaw,
-                        pitchDegrees: angles.pitch,
+                        gazeRay: gazeRay,
                         pinchingRight: false
                     )
                 )

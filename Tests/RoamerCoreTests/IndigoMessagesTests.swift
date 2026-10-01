@@ -29,8 +29,14 @@ final class IndigoMessagesTests: XCTestCase {
         let messages = IndigoMessages(runtime: runtime)
 
         let message = try messages.collection(
-            yawDegrees: 0,
-            pitchDegrees: 0,
+            gazeRay: GazeRay(
+                originX: 0,
+                originY: 0,
+                originZ: 0,
+                directionX: 0,
+                directionY: 0,
+                directionZ: -1
+            ),
             pinchingRight: true,
             rightHandPose: HandPose(x: 0.4, y: 0.5, z: -0.6)
         )

@@ -73,7 +73,7 @@ struct CLI {
             let roll = try parseDouble(rest[5], name: "roll")
             let device = try simulator.bootedAVP()
             let input = try SimulatorHIDController(udid: device.udid)
-            try input.pose(
+            let headPose = try input.pose(
                 x: x,
                 y: y,
                 z: z,
@@ -81,6 +81,7 @@ struct CLI {
                 pitchDegrees: pitch,
                 rollDegrees: roll
             )
+            try simulator.saveHeadPose(headPose, for: device)
             print("simulator pose: ok")
 
         case "crown":
@@ -97,7 +98,7 @@ struct CLI {
             let y = try parseDouble(rest[1], name: "y")
             let device = try simulator.bootedAVP()
             let geometry = try simulator.displayGeometry(for: device)
-            let input = try SimulatorHIDController(udid: device.udid)
+            let input = try spatialInput(for: device)
             try input.gaze(x: x, y: y, geometry: geometry)
             print("simulator gaze: ok")
 
@@ -107,7 +108,7 @@ struct CLI {
             let y = try parseDouble(rest[1], name: "y")
             let device = try simulator.bootedAVP()
             let geometry = try simulator.displayGeometry(for: device)
-            let input = try SimulatorHIDController(udid: device.udid)
+            let input = try spatialInput(for: device)
             try input.click(x: x, y: y, geometry: geometry)
             print("simulator click: ok")
 
@@ -124,7 +125,7 @@ struct CLI {
                 : 700
             let device = try simulator.bootedAVP()
             let geometry = try simulator.displayGeometry(for: device)
-            let input = try SimulatorHIDController(udid: device.udid)
+            let input = try spatialInput(for: device)
             try input.longPress(
                 x: x,
                 y: y,
@@ -139,7 +140,7 @@ struct CLI {
             let y = try parseDouble(rest[1], name: "y")
             let device = try simulator.bootedAVP()
             let geometry = try simulator.displayGeometry(for: device)
-            let input = try SimulatorHIDController(udid: device.udid)
+            let input = try spatialInput(for: device)
             try input.doubleClick(x: x, y: y, geometry: geometry)
             print("simulator double-click: ok")
 
@@ -158,7 +159,7 @@ struct CLI {
                 : 500
             let device = try simulator.bootedAVP()
             let geometry = try simulator.displayGeometry(for: device)
-            let input = try SimulatorHIDController(udid: device.udid)
+            let input = try spatialInput(for: device)
             try input.drag(
                 fromX: fromX,
                 fromY: fromY,
@@ -172,6 +173,16 @@ struct CLI {
         default:
             throw RoamerError.message("未知命令：\(command)\n\n\(Self.help)")
         }
+    }
+
+    private func spatialInput(
+        for device: SimulatorDevice
+    ) throws -> SimulatorHIDController {
+        let headPose = try simulator.headPose(for: device)
+        return try SimulatorHIDController(
+            udid: device.udid,
+            headPose: headPose
+        )
     }
 
     private func requireCount(
