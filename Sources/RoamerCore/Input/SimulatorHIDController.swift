@@ -78,6 +78,90 @@ package final class SimulatorHIDController {
         )
     }
 
+    package func drag(
+        fromX: Double,
+        fromY: Double,
+        toX: Double,
+        toY: Double,
+        durationMilliseconds: Double,
+        geometry: DisplayGeometry
+    ) throws {
+        let start = try ScreenProjection.angles(
+            x: fromX,
+            y: fromY,
+            geometry: geometry
+        )
+        let end = try ScreenProjection.angles(
+            x: toX,
+            y: toY,
+            geometry: geometry
+        )
+        let poses = try HandTrajectory.samples(
+            from: start,
+            to: end,
+            durationMilliseconds: durationMilliseconds
+        )
+        guard let firstPose = poses.first, let lastPose = poses.last else {
+            throw RoamerError.message("无法生成 drag hand trajectory")
+        }
+
+        try send(
+            messages.collection(
+                yawDegrees: start.yaw,
+                pitchDegrees: start.pitch,
+                pinchingRight: false,
+                rightHandPose: firstPose
+            )
+        )
+        usleep(50_000)
+
+        var releasePose = firstPose
+        do {
+            try send(
+                messages.collection(
+                    yawDegrees: start.yaw,
+                    pitchDegrees: start.pitch,
+                    pinchingRight: true,
+                    rightHandPose: firstPose
+                )
+            )
+            usleep(80_000)
+
+            let delay = useconds_t(durationMilliseconds * 1000 / Double(max(1, poses.count - 1)))
+            for pose in poses.dropFirst() {
+                releasePose = pose
+                try send(
+                    messages.collection(
+                        yawDegrees: start.yaw,
+                        pitchDegrees: start.pitch,
+                        pinchingRight: true,
+                        rightHandPose: pose
+                    )
+                )
+                usleep(delay)
+            }
+
+            try send(
+                messages.collection(
+                    yawDegrees: start.yaw,
+                    pitchDegrees: start.pitch,
+                    pinchingRight: false,
+                    rightHandPose: lastPose
+                )
+            )
+        } catch {
+            try? send(
+                messages.collection(
+                    yawDegrees: start.yaw,
+                    pitchDegrees: start.pitch,
+                    pinchingRight: false,
+                    rightHandPose: releasePose
+                )
+            )
+            throw error
+        }
+    }
+
     private func send(_ message: UnsafeMutableRawPointer) throws {
         let semaphore = DispatchSemaphore(value: 0)
         let box = SendErrorBox()

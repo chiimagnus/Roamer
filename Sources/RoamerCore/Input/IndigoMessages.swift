@@ -43,7 +43,8 @@ final class IndigoMessages {
     func collection(
         yawDegrees: Double,
         pitchDegrees: Double,
-        pinchingRight: Bool
+        pinchingRight: Bool,
+        rightHandPose: HandPose = .selection
     ) throws -> UnsafeMutableRawPointer {
         let message = try palomaMessage()
 
@@ -74,8 +75,15 @@ final class IndigoMessages {
         writeBytes(directionY, to: message, offset: 0x5b)
         writeBytes(directionZ, to: message, offset: 0x5f)
 
-        // 左右手 pose 保持 identity；已验证足以完成 gaze + right-hand pinch selection。
+        // 左手保持 identity。右手 position 用于 manipulation，orientation 当前保持 identity。
         writeBytes(Float(1), to: message, offset: 0x83)
+        writeBytes(rightHandPose.x, to: message, offset: 0x87)
+        writeBytes(rightHandPose.y, to: message, offset: 0x8b)
+        writeBytes(rightHandPose.z, to: message, offset: 0x8f)
+        writeBytes(Float(0), to: message, offset: 0x93)
+        writeBytes(Float(0), to: message, offset: 0x97)
+        writeBytes(Float(0), to: message, offset: 0x9b)
+        writeBytes(Float(0), to: message, offset: 0x9f)
         writeBytes(Float(1), to: message, offset: 0xa3)
 
         return message
