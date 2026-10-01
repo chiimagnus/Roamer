@@ -123,9 +123,9 @@ roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 - 非法坐标 / duration 明确失败；
 - visionOS Simulator 不崩溃。
 
-只有 drag 无法覆盖实际滚动需求时，才研究独立 `roamer scroll`。
+真实验证已经确认 `roamer drag` 可直接滚动 visionOS Settings 的纵向列表：上拖和下拖均生效，release 后稳定。因此 v0.1 **不增加 `roamer scroll`**，避免和 drag 建立重复命令。
 
-历史上错误猜测 `IndigoHIDMessageForScrollEvent` ABI 曾导致 SurfBoard 崩溃，因此必须先还原真实 ABI，再进入正式代码。
+历史上错误猜测 `IndigoHIDMessageForScrollEvent` ABI 曾导致 SurfBoard 崩溃；该路线不再进入本 feature。
 
 ## P2-T5 实现长按和双击
 

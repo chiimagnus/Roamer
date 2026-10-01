@@ -111,7 +111,10 @@
 - Device Hub live state inspection -> PASS：right hand `(0,0,-0.56)`、radius `0.56`、spherical movement=true、pivot=zero。
 - `/tmp/roamer-handdrag-experiment` + HappyPianist Book Flow -> PASS：固定 gaze，hand yaw `0 → +0.35 rad` 后 carousel 切换到相邻卡片。
 - 2.2 s 连续实验 before/mid/after screenshot -> PASS：mid 帧处于连续拖动中，release 后最终 selection 改变。
-- 实验前后 macOS frontmost App -> PASS，保持 `WeChat`。
+- 正式 `roamer drag` + HappyPianist Book Flow -> PASS：横向连续拖动，frontmost `zed → zed`。
+- 正式 `roamer drag` + visionOS Settings 左侧列表 -> PASS：上拖与下拖都能滚动真实纵向列表，frontmost 保持 `WeChat`。
+- `duration=0` / x==width -> PASS：发送 HID 前明确失败。
+- 结论：drag 已覆盖实际 ScrollView；不新增独立 scroll 命令。
 
 ## Gate（是否允许进入下一阶段）
 
