@@ -33,10 +33,12 @@ roamer home
 roamer pose <yaw-deg>
 roamer gaze <x-px> <y-px>
 roamer click <x-px> <y-px>
+roamer long-press <x-px> <y-px> [duration-ms]
+roamer double-click <x-px> <y-px>
 roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 ```
 
-`gaze`、`click` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。
+`gaze`、`click`、`long-press`、`double-click` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。
 
 例如：
 

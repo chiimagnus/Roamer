@@ -87,6 +87,38 @@ struct CLI {
             try input.click(x: x, y: y, geometry: geometry)
             print("simulator click: ok")
 
+        case "long-press":
+            guard rest.count == 2 || rest.count == 3 else {
+                throw RoamerError.message(
+                    "用法: roamer long-press <x-px> <y-px> [duration-ms]"
+                )
+            }
+            let x = try parseDouble(rest[0], name: "x")
+            let y = try parseDouble(rest[1], name: "y")
+            let duration = try rest.count == 3
+                ? parseDouble(rest[2], name: "duration-ms")
+                : 700
+            let device = try simulator.bootedAVP()
+            let geometry = try simulator.displayGeometry(for: device)
+            let input = try SimulatorHIDController(udid: device.udid)
+            try input.longPress(
+                x: x,
+                y: y,
+                durationMilliseconds: duration,
+                geometry: geometry
+            )
+            print("simulator long-press: ok")
+
+        case "double-click":
+            try requireCount(rest, 2, usage: "roamer double-click <x-px> <y-px>")
+            let x = try parseDouble(rest[0], name: "x")
+            let y = try parseDouble(rest[1], name: "y")
+            let device = try simulator.bootedAVP()
+            let geometry = try simulator.displayGeometry(for: device)
+            let input = try SimulatorHIDController(udid: device.udid)
+            try input.doubleClick(x: x, y: y, geometry: geometry)
+            print("simulator double-click: ok")
+
         case "drag":
             guard rest.count == 4 || rest.count == 5 else {
                 throw RoamerError.message(
@@ -148,9 +180,11 @@ struct CLI {
       roamer pose <yaw-deg>
       roamer gaze <x-px> <y-px>
       roamer click <x-px> <y-px>
+      roamer long-press <x-px> <y-px> [duration-ms]
+      roamer double-click <x-px> <y-px>
       roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 
-    gaze/click/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
+    gaze/click/long-press/double-click/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。
     """
 }

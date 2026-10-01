@@ -50,32 +50,31 @@ package final class SimulatorHIDController {
         geometry: DisplayGeometry
     ) throws {
         let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
+        try pinch(at: angles, holdMilliseconds: 80)
+    }
 
-        try send(
-            messages.collection(
-                yawDegrees: angles.yaw,
-                pitchDegrees: angles.pitch,
-                pinchingRight: false
-            )
-        )
-        usleep(50_000)
+    package func longPress(
+        x: Double,
+        y: Double,
+        durationMilliseconds: Double,
+        geometry: DisplayGeometry
+    ) throws {
+        guard durationMilliseconds.isFinite, durationMilliseconds > 0 else {
+            throw RoamerError.message("long-press duration 必须大于 0")
+        }
+        let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
+        try pinch(at: angles, holdMilliseconds: durationMilliseconds)
+    }
 
-        try send(
-            messages.collection(
-                yawDegrees: angles.yaw,
-                pitchDegrees: angles.pitch,
-                pinchingRight: true
-            )
-        )
-        usleep(80_000)
-
-        try send(
-            messages.collection(
-                yawDegrees: angles.yaw,
-                pitchDegrees: angles.pitch,
-                pinchingRight: false
-            )
-        )
+    package func doubleClick(
+        x: Double,
+        y: Double,
+        geometry: DisplayGeometry
+    ) throws {
+        let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
+        try pinch(at: angles, holdMilliseconds: 80)
+        usleep(160_000)
+        try pinch(at: angles, holdMilliseconds: 80)
     }
 
     package func drag(
@@ -158,6 +157,51 @@ package final class SimulatorHIDController {
                     rightHandPose: releasePose
                 )
             )
+            throw error
+        }
+    }
+
+    private func pinch(
+        at angles: GazeAngles,
+        holdMilliseconds: Double
+    ) throws {
+        try send(
+            messages.collection(
+                yawDegrees: angles.yaw,
+                pitchDegrees: angles.pitch,
+                pinchingRight: false
+            )
+        )
+        usleep(50_000)
+
+        var isPinching = false
+        do {
+            try send(
+                messages.collection(
+                    yawDegrees: angles.yaw,
+                    pitchDegrees: angles.pitch,
+                    pinchingRight: true
+                )
+            )
+            isPinching = true
+            Thread.sleep(forTimeInterval: holdMilliseconds / 1000)
+            try send(
+                messages.collection(
+                    yawDegrees: angles.yaw,
+                    pitchDegrees: angles.pitch,
+                    pinchingRight: false
+                )
+            )
+        } catch {
+            if isPinching {
+                try? send(
+                    messages.collection(
+                        yawDegrees: angles.yaw,
+                        pitchDegrees: angles.pitch,
+                        pinchingRight: false
+                    )
+                )
+            }
             throw error
         }
     }
