@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P2-T3"
+current_task_id = "P2-T4"
 
 [[tasks]]
 id = "P1-T1"
@@ -53,18 +53,18 @@ note = "RoamerCore 已实现 spherical right-hand trajectory；9 tests + release
 [[tasks]]
 id = "P2-T3"
 title = "接入 roamer drag 并做横向真实验收"
-status = "in_progress"
+status = "completed"
 plan = "plan-p2.md#p2-t3"
-commit = ""
-note = "接入 roamer drag 并对 HappyPianist Book Flow 做真实横向验收。"
+commit = "3dc3802"
+note = "正式 roamer drag 在 HappyPianist Book Flow 完成 before/mid/after 连续横向验收；frontmost zed→zed。"
 
 [[tasks]]
 id = "P2-T4"
 title = "验证纵向 drag，并决定是否需要独立 scroll"
-status = "pending"
+status = "in_progress"
 plan = "plan-p2.md#p2-t4"
 commit = ""
-note = ""
+note = "开始验证纵向 drag，并仅在 drag 无法覆盖真实 ScrollView 时研究独立 scroll。"
 
 [[tasks]]
 id = "P2-T5"
