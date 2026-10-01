@@ -60,11 +60,27 @@ struct CLI {
             print("simulator home: ok")
 
         case "pose":
-            try requireCount(rest, 1, usage: "roamer pose <yaw-deg>")
-            let yaw = try parseDouble(rest[0], name: "yaw")
+            try requireCount(
+                rest,
+                6,
+                usage: "roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>"
+            )
+            let x = try parseDouble(rest[0], name: "x")
+            let y = try parseDouble(rest[1], name: "y")
+            let z = try parseDouble(rest[2], name: "z")
+            let yaw = try parseDouble(rest[3], name: "yaw")
+            let pitch = try parseDouble(rest[4], name: "pitch")
+            let roll = try parseDouble(rest[5], name: "roll")
             let device = try simulator.bootedAVP()
             let input = try SimulatorHIDController(udid: device.udid)
-            try input.pose(yawDegrees: yaw)
+            try input.pose(
+                x: x,
+                y: y,
+                z: z,
+                yawDegrees: yaw,
+                pitchDegrees: pitch,
+                rollDegrees: roll
+            )
             print("simulator pose: ok")
 
         case "gaze":
@@ -177,7 +193,7 @@ struct CLI {
       roamer terminate <bundle-id>
       roamer reboot
       roamer home
-      roamer pose <yaw-deg>
+      roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
       roamer gaze <x-px> <y-px>
       roamer click <x-px> <y-px>
       roamer long-press <x-px> <y-px> [duration-ms]

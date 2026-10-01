@@ -22,11 +22,23 @@ package final class SimulatorHIDController {
         try send(messages.homeButton(eventType: 2))
     }
 
-    package func pose(yawDegrees: Double) throws {
-        guard yawDegrees.isFinite else {
-            throw RoamerError.message("yaw 必须是有限数值")
-        }
-        try send(messages.pose(yawDegrees: yawDegrees))
+    package func pose(
+        x: Double,
+        y: Double,
+        z: Double,
+        yawDegrees: Double,
+        pitchDegrees: Double,
+        rollDegrees: Double
+    ) throws {
+        let pose = try HeadPose.make(
+            x: x,
+            y: y,
+            z: z,
+            yawDegrees: yawDegrees,
+            pitchDegrees: pitchDegrees,
+            rollDegrees: rollDegrees
+        )
+        try send(messages.pose(pose))
     }
 
     package func gaze(

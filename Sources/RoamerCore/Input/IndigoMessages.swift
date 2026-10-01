@@ -25,18 +25,17 @@ final class IndigoMessages {
         return message
     }
 
-    func pose(yawDegrees: Double) throws -> UnsafeMutableRawPointer {
+    func pose(_ pose: HeadPose) throws -> UnsafeMutableRawPointer {
         let message = try palomaMessage()
         writeBytes(UInt32(300), to: message, offset: 0x30)
 
-        let halfYaw = yawDegrees * .pi / 360
-        writeBytes(Float(0), to: message, offset: 0x54)
-        writeBytes(Float(0), to: message, offset: 0x58)
-        writeBytes(Float(0), to: message, offset: 0x5c)
-        writeBytes(Float(0), to: message, offset: 0x64)
-        writeBytes(Float(sin(halfYaw)), to: message, offset: 0x68)
-        writeBytes(Float(0), to: message, offset: 0x6c)
-        writeBytes(Float(cos(halfYaw)), to: message, offset: 0x70)
+        writeBytes(pose.x, to: message, offset: 0x54)
+        writeBytes(pose.y, to: message, offset: 0x58)
+        writeBytes(pose.z, to: message, offset: 0x5c)
+        writeBytes(pose.quaternionX, to: message, offset: 0x64)
+        writeBytes(pose.quaternionY, to: message, offset: 0x68)
+        writeBytes(pose.quaternionZ, to: message, offset: 0x6c)
+        writeBytes(pose.quaternionW, to: message, offset: 0x70)
         return message
     }
 

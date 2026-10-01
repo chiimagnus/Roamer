@@ -30,7 +30,7 @@ roamer terminate <bundle-id>
 roamer reboot
 
 roamer home
-roamer pose <yaw-deg>
+roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
 roamer gaze <x-px> <y-px>
 roamer click <x-px> <y-px>
 roamer long-press <x-px> <y-px> [duration-ms]
@@ -57,7 +57,7 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 - Xcode 27
 - visionOS 27 Simulator
 
-目前 head pose 只支持 yaw；尚不支持完整 6DoF、键盘输入和文本输入。
+`pose` 使用绝对 6DoF：位置单位为米，旋转单位为度。
 
 ## License
 
