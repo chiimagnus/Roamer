@@ -23,6 +23,14 @@
 
 至少一个单键必须真实作用到 visionOS 控件后才算完成。
 
+已确认的 Xcode 27 / xrOS 27 事实：
+
+- 正式 transport 为 `IndigoHIDMessageForKeyboardArbitrary(usageCode, down/up)`；真实 SwiftUI `onKeyPress` 已确认 `A`、Return、Escape、Delete、Tab、Space、四方向键均收到成对 down/up。
+- modifier 继续走同一个 keyboard transport 的 USB HID usage：Shift `0xE1`、Control `0xE0`、Option `0xE2` 均能进入 `EventModifiers`；不需要单独保留 `ModifierKeyBit` production 路径。
+- Command 的左右 GUI usage `0xE3 / 0xE7` 在当前 AVP Simulator 中均不会形成 SwiftUI `.command` modifier，也无法触发真实 `⌘A` shortcut；不得伪装为已支持。
+- Xcode 没有发现直接 Unicode/text builder；`HIDArbitrary` Unicode usage page `0x10` 的真实 TextField 验证也没有产生输入事件，因此当前没有直接 Unicode transport。
+- raw keyboard HID 的字符结果受 visionOS 当前输入法/键盘布局影响；当前中文拼音输入法下，物理 `A` 会先进入组合输入，不会立刻提交到 `TextField` binding。
+
 ## P3-T2 实现 `roamer key`
 
 至少支持：
@@ -37,14 +45,17 @@ roamer key up
 roamer key down
 roamer key space
 roamer key tab
-roamer key command+a
 roamer key shift+tab
+roamer key control+a
+roamer key option+left
 ```
 
 要求：
 
 - key down/up 成对；
 - modifier/chord 有明确按下与释放顺序；
+- 支持已真实验证的 Shift / Control / Option；
+- `command+...` 在当前 Xcode 27 AVP Simulator 上必须明确报“不支持”，不能退化成无 modifier 的普通按键；
 - 未知 key / modifier 直接报错；
 - 不触发 host keyboard；
 - 不要求 Device Hub 前台。
@@ -61,8 +72,9 @@ roamer type "中文"
 要求：
 
 - CLI 参数按 UTF-8 接收；
-- **只有发现直接 Unicode/text transport 时才承诺任意 Unicode（包括中文）**；
-- 若只有 raw keyboard HID，则 `type` 只支持已证实可可靠表示的字符集；发送前先完整校验，不允许输入一半才发现不可表示字符；
+- P3-T1 已确认当前 Xcode 27 没有可用的直接 Unicode/text transport，因此不得承诺任意 Unicode（包括中文）；
+- `type` 只能在能够确认 guest 当前输入法/键盘布局与目标字符映射可靠时发送；否则必须在发送任何按键前整体失败，不能假设 US 布局，也不能偷偷切换用户输入法；
+- 若最终只能证明某个受控 guest 输入模式下的一小段字符集可靠，则 `type` 仅支持该已验证字符集；发送前先完整校验，不允许输入一半才发现不可表示字符；
 - 不使用 host clipboard / IME / AppleScript 兜底；
 - 不静默丢字符；
 - 中途失败不盲目重试整段文本。
@@ -73,7 +85,7 @@ roamer type "中文"
 
 - 英文；
 - `type` 当前声明支持的字符范围；
-- 若 P3-T1 证实直接 Unicode transport，再额外验证中文；否则验证中文在发送任何字符前明确失败；
+- 中文必须在发送任何字符前明确失败；若 `type` 需要特定 guest 输入模式，也要验证不满足前提时在首个按键前失败；
 - Return；
 - Delete；
 - 至少一个方向键；

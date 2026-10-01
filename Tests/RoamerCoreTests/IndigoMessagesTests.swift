@@ -2,6 +2,21 @@ import XCTest
 @testable import RoamerCore
 
 final class IndigoMessagesTests: XCTestCase {
+    func testKeyboardBuilderProducesUsageAndDownUpOperations() throws {
+        let runtime = try PrivateRuntime()
+        let messages = IndigoMessages(runtime: runtime)
+
+        let down = try messages.keyboard(usageCode: 0x04, isDown: true)
+        defer { free(down) }
+        let up = try messages.keyboard(usageCode: 0x04, isDown: false)
+        defer { free(up) }
+
+        XCTAssertEqual(down.loadUnaligned(fromByteOffset: 0x34, as: UInt32.self), 1)
+        XCTAssertEqual(down.loadUnaligned(fromByteOffset: 0x3c, as: UInt32.self), 0x04)
+        XCTAssertEqual(up.loadUnaligned(fromByteOffset: 0x34, as: UInt32.self), 2)
+        XCTAssertEqual(up.loadUnaligned(fromByteOffset: 0x3c, as: UInt32.self), 0x04)
+    }
+
     func testOfficialPoseBuilderProducesExpectedFields() throws {
         let runtime = try PrivateRuntime()
         let messages = IndigoMessages(runtime: runtime)

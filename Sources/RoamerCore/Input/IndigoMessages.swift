@@ -8,6 +8,11 @@ private typealias ButtonBuilder = @convention(c) (
     Int32
 ) -> UnsafeMutableRawPointer?
 
+private typealias KeyboardBuilder = @convention(c) (
+    UInt32,
+    Int32
+) -> UnsafeMutableRawPointer?
+
 final class IndigoMessages {
     private let runtime: PrivateRuntime
 
@@ -22,6 +27,20 @@ final class IndigoMessages {
         )
         guard let message = build(0, eventType, 0x33) else {
             throw RoamerError.message("无法构造 Home HID 事件")
+        }
+        return message
+    }
+
+    func keyboard(
+        usageCode: UInt32,
+        isDown: Bool
+    ) throws -> UnsafeMutableRawPointer {
+        let build = try runtime.symbol(
+            "IndigoHIDMessageForKeyboardArbitrary",
+            as: KeyboardBuilder.self
+        )
+        guard let message = build(usageCode, isDown ? 1 : 2) else {
+            throw RoamerError.message("无法构造 keyboard HID 事件")
         }
         return message
     }

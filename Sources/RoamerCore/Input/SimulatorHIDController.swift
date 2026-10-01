@@ -45,6 +45,38 @@ package final class SimulatorHIDController {
         return pose
     }
 
+    package func keyDown(usageCode: UInt32) throws {
+        try send(messages.keyboard(usageCode: usageCode, isDown: true))
+    }
+
+    package func keyUp(usageCode: UInt32) throws {
+        try send(messages.keyboard(usageCode: usageCode, isDown: false))
+    }
+
+    package func keyChord(_ usageCodes: [UInt32]) throws {
+        guard !usageCodes.isEmpty else {
+            throw RoamerError.message("key chord 不能为空")
+        }
+
+        var pressed: [UInt32] = []
+        do {
+            for usageCode in usageCodes {
+                try keyDown(usageCode: usageCode)
+                pressed.append(usageCode)
+                usleep(15_000)
+            }
+            for usageCode in pressed.reversed() {
+                try keyUp(usageCode: usageCode)
+                usleep(15_000)
+            }
+        } catch {
+            for usageCode in pressed.reversed() {
+                try? keyUp(usageCode: usageCode)
+            }
+            throw error
+        }
+    }
+
     package func gaze(
         x: Double,
         y: Double,
