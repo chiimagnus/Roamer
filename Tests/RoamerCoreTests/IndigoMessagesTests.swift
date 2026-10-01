@@ -43,6 +43,7 @@ final class IndigoMessagesTests: XCTestCase {
         defer { free(message) }
 
         XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x30, as: UInt32.self), 302)
+        XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x38, as: UInt8.self), 0)
         XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x3f, as: UInt8.self), 1)
         XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x57, as: Float.self), 0, accuracy: 0.0001)
         XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x5b, as: Float.self), 0, accuracy: 0.0001)
@@ -51,5 +52,31 @@ final class IndigoMessagesTests: XCTestCase {
         XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x8b, as: Float.self), 0.5, accuracy: 0.0001)
         XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x8f, as: Float.self), -0.6, accuracy: 0.0001)
         XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0xa3, as: Float.self), 1, accuracy: 0.0001)
+    }
+
+    func testOfficialCollectionBuilderProducesLeftHandFields() throws {
+        let runtime = try PrivateRuntime()
+        let messages = IndigoMessages(runtime: runtime)
+
+        let message = try messages.collection(
+            gazeRay: GazeRay(
+                originX: 0,
+                originY: 0,
+                originZ: 0,
+                directionX: 0,
+                directionY: 0,
+                directionZ: -1
+            ),
+            pinchingLeft: true,
+            leftHandPose: HandPose(x: -0.4, y: 0.5, z: -0.6)
+        )
+        defer { free(message) }
+
+        XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x38, as: UInt8.self), 1)
+        XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x3f, as: UInt8.self), 0)
+        XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x67, as: Float.self), -0.4, accuracy: 0.0001)
+        XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x6b, as: Float.self), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x6f, as: Float.self), -0.6, accuracy: 0.0001)
+        XCTAssertEqual(message.loadUnaligned(fromByteOffset: 0x83, as: Float.self), 1, accuracy: 0.0001)
     }
 }

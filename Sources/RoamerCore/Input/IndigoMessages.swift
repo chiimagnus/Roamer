@@ -48,7 +48,9 @@ final class IndigoMessages {
 
     func collection(
         gazeRay: GazeRay,
-        pinchingRight: Bool,
+        pinchingLeft: Bool = false,
+        leftHandPose: HandPose = .selection,
+        pinchingRight: Bool = false,
         rightHandPose: HandPose = .selection
     ) throws -> UnsafeMutableRawPointer {
         let build = try runtime.xrosSymbol("IndigoHIDMessageForPalomaCollection")
@@ -63,6 +65,10 @@ final class IndigoMessages {
                 gazeRay.directionX,
                 gazeRay.directionY,
                 gazeRay.directionZ,
+                pinchingLeft,
+                leftHandPose.x,
+                leftHandPose.y,
+                leftHandPose.z,
                 pinchingRight,
                 rightHandPose.x,
                 rightHandPose.y,

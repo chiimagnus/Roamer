@@ -62,34 +62,37 @@ package final class SimulatorHIDController {
     package func click(
         x: Double,
         y: Double,
+        hand: HandSide = .right,
         geometry: DisplayGeometry
     ) throws {
         let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
-        try pinch(at: angles, holdMilliseconds: 80)
+        try pinch(at: angles, holdMilliseconds: 80, hand: hand)
     }
 
     package func longPress(
         x: Double,
         y: Double,
         durationMilliseconds: Double,
+        hand: HandSide = .right,
         geometry: DisplayGeometry
     ) throws {
         guard durationMilliseconds.isFinite, durationMilliseconds > 0 else {
             throw RoamerError.message("long-press duration 必须大于 0")
         }
         let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
-        try pinch(at: angles, holdMilliseconds: durationMilliseconds)
+        try pinch(at: angles, holdMilliseconds: durationMilliseconds, hand: hand)
     }
 
     package func doubleClick(
         x: Double,
         y: Double,
+        hand: HandSide = .right,
         geometry: DisplayGeometry
     ) throws {
         let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
-        try pinch(at: angles, holdMilliseconds: 80)
+        try pinch(at: angles, holdMilliseconds: 80, hand: hand)
         usleep(160_000)
-        try pinch(at: angles, holdMilliseconds: 80)
+        try pinch(at: angles, holdMilliseconds: 80, hand: hand)
     }
 
     package func drag(
@@ -98,6 +101,7 @@ package final class SimulatorHIDController {
         toX: Double,
         toY: Double,
         durationMilliseconds: Double,
+        hand: HandSide = .right,
         geometry: DisplayGeometry
     ) throws {
         let start = try ScreenProjection.angles(
@@ -121,10 +125,11 @@ package final class SimulatorHIDController {
 
         let gazeRay = headPose.gazeRay(for: start)
         try send(
-            messages.collection(
+            collection(
                 gazeRay: gazeRay,
-                pinchingRight: false,
-                rightHandPose: firstPose
+                hand: hand,
+                pinching: false,
+                handPose: firstPose
             )
         )
         usleep(50_000)
@@ -132,10 +137,11 @@ package final class SimulatorHIDController {
         var releasePose = firstPose
         do {
             try send(
-                messages.collection(
+                collection(
                     gazeRay: gazeRay,
-                    pinchingRight: true,
-                    rightHandPose: firstPose
+                    hand: hand,
+                    pinching: true,
+                    handPose: firstPose
                 )
             )
             usleep(80_000)
@@ -144,28 +150,31 @@ package final class SimulatorHIDController {
             for pose in poses.dropFirst() {
                 releasePose = pose
                 try send(
-                    messages.collection(
+                    collection(
                         gazeRay: gazeRay,
-                        pinchingRight: true,
-                        rightHandPose: pose
+                        hand: hand,
+                        pinching: true,
+                        handPose: pose
                     )
                 )
                 usleep(delay)
             }
 
             try send(
-                messages.collection(
+                collection(
                     gazeRay: gazeRay,
-                    pinchingRight: false,
-                    rightHandPose: lastPose
+                    hand: hand,
+                    pinching: false,
+                    handPose: lastPose
                 )
             )
         } catch {
             try? send(
-                messages.collection(
+                collection(
                     gazeRay: gazeRay,
-                    pinchingRight: false,
-                    rightHandPose: releasePose
+                    hand: hand,
+                    pinching: false,
+                    handPose: releasePose
                 )
             )
             throw error
@@ -174,13 +183,15 @@ package final class SimulatorHIDController {
 
     private func pinch(
         at angles: GazeAngles,
-        holdMilliseconds: Double
+        holdMilliseconds: Double,
+        hand: HandSide
     ) throws {
         let gazeRay = headPose.gazeRay(for: angles)
         try send(
-            messages.collection(
+            collection(
                 gazeRay: gazeRay,
-                pinchingRight: false
+                hand: hand,
+                pinching: false
             )
         )
         usleep(50_000)
@@ -188,29 +199,54 @@ package final class SimulatorHIDController {
         var isPinching = false
         do {
             try send(
-                messages.collection(
+                collection(
                     gazeRay: gazeRay,
-                    pinchingRight: true
+                    hand: hand,
+                    pinching: true
                 )
             )
             isPinching = true
             Thread.sleep(forTimeInterval: holdMilliseconds / 1000)
             try send(
-                messages.collection(
+                collection(
                     gazeRay: gazeRay,
-                    pinchingRight: false
+                    hand: hand,
+                    pinching: false
                 )
             )
         } catch {
             if isPinching {
                 try? send(
-                    messages.collection(
+                    collection(
                         gazeRay: gazeRay,
-                        pinchingRight: false
+                        hand: hand,
+                        pinching: false
                     )
                 )
             }
             throw error
+        }
+    }
+
+    private func collection(
+        gazeRay: GazeRay,
+        hand: HandSide,
+        pinching: Bool,
+        handPose: HandPose = .selection
+    ) throws -> UnsafeMutableRawPointer {
+        switch hand {
+        case .left:
+            return try messages.collection(
+                gazeRay: gazeRay,
+                pinchingLeft: pinching,
+                leftHandPose: handPose
+            )
+        case .right:
+            return try messages.collection(
+                gazeRay: gazeRay,
+                pinchingRight: pinching,
+                rightHandPose: handPose
+            )
         }
     }
 
