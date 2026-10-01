@@ -79,6 +79,15 @@ roamer type "中文"
 - 不静默丢字符；
 - 中途失败不盲目重试整段文本。
 
+当前实现与证据：
+
+- guest 当前输入模式从该 Simulator `dataPath/Library/Preferences/com.apple.keyboard.preferences.plist` 的 `KeyboardsCurrentAndNext[0]` 读取，不依赖 macOS 当前输入法；
+- 仅精确识别已验证的 `en_US` 模式，其他标识全部 fail-fast，不推断、不兼容猜测；
+- 当前 `type` 字符集收敛为英文字母、数字和空格；大写字母使用已验证 Shift HID；
+- 整段文本先生成完整按键计划，再确认 guest 输入模式，两个 preflight 都完成后才创建 HID controller；
+- 当前中文拼音 `zh_Hans-Pinyin@sw=Pinyin-Simplified;hw=Automatic` 下，`roamer type "Hello"` 已验证会在任何键盘 HID 发送前失败；中文与未支持标点同样会在整段预校验阶段失败；
+- 整个失败路径不会改变 macOS frontmost App，也不会自动切换 guest 输入法。
+
 ## P3-T4 真实文本字段验收
 
 在已安装 visionOS App 的真实输入框验证：

@@ -70,6 +70,24 @@ package struct SimulatorService: Sendable {
     }
 
 
+    package func keyboardInputMode(
+        for device: SimulatorDevice
+    ) throws -> SimulatorKeyboardInputMode {
+        let url = URL(fileURLWithPath: device.dataPath)
+            .appendingPathComponent("Library/Preferences/com.apple.keyboard.preferences.plist")
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            throw RoamerError.message(
+                "无法读取 Simulator 当前输入模式：\(error)"
+            )
+        }
+
+        return try SimulatorKeyboardInputMode.decode(from: data)
+    }
+
     package func displayGeometry(for device: SimulatorDevice) throws -> DisplayGeometry {
         let output = try ProcessRunner.run(
             xcrun,

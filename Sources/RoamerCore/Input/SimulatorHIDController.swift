@@ -77,6 +77,15 @@ package final class SimulatorHIDController {
         }
     }
 
+    package func typeText(_ plan: KeyboardTextPlan) throws {
+        for (index, stroke) in plan.strokes.enumerated() {
+            try keyChord(stroke.usageCodes)
+            if index + 1 < plan.strokes.count {
+                usleep(20_000)
+            }
+        }
+    }
+
     package func gaze(
         x: Double,
         y: Double,
