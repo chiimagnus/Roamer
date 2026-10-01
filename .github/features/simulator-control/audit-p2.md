@@ -7,14 +7,14 @@
 
 ## 任务看板
 
-- [ ] P2-T1 还原 Manipulator state machine 与真实 right-hand pose
-- [ ] P2-T2 在 RoamerCore 实现 right-hand drag
-- [ ] P2-T3 接入 roamer drag 并做横向真实验收
-- [ ] P2-T4 验证纵向 drag，并决定是否需要独立 scroll
-- [ ] P2-T5 实现长按和双击
-- [ ] P2-T6 扩展完整 6DoF 头部姿态并实现 Digital Crown
-- [ ] P2-T7 支持左手 / 右手选择
-- [ ] P2-T8 实现双手缩放和旋转
+- [x] P2-T1 还原 Manipulator state machine 与真实 right-hand pose
+- [x] P2-T2 在 RoamerCore 实现 right-hand drag
+- [x] P2-T3 接入 roamer drag 并做横向真实验收
+- [x] P2-T4 验证纵向 drag，并决定是否需要独立 scroll
+- [x] P2-T5 实现长按和双击
+- [x] P2-T6 扩展完整 6DoF 头部姿态并实现 Digital Crown
+- [x] P2-T7 支持左手 / 右手选择
+- [x] P2-T8 实现双手缩放和旋转
 
 ## 任务到文件的映射
 
@@ -45,8 +45,12 @@
 - P2-T7
   - `Sources/RoamerCore/Input/`
 - P2-T8
-  - `Sources/RoamerCore/Input/`
-  - Xcode 27 `VisionDeviceKitExtension`
+  - `Sources/RoamerCore/Input/HandTrajectory.swift`
+  - `Sources/RoamerCore/Input/SimulatorHIDController.swift`
+  - `Sources/RoamerCLI/CLI.swift`
+  - `Tests/RoamerCoreTests/HandTrajectoryTests.swift`
+  - `README.md`
+  - 临时 `/tmp` SwiftUI `MagnifyGesture` / `RotationGesture` 探针
 
 ## 发现项
 
@@ -125,7 +129,7 @@
 - 风险：`当前证据只有 Device Hub/插件中的 magnification UI 字符串，不能证明 Paloma transport 能向 visionOS App 注入双手缩放/旋转；把它列为完成标准会制造无证据 scope。`
 - 预期修复：`改成能力验证任务：只有运行证据证明 App-facing 两手 manipulation 可表达时才暴露 magnify/rotate；否则记录明确限制，不阻塞 v0.1。`
 - 验证：`真实支持双手手势的 visionOS 目标出现预期 UI 变化；若无法表达则保留证据并不新增命令`
-- 解决证据：`plan-p2 已改为 capability-first：只有真实 App-facing 双手 manipulation 证据成立才暴露 magnify/rotate；否则记录限制且不阻塞 v0.1。`
+- 解决证据：`5c1f26b：正式新增 magnify/rotate。临时 SwiftUI 探针真实收到 magnify scale 1.0→2.5 与 1.0→0.4，rotate 请求 +45° 后收到 +45.0°；两类手势均产生 32 个连续事件，backboardd PID、Simulator Booted 与 macOS frontmost 均稳定。`
 
 
 ## 发现 F-01
@@ -163,16 +167,21 @@
 - 历史 backboardd crash reports -> `SimHIDVirtualServiceManager serviceForIndigoHIDData:` assertion / IOHID provenance 崩溃，定位为手写非法 Indigo HID。
 - `7759aa5` -> 删除 production 手写 Paloma raw packet，改用 XROS 官方 Pose/Collection builder；17/17 tests + release build 通过。
 - 官方 builder 压力回归 -> 连续 pose/gaze/click/long-press/double-click/drag/crown 后设备仍 Booted，没有新增 backboardd/RealityLauncher/CoreSimulatorBridge/SurfBoard crash report，也没有新的 guest `syslogd restarted`。
+- P2-T6 非零完整 6DoF -> PASS：screenshot-space click/drag 在 translation + yaw/pitch/roll 后仍命中；backboardd 与 macOS focus 稳定。
+- P2-T7 左手 -> PASS：同一 Settings 开关被左手 click 切换；左手 drag 真实滚动列表；backboardd、Booted、frontmost 均稳定。
+- P2-T8 正式 `roamer magnify` -> PASS：SwiftUI `MagnifyGesture` 从 `SCALE 1.000` 到 `2.500`，缩小方向到 `0.400`，每次 32 个连续事件。
+- P2-T8 正式 `roamer rotate 1920 1080 45 500` -> PASS：SwiftUI `RotationGesture` 显示 `ROT 45.0 deg`、`ROT EVENTS 32`，scale 保持 `1.000`；backboardd `67604→67604`，frontmost `Helium→Helium`，AVP 保持 Booted。
+- 当前 HEAD `5c1f26b` -> PASS：`swift test` 27/27，`swift build -c release` 通过，`git diff --check` 通过。
 
 ## Gate（是否允许进入下一阶段）
 
-- 结论：`Go | No-Go`
-- 理由：`<一句话>`
+- 结论：`Go`
+- 理由：`P2 全部 8 个任务均已满足计划验收，所有已记录 finding 均 Resolved；当前 HEAD 的单元测试、release build 与关键真实 Simulator 交互均通过。`
 
 ## 最终状态与剩余风险
 
-- 当前状态：`Open | Resolved`
-- 剩余风险：`<if any>`
+- 当前状态：`Resolved`
+- 剩余风险：`Roamer 依赖 Xcode 27 私有 CoreSimulator/XROS 接口，后续 Xcode 版本仍可能改变 ABI；当前不存在阻塞 P3 的已知 P2 正确性问题。`
 
 ## 审计约束
 
