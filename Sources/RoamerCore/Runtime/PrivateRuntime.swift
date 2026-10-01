@@ -135,6 +135,17 @@ final class PrivateRuntime {
         return unsafeBitCast(raw, to: T.self)
     }
 
+    func xrosSymbol(_ name: String) throws -> UnsafeMutableRawPointer {
+        let plugin = developerDir
+            + "/Platforms/XROS.platform/Library/Developer/CoreSimulator/Profiles/UserInterface/"
+            + "XROS.simdeviceui/Contents/MacOS/XROS"
+        let handle = try Self.loadFramework(plugin)
+        guard let raw = dlsym(handle, name) else {
+            throw RoamerError.message("找不到 XROS symbol：\(name)")
+        }
+        return raw
+    }
+
     private static func resolveDeveloperDir() throws -> String {
         if let override = ProcessInfo.processInfo.environment["DEVELOPER_DIR"],
            !override.isEmpty {
