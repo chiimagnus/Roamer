@@ -107,7 +107,7 @@ struct CLI {
             let inputMode = try simulator.keyboardInputMode(for: device)
             guard inputMode.supportsVerifiedTextTyping else {
                 throw RoamerError.message(
-                    "roamer type 当前只支持已验证的 English (US) guest 输入模式；当前为 \(inputMode.identifier)。请在 Simulator 内手动切换输入法，Roamer 不会自动切换。"
+                    "roamer type 当前只支持已验证的 visionOS English (US) 输入模式；当前为 \(inputMode.identifier)。请在 Simulator 内手动切换输入法，Roamer 不会自动切换。"
                 )
             }
             let input = try SimulatorHIDController(udid: device.udid)
@@ -354,7 +354,7 @@ struct CLI {
       roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms] [--hand left|right]
 
     key 支持 Return/Escape/Delete/Tab/Space/方向键、字母、数字，以及 Shift/Control/Option chord。
-    type 当前只支持已验证的 English (US) guest 输入模式下的英文字母、数字和空格；不会自动切换输入法。
+    type 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格；不会自动切换输入法。
     Xcode 27 Apple Vision Pro Simulator 当前不支持 Command modifier。
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。

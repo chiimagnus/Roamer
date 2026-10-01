@@ -10,7 +10,7 @@ import ObjectiveC.runtime
     func changeImmersionLevel(_ level: Float, isAbsolute: Bool)
 }
 
-@objc protocol LegacyHIDClientMessaging {
+@objc protocol SimulatorHIDClientMessaging {
     @objc(initWithDevice:error:)
     func initWithDevice(
         _ device: Any,
@@ -102,7 +102,7 @@ final class PrivateRuntime {
         return unsafeBitCast(service, to: VirtualHeadsetRemoteMessaging.self)
     }
 
-    func makeLegacyHIDClient(device: AnyObject) throws -> LegacyHIDClientMessaging {
+    func makeSimulatorHIDClient(device: AnyObject) throws -> SimulatorHIDClientMessaging {
         guard let clientClass = NSClassFromString("SimulatorKit.SimDeviceLegacyHIDClient") else {
             throw RoamerError.message("找不到 SimDeviceLegacyHIDClient")
         }
@@ -117,13 +117,13 @@ final class PrivateRuntime {
 
         var initError: AnyObject?
         guard
-            let initialized = unsafeBitCast(allocated, to: LegacyHIDClientMessaging.self)
+            let initialized = unsafeBitCast(allocated, to: SimulatorHIDClientMessaging.self)
                 .initWithDevice(device, error: &initError)
         else {
             throw RoamerError.message("无法连接 Simulator HID：\(String(describing: initError))")
         }
 
-        return unsafeBitCast(initialized, to: LegacyHIDClientMessaging.self)
+        return unsafeBitCast(initialized, to: SimulatorHIDClientMessaging.self)
     }
 
     func symbol<T>(_ name: String, as type: T.Type) throws -> T {

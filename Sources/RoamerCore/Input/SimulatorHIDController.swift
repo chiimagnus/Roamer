@@ -6,14 +6,14 @@ private final class SendErrorBox: @unchecked Sendable {
 }
 
 package final class SimulatorHIDController {
-    private let client: LegacyHIDClientMessaging
+    private let client: SimulatorHIDClientMessaging
     private let messages: IndigoMessages
     private let headPose: HeadPose
 
     package init(udid: String, headPose: HeadPose = .identity) throws {
         let runtime = try PrivateRuntime()
         let device = try runtime.resolveDevice(udid: udid)
-        client = try runtime.makeLegacyHIDClient(device: device)
+        client = try runtime.makeSimulatorHIDClient(device: device)
         messages = IndigoMessages(runtime: runtime)
         self.headPose = headPose
     }

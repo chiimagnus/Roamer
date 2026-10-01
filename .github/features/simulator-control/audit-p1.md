@@ -64,12 +64,12 @@
 - 任务：`P1-T3`
 - 严重级别：`Low`
 - 状态：`Resolved`
-- 位置：`Sources/RoamerCore/Input/GuestHIDController.swift:8,84`
-- 摘要：`旧 guest 命名仍残留在正式源码`
+- 位置：当时的旧 Simulator HID controller
+- 摘要：`旧端侧命名仍残留在正式源码`
 - 风险：`产品和文档已经统一为 Simulator，但核心类型和 dispatch queue 仍保留实验阶段命名，后续 P2 会继续扩散该术语。`
 - 预期修复：`现在重命名为 SimulatorHIDController，并同步 queue label 与 CLI 引用，不延后到 P4。`
-- 验证：`rg guest Sources; swift test; swift build -c release`
-- 解决证据：`06594db：GuestHIDController 重命名为 SimulatorHIDController，Sources/Tests 已无 guest/Guest 引用。`
+- 验证：`Sources/Tests 中无旧端侧命名；swift test；swift build -c release`
+- 解决证据：`06594db：旧 HID controller 重命名为 SimulatorHIDController，Sources/Tests 已无旧端侧命名。`
 
 
 ## 发现 F-02
@@ -103,7 +103,7 @@
 ## 修复日志
 
 - `06594db`：AVP 识别改用 `deviceTypeIdentifier`，删除 status 的无用字段与重复查询。
-- `06594db`：`GuestHIDController` → `SimulatorHIDController`，同步 queue label。
+- `06594db`：旧 HID controller → `SimulatorHIDController`，同步 queue label。
 - `06594db`：截图像素坐标改为半开区间并补边界测试。
 - F-04 被更强运行证据推翻：Paloma pose 会真实改变 Simulator 画面，`SimVirtualHeadsetRemoteService.getPose` 不是该状态的等价 oracle。
 
@@ -115,7 +115,7 @@
 - `roamer pose 0` / `pose 15` + screenshot -> PASS，整体空间视角明确变化
 - HappyPianist `roamer click 2290 690` -> PASS，进入乐谱页面
 - click/pose 前后 frontmost App -> PASS，均保持 `zed`
-- `rg guest Sources Tests` -> PASS，无旧 guest 命名
+- Sources/Tests 旧端侧命名扫描 -> PASS
 
 ## Gate（是否允许进入下一阶段）
 

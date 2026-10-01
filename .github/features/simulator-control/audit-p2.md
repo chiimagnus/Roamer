@@ -73,8 +73,8 @@
 - 严重级别：`High`
 - 状态：`Resolved`
 - 位置：`Sources/RoamerCore/Input/IndigoMessages.swift; Sources/RoamerPrivateABI/`
-- 摘要：`手写 Paloma raw packet 会触发 backboardd / SimulatorHID 崩溃并造成 guest 重启`
-- 风险：`历史 crash report 显示 backboardd 在 SimHIDVirtualServiceManager serviceForIndigoHIDData: assertion 与 IOHID provenance 阶段反复崩溃；非法 Indigo HID 可导致整个 visionOS guest 会话重启。`
+- 摘要：`手写 Paloma raw packet 会触发 backboardd / SimulatorHID 崩溃并造成 visionOS 会话重启`
+- 风险：`历史 crash report 显示 backboardd 在 SimHIDVirtualServiceManager serviceForIndigoHIDData: assertion 与 IOHID provenance 阶段反复崩溃；非法 Indigo HID 可导致整个 visionOS 会话重启。`
 - 预期修复：`删除 production 中 calloc+offset 的 Paloma Pose/Collection 手写包；通过最小 C ABI shim 调用 XROS.simdeviceui 导出的 IndigoHIDMessageForPalomaPose / Collection 官方 builder。`
 - 验证：`swift test; release build; 连续运行 pose/gaze/click/long-press/double-click/drag/crown 后设备保持 Booted，且不新增 backboardd/RealityLauncher/CoreSimulatorBridge/SurfBoard crash report。`
 - 解决证据：`7759aa5：production 手写 Paloma packet 已全部删除，改用 XROS 官方 builder；17/17 tests 与 release build 通过；压力回归后 AVP 保持 Booted，未新增相关 crash report，system.log 无新的 syslogd restart。`
@@ -166,7 +166,7 @@
 - 多窗口实验 -> 已确认 screenshot pixel 是空间 gaze ray；重叠 scene 由 visionOS hit-testing 决定，不能用二维截图坐标指定被遮挡窗口。
 - 历史 backboardd crash reports -> `SimHIDVirtualServiceManager serviceForIndigoHIDData:` assertion / IOHID provenance 崩溃，定位为手写非法 Indigo HID。
 - `7759aa5` -> 删除 production 手写 Paloma raw packet，改用 XROS 官方 Pose/Collection builder；17/17 tests + release build 通过。
-- 官方 builder 压力回归 -> 连续 pose/gaze/click/long-press/double-click/drag/crown 后设备仍 Booted，没有新增 backboardd/RealityLauncher/CoreSimulatorBridge/SurfBoard crash report，也没有新的 guest `syslogd restarted`。
+- 官方 builder 压力回归 -> 连续 pose/gaze/click/long-press/double-click/drag/crown 后设备仍 Booted，没有新增 backboardd/RealityLauncher/CoreSimulatorBridge/SurfBoard crash report，也没有新的 visionOS `syslogd restarted`。
 - P2-T6 非零完整 6DoF -> PASS：screenshot-space click/drag 在 translation + yaw/pitch/roll 后仍命中；backboardd 与 macOS focus 稳定。
 - P2-T7 左手 -> PASS：同一 Settings 开关被左手 click 切换；左手 drag 真实滚动列表；backboardd、Booted、frontmost 均稳定。
 - P2-T8 正式 `roamer magnify` -> PASS：SwiftUI `MagnifyGesture` 从 `SCALE 1.000` 到 `2.500`，缩小方向到 `0.400`，每次 32 个连续事件。

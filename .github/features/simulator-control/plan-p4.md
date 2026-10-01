@@ -4,7 +4,7 @@
 
 ## P4-T1 最终术语与死代码扫描
 
-基础清理不延后到本任务：旧 `GuestHIDController` 等遗留命名已经在执行前审计中清理。
+基础清理不延后到本任务：旧 HID controller 等遗留命名已经在执行前审计中清理。
 
 本任务只做发布前最后核销：
 
@@ -12,6 +12,14 @@
 - 无被新实现取代的旧 helper、旧命令 alias、双轨 transport；
 - 无为了未来版本保留的兼容分支；
 - production 源码不包含 host GUI fallback。
+
+实际核销结果：
+
+- 用户文案与 production 源码已统一为 AVP Simulator / visionOS Simulator，移除 `guest` 术语；
+- Roamer 自己的 `LegacyHIDClientMessaging` / `makeLegacyHIDClient` 已改为 Simulator 语义；仅保留 Xcode 私有类真实名称 `SimDeviceLegacyHIDClient`；
+- production 中没有 probe、fallback、compat/deprecated alias，也没有手写 Paloma raw packet 双轨；
+- `SimVirtualHeadsetRemoteService` 仅用于 Digital Crown 沉浸度，`SimDeviceLegacyHIDClient` 仅用于 HID，两者职责不同，不是同一能力的兼容双轨；
+- `swift test` 39/39、`swift build -c release`、真实 `roamer status` 均通过。
 
 ## P4-T2 收紧 private API fail-fast 与输入边界
 

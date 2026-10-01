@@ -73,20 +73,20 @@ roamer type "中文"
 
 - CLI 参数按 UTF-8 接收；
 - P3-T1 已确认当前 Xcode 27 没有可用的直接 Unicode/text transport，因此不得承诺任意 Unicode（包括中文）；
-- `type` 只能在能够确认 guest 当前输入法/键盘布局与目标字符映射可靠时发送；否则必须在发送任何按键前整体失败，不能假设 US 布局，也不能偷偷切换用户输入法；
-- 若最终只能证明某个受控 guest 输入模式下的一小段字符集可靠，则 `type` 仅支持该已验证字符集；发送前先完整校验，不允许输入一半才发现不可表示字符；
+- `type` 只能在能够确认 Simulator 当前输入法/键盘布局与目标字符映射可靠时发送；否则必须在发送任何按键前整体失败，不能假设 US 布局，也不能偷偷切换用户输入法；
+- 若最终只能证明某个受控 Simulator 输入模式下的一小段字符集可靠，则 `type` 仅支持该已验证字符集；发送前先完整校验，不允许输入一半才发现不可表示字符；
 - 不使用 host clipboard / IME / AppleScript 兜底；
 - 不静默丢字符；
 - 中途失败不盲目重试整段文本。
 
 当前实现与证据：
 
-- guest 当前输入模式从该 Simulator `dataPath/Library/Preferences/com.apple.keyboard.preferences.plist` 的 `KeyboardsCurrentAndNext[0]` 读取，不依赖 macOS 当前输入法；
+- Simulator 当前输入模式从该设备 `dataPath/Library/Preferences/com.apple.keyboard.preferences.plist` 的 `KeyboardsCurrentAndNext[0]` 读取，不依赖 macOS 当前输入法；
 - 真实切换到 English (US) 后，xrOS 27 报告的当前模式为 `en_US@sw=QWERTY;hw=Automatic`；仅精确识别这个已验证标识，其他标识全部 fail-fast，不推断、不兼容猜测；
 - 当前 `type` 字符集收敛为英文字母、数字和空格；大写字母使用已验证 Shift HID；
-- 整段文本先生成完整按键计划，再确认 guest 输入模式，两个 preflight 都完成后才创建 HID controller；
+- 整段文本先生成完整按键计划，再确认 Simulator 输入模式，两个 preflight 都完成后才创建 HID controller；
 - 当前中文拼音 `zh_Hans-Pinyin@sw=Pinyin-Simplified;hw=Automatic` 下，`roamer type "Hello"` 已验证会在任何键盘 HID 发送前失败；中文与未支持标点同样会在整段预校验阶段失败；
-- 整个失败路径不会改变 macOS frontmost App，也不会自动切换 guest 输入法。
+- 整个失败路径不会改变 macOS frontmost App，也不会自动切换 Simulator 输入法。
 
 ## P3-T4 真实文本字段验收
 
@@ -94,7 +94,7 @@ roamer type "中文"
 
 - 英文；
 - `type` 当前声明支持的字符范围；
-- 中文必须在发送任何字符前明确失败；若 `type` 需要特定 guest 输入模式，也要验证不满足前提时在首个按键前失败；
+- 中文必须在发送任何字符前明确失败；若 `type` 需要特定 Simulator 输入模式，也要验证不满足前提时在首个按键前失败；
 - Return；
 - Delete；
 - 至少一个方向键；
