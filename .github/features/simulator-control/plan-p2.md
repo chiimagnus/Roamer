@@ -46,29 +46,32 @@ Options
 - `pinchContinuingHorizontal`
 - `pinchEnded`
 
-还要确认：
+已通过 Device Hub 运行时状态与真实 Simulator 实验确认生产所需模型：
 
-1. 当前 head pose 与 Paloma gaze ray / hand pose 的坐标系关系；
-2. gaze hit 如何得到 right-hand 初始 pose；
-3. `inverseProjMatrix` 的来源和布局；
-4. `rightPivotPosition` 如何参与移动；
-5. pinch continuing 时 hand pose 如何变化；
-6. pinch ended 如何结束 manipulation。
+- right hand 初始 pose：position `(0, 0, -0.56)`，orientation identity；
+- `useSphericalMovement = true`；
+- `radius = 0.56`；
+- `rightPivotPosition = (0, 0, 0)`；
+- 初始 hand yaw / pitch = `0 / 0`；
+- gaze 在 drag 期间保持固定，只负责选中目标；
+- pinch continuing 通过球面 hand pose 连续变化实现；
+- pinch ended 发送最终 hand pose + `pinching=false`。
 
-不得假设当前 `ScreenProjection` 的固定 90° 映射在非零 head pose 下仍成立；必须用真实 Simulator 证据决定是否需要 pose-aware transform。
-
-完成条件：
+球面轨迹：
 
 ```text
-hover
-→ pinch started
-→ 连续 hand pose
-→ pinch ended
+x = radius * sin(yaw) * cos(pitch)
+y = radius * sin(pitch)
+z = -radius * cos(yaw) * cos(pitch)
 ```
 
-必须能解释并真实驱动 Simulator；只找到 offset 或成功发送消息不算完成。
+Roamer 不需要复刻 Device Hub 的 `inverseProjMatrix` 鼠标投影过程：Roamer 已有 screenshot pixel → gaze angle，拖动只需把起终点视觉角差转换为 hand yaw / pitch delta。保留这条最短路径，避免复制无关内部状态机。
 
-研究实验优先留在 `/tmp`。
+真实证据：固定 gaze + right-hand sphere pose + pinch down/continuing/up 已让 HappyPianist Book Flow 在中途帧连续移动，并在 release 后切换到相邻卡片；这不是 click，也不是移动 gaze 冒充 drag。
+
+当前 head pose 与 screenshot 坐标关系属于 P2-T6 的 6DoF 验收，不再阻塞本任务。
+
+研究实验保留在 `/tmp`，不进入 production。
 
 ## P2-T2 在 RoamerCore 实现 right-hand drag
 

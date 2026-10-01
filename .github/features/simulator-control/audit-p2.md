@@ -103,11 +103,15 @@
 
 ## 修复日志
 
-- <fill after fixes>
+- P2-T1 不产生 production 代码；实验只用于确定最小 right-hand trajectory。
+- 删除了“必须复刻 inverseProjMatrix / Device Hub 鼠标投影”的过度要求；Roamer 直接从 screenshot 角差生成球面 hand pose。
 
 ## 验证日志
 
-- `<command>` -> `PASS | FAIL`
+- Device Hub live state inspection -> PASS：right hand `(0,0,-0.56)`、radius `0.56`、spherical movement=true、pivot=zero。
+- `/tmp/roamer-handdrag-experiment` + HappyPianist Book Flow -> PASS：固定 gaze，hand yaw `0 → +0.35 rad` 后 carousel 切换到相邻卡片。
+- 2.2 s 连续实验 before/mid/after screenshot -> PASS：mid 帧处于连续拖动中，release 后最终 selection 改变。
+- 实验前后 macOS frontmost App -> PASS，保持 `WeChat`。
 
 ## Gate（是否允许进入下一阶段）
 

@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P2-T1"
+current_task_id = "P2-T2"
 
 [[tasks]]
 id = "P1-T1"
@@ -36,18 +36,19 @@ note = ""
 [[tasks]]
 id = "P2-T1"
 title = "还原 Manipulator state machine 与真实 right-hand pose"
-status = "in_progress"
+status = "completed"
 plan = "plan-p2.md#p2-t1"
 commit = ""
-note = "基线审计通过后继续：重点确认 head pose 与 gaze/hand manipulation 的坐标关系。"
+no_commit_reason = "研究任务仅产生运行证据与计划收敛；实验代码保留在 /tmp，不进入 production。"
+note = "已确认 spherical right-hand pose 可真实驱动 HappyPianist Book Flow 连续拖动。"
 
 [[tasks]]
 id = "P2-T2"
 title = "在 RoamerCore 实现 right-hand drag"
-status = "pending"
+status = "in_progress"
 plan = "plan-p2.md#p2-t2"
 commit = ""
-note = ""
+note = "开始把已验证 spherical right-hand trajectory 收口进 RoamerCore。"
 
 [[tasks]]
 id = "P2-T3"
