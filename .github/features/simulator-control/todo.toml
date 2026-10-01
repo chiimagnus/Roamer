@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P3-T3"
+current_task_id = "P3-T4"
 
 [[tasks]]
 id = "P1-T1"
@@ -118,18 +118,18 @@ note = "roamer key 已实现；真实 option+left 进入 visionOS，Command/未�
 [[tasks]]
 id = "P3-T3"
 title = "实现 roamer type"
-status = "in_progress"
+status = "completed"
 plan = "plan-p3.md#p3-t3"
-commit = ""
-note = "开始实现 roamer type；先验证能否可靠读取 guest 当前输入模式，避免 raw HID 在中文拼音等输入法下产生错误文本。"
+commit = "96ed209"
+note = "实现安全 roamer type：整段文本预校验 + guest 当前输入模式检测；中文拼音、中文文本和未支持标点均已验证在首个 HID 前失败。"
 
 [[tasks]]
 id = "P3-T4"
 title = "真实文本字段验收"
-status = "pending"
+status = "in_progress"
 plan = "plan-p3.md#p3-t4"
 commit = ""
-note = ""
+note = "开始真实 TextField 验收：中文模式 fail-fast、en_US 英文输入、Return/Delete/方向键、focus 与 Simulator 稳定性。"
 
 [[tasks]]
 id = "P4-T1"
