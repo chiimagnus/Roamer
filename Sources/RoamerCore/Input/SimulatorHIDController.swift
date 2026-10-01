@@ -95,6 +95,44 @@ package final class SimulatorHIDController {
         try pinch(at: angles, holdMilliseconds: 80, hand: hand)
     }
 
+    package func magnify(
+        x: Double,
+        y: Double,
+        scale: Double,
+        durationMilliseconds: Double,
+        geometry: DisplayGeometry
+    ) throws {
+        let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
+        let samples = try HandTrajectory.magnifySamples(
+            scale: scale,
+            durationMilliseconds: durationMilliseconds
+        )
+        try twoHandGesture(
+            gazeRay: headPose.gazeRay(for: angles),
+            samples: samples,
+            durationMilliseconds: durationMilliseconds
+        )
+    }
+
+    package func rotate(
+        x: Double,
+        y: Double,
+        degrees: Double,
+        durationMilliseconds: Double,
+        geometry: DisplayGeometry
+    ) throws {
+        let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
+        let samples = try HandTrajectory.rotateSamples(
+            degrees: degrees,
+            durationMilliseconds: durationMilliseconds
+        )
+        try twoHandGesture(
+            gazeRay: headPose.gazeRay(for: angles),
+            samples: samples,
+            durationMilliseconds: durationMilliseconds
+        )
+    }
+
     package func drag(
         fromX: Double,
         fromY: Double,
@@ -224,6 +262,73 @@ package final class SimulatorHIDController {
                     )
                 )
             }
+            throw error
+        }
+    }
+
+    private func twoHandGesture(
+        gazeRay: GazeRay,
+        samples: [HandPosePair],
+        durationMilliseconds: Double
+    ) throws {
+        guard let first = samples.first, let last = samples.last else {
+            throw RoamerError.message("无法生成双手 gesture trajectory")
+        }
+
+        try send(
+            messages.collection(
+                gazeRay: gazeRay,
+                leftHandPose: first.left,
+                rightHandPose: first.right
+            )
+        )
+        usleep(50_000)
+
+        var releasePose = first
+        do {
+            try send(
+                messages.collection(
+                    gazeRay: gazeRay,
+                    pinchingLeft: true,
+                    leftHandPose: first.left,
+                    pinchingRight: true,
+                    rightHandPose: first.right
+                )
+            )
+            usleep(80_000)
+
+            let delay = useconds_t(
+                durationMilliseconds * 1000 / Double(max(1, samples.count - 1))
+            )
+            for sample in samples.dropFirst() {
+                releasePose = sample
+                try send(
+                    messages.collection(
+                        gazeRay: gazeRay,
+                        pinchingLeft: true,
+                        leftHandPose: sample.left,
+                        pinchingRight: true,
+                        rightHandPose: sample.right
+                    )
+                )
+                usleep(delay)
+            }
+
+            try send(
+                messages.collection(
+                    gazeRay: gazeRay,
+                    leftHandPose: last.left,
+                    rightHandPose: last.right
+                )
+            )
+        } catch {
+            try? send(
+                messages.collection(
+                    gazeRay: gazeRay,
+                    leftHandPose: releasePose.left,
+                    rightHandPose: releasePose.right
+                )
+            )
             throw error
         }
     }

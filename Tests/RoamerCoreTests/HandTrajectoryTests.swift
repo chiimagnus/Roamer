@@ -65,4 +65,56 @@ final class HandTrajectoryTests: XCTestCase {
             )
         )
     }
+
+    func testMagnifySamplesMatchRequestedScale() throws {
+        let samples = try HandTrajectory.magnifySamples(
+            scale: 2.5,
+            durationMilliseconds: 100
+        )
+        let first = try XCTUnwrap(samples.first)
+        let last = try XCTUnwrap(samples.last)
+        let startDistance = first.right.x - first.left.x
+        let endDistance = last.right.x - last.left.x
+
+        XCTAssertEqual(endDistance / startDistance, 2.5, accuracy: 0.0001)
+        XCTAssertEqual(first.left.y, 0)
+        XCTAssertEqual(last.right.y, 0)
+    }
+
+    func testMagnifySamplesSupportShrink() throws {
+        let samples = try HandTrajectory.magnifySamples(
+            scale: 0.5,
+            durationMilliseconds: 100
+        )
+        let first = try XCTUnwrap(samples.first)
+        let last = try XCTUnwrap(samples.last)
+        let startDistance = first.right.x - first.left.x
+        let endDistance = last.right.x - last.left.x
+
+        XCTAssertEqual(endDistance / startDistance, 0.5, accuracy: 0.0001)
+    }
+
+    func testRotateSamplesKeepDistanceAndCorrectAppDirection() throws {
+        let samples = try HandTrajectory.rotateSamples(
+            degrees: 45,
+            durationMilliseconds: 100
+        )
+        let first = try XCTUnwrap(samples.first)
+        let last = try XCTUnwrap(samples.last)
+        let startDistance = hypot(first.right.x - first.left.x, first.right.y - first.left.y)
+        let endDistance = hypot(last.right.x - last.left.x, last.right.y - last.left.y)
+        let endAngle = atan2(Double(last.right.y), Double(last.right.x)) * 180 / .pi
+
+        XCTAssertEqual(endDistance, startDistance, accuracy: 0.0001)
+        XCTAssertEqual(endAngle, -45, accuracy: 0.0001)
+    }
+
+    func testTwoHandGesturesRejectUnverifiedRanges() {
+        XCTAssertThrowsError(
+            try HandTrajectory.magnifySamples(scale: 3, durationMilliseconds: 100)
+        )
+        XCTAssertThrowsError(
+            try HandTrajectory.rotateSamples(degrees: 181, durationMilliseconds: 100)
+        )
+    }
 }

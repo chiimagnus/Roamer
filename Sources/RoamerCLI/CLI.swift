@@ -156,6 +156,54 @@ struct CLI {
             try input.doubleClick(x: x, y: y, hand: parsed.hand, geometry: geometry)
             print("simulator double-click: ok")
 
+        case "magnify":
+            guard rest.count == 3 || rest.count == 4 else {
+                throw RoamerError.message(
+                    "用法: roamer magnify <x-px> <y-px> <scale> [duration-ms]"
+                )
+            }
+            let x = try parseDouble(rest[0], name: "x")
+            let y = try parseDouble(rest[1], name: "y")
+            let scale = try parseDouble(rest[2], name: "scale")
+            let duration = try rest.count == 4
+                ? parseDouble(rest[3], name: "duration-ms")
+                : 500
+            let device = try simulator.bootedAVP()
+            let geometry = try simulator.displayGeometry(for: device)
+            let input = try spatialInput(for: device)
+            try input.magnify(
+                x: x,
+                y: y,
+                scale: scale,
+                durationMilliseconds: duration,
+                geometry: geometry
+            )
+            print("simulator magnify: ok")
+
+        case "rotate":
+            guard rest.count == 3 || rest.count == 4 else {
+                throw RoamerError.message(
+                    "用法: roamer rotate <x-px> <y-px> <degrees> [duration-ms]"
+                )
+            }
+            let x = try parseDouble(rest[0], name: "x")
+            let y = try parseDouble(rest[1], name: "y")
+            let degrees = try parseDouble(rest[2], name: "degrees")
+            let duration = try rest.count == 4
+                ? parseDouble(rest[3], name: "duration-ms")
+                : 500
+            let device = try simulator.bootedAVP()
+            let geometry = try simulator.displayGeometry(for: device)
+            let input = try spatialInput(for: device)
+            try input.rotate(
+                x: x,
+                y: y,
+                degrees: degrees,
+                durationMilliseconds: duration,
+                geometry: geometry
+            )
+            print("simulator rotate: ok")
+
         case "drag":
             let parsed = try parseHandOption(rest)
             guard parsed.arguments.count == 4 || parsed.arguments.count == 5 else {
@@ -277,10 +325,12 @@ struct CLI {
       roamer click <x-px> <y-px> [--hand left|right]
       roamer long-press <x-px> <y-px> [duration-ms] [--hand left|right]
       roamer double-click <x-px> <y-px> [--hand left|right]
+      roamer magnify <x-px> <y-px> <scale> [duration-ms]
+      roamer rotate <x-px> <y-px> <degrees> [duration-ms]
       roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms] [--hand left|right]
 
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
-    gaze/click/long-press/double-click/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
+    gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。
     """
 }
