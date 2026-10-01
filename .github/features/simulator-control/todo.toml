@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P4-T2"
+current_task_id = "P4-T3"
 
 [[tasks]]
 id = "P1-T1"
@@ -142,18 +142,18 @@ note = "统一 AVP/visionOS Simulator 术语；移除 guest 与自有 Legacy 命
 [[tasks]]
 id = "P4-T2"
 title = "收紧 private API fail-fast 与输入边界"
-status = "in_progress"
+status = "completed"
 plan = "plan-p4.md#p4-t2"
-commit = ""
-note = "开始收紧 private API fail-fast 与输入边界。"
+commit = "8c204d3"
+note = "private selector capability-check、pose Float 可表示性、crown -20...20 边界已完成；43/43 tests、release build、真实 pose/crown/key smoke 与坏 DEVELOPER_DIR fail-fast 均通过。"
 
 [[tasks]]
 id = "P4-T3"
 title = "建立发布前真实 Simulator 回归"
-status = "pending"
+status = "in_progress"
 plan = "plan-p4.md#p4-t3"
 commit = ""
-note = ""
+note = "开始发布前完整真实 AVP Simulator 回归。"
 
 [[tasks]]
 id = "P4-T4"
