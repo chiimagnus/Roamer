@@ -4,7 +4,7 @@ package struct SimulatorKeyboardInputMode: Equatable, Sendable {
     package let identifier: String
 
     package var supportsVerifiedTextTyping: Bool {
-        identifier == "en_US"
+        identifier == "en_US@sw=QWERTY;hw=Automatic"
     }
 
     static func decode(from data: Data) throws -> SimulatorKeyboardInputMode {

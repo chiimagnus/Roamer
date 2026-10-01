@@ -23,17 +23,20 @@ final class SimulatorKeyboardInputModeTests: XCTestCase {
     func testOnlyVerifiedEnglishUSModeAllowsTyping() throws {
         let english = try SimulatorKeyboardInputMode.decode(
             from: try plistData([
-                "KeyboardsCurrentAndNext": ["en_US", "zh_Hans-Pinyin"],
+                "KeyboardsCurrentAndNext": [
+                    "en_US@sw=QWERTY;hw=Automatic",
+                    "zh_Hans-Pinyin",
+                ],
             ])
         )
-        let unverifiedVariant = try SimulatorKeyboardInputMode.decode(
+        let unverifiedPlainIdentifier = try SimulatorKeyboardInputMode.decode(
             from: try plistData([
-                "KeyboardsCurrentAndNext": ["en_US@hw=Automatic", "en_US"],
+                "KeyboardsCurrentAndNext": ["en_US", "zh_Hans-Pinyin"],
             ])
         )
 
         XCTAssertTrue(english.supportsVerifiedTextTyping)
-        XCTAssertFalse(unverifiedVariant.supportsVerifiedTextTyping)
+        XCTAssertFalse(unverifiedPlainIdentifier.supportsVerifiedTextTyping)
     }
 
     func testMissingCurrentModeFails() throws {

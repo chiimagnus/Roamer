@@ -82,7 +82,7 @@ roamer type "中文"
 当前实现与证据：
 
 - guest 当前输入模式从该 Simulator `dataPath/Library/Preferences/com.apple.keyboard.preferences.plist` 的 `KeyboardsCurrentAndNext[0]` 读取，不依赖 macOS 当前输入法；
-- 仅精确识别已验证的 `en_US` 模式，其他标识全部 fail-fast，不推断、不兼容猜测；
+- 真实切换到 English (US) 后，xrOS 27 报告的当前模式为 `en_US@sw=QWERTY;hw=Automatic`；仅精确识别这个已验证标识，其他标识全部 fail-fast，不推断、不兼容猜测；
 - 当前 `type` 字符集收敛为英文字母、数字和空格；大写字母使用已验证 Shift HID；
 - 整段文本先生成完整按键计划，再确认 guest 输入模式，两个 preflight 都完成后才创建 HID controller；
 - 当前中文拼音 `zh_Hans-Pinyin@sw=Pinyin-Simplified;hw=Automatic` 下，`roamer type "Hello"` 已验证会在任何键盘 HID 发送前失败；中文与未支持标点同样会在整段预校验阶段失败；
@@ -100,3 +100,13 @@ roamer type "中文"
 - 至少一个方向键；
 - screenshot / App 状态正确；
 - macOS frontmost App 不变。
+
+真实验收结果：
+
+- 临时 visionOS TextField 探针仅用于验收，未进入仓库；
+- 中文拼音模式下，`type "Hello"` 在首个 HID 前失败，`type "中文"` 也在整段预校验阶段失败，TextField 保持为空；
+- 手动切换到 `English (US)` 后，xrOS 27 的真实输入模式标识为 `en_US@sw=QWERTY;hw=Automatic`；
+- `type "Hello 2026"` 精确进入 TextField；
+- 随后 `key left`、`key delete`、`key return` 的真实结果为文本 `Hello 206`、Left 计数 1、Submit 计数 1；
+- 验收过程中 macOS frontmost App 保持不变，AVP Simulator 持续 Booted；
+- 验收结束后已手动恢复原中文拼音输入法，并再次确认 `type "Hello"` fail-fast。
