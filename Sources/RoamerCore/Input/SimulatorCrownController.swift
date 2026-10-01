@@ -9,14 +9,10 @@ package final class SimulatorCrownController {
         remote = try runtime.makeVirtualHeadsetRemoteService(device: device)
     }
 
-    package func rotate(delta: Int) {
-        guard delta != 0 else {
-            return
-        }
-
-        let step: Float = delta > 0 ? 0.05 : -0.05
-        for _ in 0..<delta.magnitude {
-            remote.changeImmersionLevel(step, isAbsolute: false)
+    package func rotate(delta: Int) throws {
+        let rotation = try CrownRotation(delta: delta)
+        for _ in 0..<rotation.stepCount {
+            remote.changeImmersionLevel(rotation.step, isAbsolute: false)
         }
     }
 }

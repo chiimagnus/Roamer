@@ -131,4 +131,17 @@ final class HeadPoseTests: XCTestCase {
             )
         )
     }
+
+    func testRejectsPositionOutsideFloatRange() {
+        XCTAssertThrowsError(
+            try HeadPose.make(
+                x: .greatestFiniteMagnitude,
+                y: 0,
+                z: 0,
+                yawDegrees: 0,
+                pitchDegrees: 0,
+                rollDegrees: 0
+            )
+        )
+    }
 }

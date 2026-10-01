@@ -41,6 +41,18 @@
 
 补齐可纯逻辑验证的边界测试。
 
+实际收紧结果：
+
+- `DEVELOPER_DIR` 继续遵循显式环境变量 / `xcode-select -p`，路径不可用时直接失败；真实 `DEVELOPER_DIR=/tmp` 验证不会回退到其他 Xcode 或 GUI；
+- CoreSimulator / SimulatorKit / XROS plugin 仍按实际文件存在性 + `dlopen` capability 检查，不按 Xcode 版本号分支；
+- `SimServiceContext`、device set、`SimVirtualHeadsetRemoteService`、`SimDeviceLegacyHIDClient` 的实际 Objective-C selector 均在调用前检查，避免私有 API 变化退化为 `unrecognized selector`；
+- HID / XROS builder 继续按命令所需 symbol 逐个 `dlsym`，不存在即失败；
+- 唯一 booted AVP、screenshot 半开坐标范围、双手 scale/rotation、正 duration、`type` 字符集/输入模式等既有边界继续保留；
+- `pose` 新增 Double→Float 可表示性检查，避免有限 Double 在私有 ABI 边界变成 Inf/NaN；
+- `crown` 收敛到 `-20...20` 整数步，对应 0.05/step 的完整 0...1 沉浸度范围，避免无意义的大循环；
+- 没有增加 Xcode 多版本兼容层，也没有 host fallback；
+- 纯逻辑测试新增 Crown 范围与 pose Float 溢出边界；43/43 tests、release build、真实 `pose / crown / key` capability smoke 均通过，macOS focus 保持不变。
+
 ## P4-T3 建立真实 Simulator 回归
 
 稳定命令全部回归：

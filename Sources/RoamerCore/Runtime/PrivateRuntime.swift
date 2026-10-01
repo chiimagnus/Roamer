@@ -49,10 +49,14 @@ final class PrivateRuntime {
             throw RoamerError.message("找不到 SimServiceContext")
         }
 
+        let sharedContext = try Self.requireClassMethod(
+            contextClass,
+            "sharedServiceContextForDeveloperDir:error:"
+        )
         guard
             let context = (contextClass as AnyObject)
                 .perform(
-                    NSSelectorFromString("sharedServiceContextForDeveloperDir:error:"),
+                    sharedContext,
                     with: developerDir as NSString,
                     with: nil
                 )?
@@ -61,15 +65,30 @@ final class PrivateRuntime {
             throw RoamerError.message("无法创建 SimServiceContext")
         }
 
+        let contextClassInstance: AnyClass = try Self.runtimeClass(of: context)
+        let defaultDeviceSet = try Self.requireInstanceMethod(
+            contextClassInstance,
+            "defaultDeviceSetWithError:"
+        )
         guard
             let deviceSet = context
-                .perform(NSSelectorFromString("defaultDeviceSetWithError:"), with: nil)?
-                .takeUnretainedValue() as AnyObject?,
-            let devices = deviceSet
-                .perform(NSSelectorFromString("devicesByUDID"))?
-                .takeUnretainedValue() as? NSDictionary
+                .perform(defaultDeviceSet, with: nil)?
+                .takeUnretainedValue() as AnyObject?
         else {
             throw RoamerError.message("无法读取默认 Simulator device set")
+        }
+
+        let deviceSetClass: AnyClass = try Self.runtimeClass(of: deviceSet)
+        let devicesByUDID = try Self.requireInstanceMethod(
+            deviceSetClass,
+            "devicesByUDID"
+        )
+        guard
+            let devices = deviceSet
+                .perform(devicesByUDID)?
+                .takeUnretainedValue() as? NSDictionary
+        else {
+            throw RoamerError.message("无法读取 Simulator device 列表")
         }
 
         for (key, value) in devices {
@@ -89,6 +108,12 @@ final class PrivateRuntime {
         guard let serviceClass = NSClassFromString("SimVirtualHeadsetRemoteService") else {
             throw RoamerError.message("找不到 SimVirtualHeadsetRemoteService")
         }
+        _ = try Self.requireInstanceMethod(serviceClass, "initWithDevice:")
+        _ = try Self.requireInstanceMethod(
+            serviceClass,
+            "changeImmersionLevel:isAbsolute:"
+        )
+
         guard
             let allocated = (serviceClass as AnyObject)
                 .perform(NSSelectorFromString("alloc"))?
@@ -106,6 +131,11 @@ final class PrivateRuntime {
         guard let clientClass = NSClassFromString("SimulatorKit.SimDeviceLegacyHIDClient") else {
             throw RoamerError.message("找不到 SimDeviceLegacyHIDClient")
         }
+        _ = try Self.requireInstanceMethod(clientClass, "initWithDevice:error:")
+        _ = try Self.requireInstanceMethod(
+            clientClass,
+            "sendWithMessage:freeWhenDone:completionQueue:completion:"
+        )
 
         guard
             let allocated = (clientClass as AnyObject)
@@ -166,6 +196,39 @@ final class PrivateRuntime {
             throw RoamerError.message("xcode-select -p 没有返回 DeveloperDir")
         }
         return value
+    }
+
+    private static func requireClassMethod(
+        _ runtimeClass: AnyClass,
+        _ name: String
+    ) throws -> Selector {
+        let selector = NSSelectorFromString(name)
+        guard class_getClassMethod(runtimeClass, selector) != nil else {
+            throw RoamerError.message(
+                "Xcode private API 缺少 class selector：\(NSStringFromClass(runtimeClass)).\(name)"
+            )
+        }
+        return selector
+    }
+
+    private static func requireInstanceMethod(
+        _ runtimeClass: AnyClass,
+        _ name: String
+    ) throws -> Selector {
+        let selector = NSSelectorFromString(name)
+        guard class_getInstanceMethod(runtimeClass, selector) != nil else {
+            throw RoamerError.message(
+                "Xcode private API 缺少 instance selector：\(NSStringFromClass(runtimeClass)).\(name)"
+            )
+        }
+        return selector
+    }
+
+    private static func runtimeClass(of object: AnyObject) throws -> AnyClass {
+        guard let runtimeClass = object_getClass(object) else {
+            throw RoamerError.message("无法读取 Xcode private API 对象类型")
+        }
+        return runtimeClass
     }
 
     private static func loadFramework(_ path: String) throws -> UnsafeMutableRawPointer {

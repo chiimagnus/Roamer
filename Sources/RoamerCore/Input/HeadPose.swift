@@ -41,19 +41,34 @@ package struct HeadPose: Codable, Equatable, Sendable {
             throw RoamerError.message("pose 参数必须是有限数值")
         }
 
-        let yaw = Quaternion.axisY(angle: yawDegrees * .pi / 180)
-        let pitch = Quaternion.axisX(angle: pitchDegrees * .pi / 180)
-        let roll = Quaternion.axisZ(angle: rollDegrees * .pi / 180)
+        let position = [Float(x), Float(y), Float(z)]
+        guard position.allSatisfy(\.isFinite) else {
+            throw RoamerError.message("pose 位置超出 Simulator 可表示范围")
+        }
+
+        let degreesToRadians = Double.pi / 180
+        let yaw = Quaternion.axisY(angle: yawDegrees * degreesToRadians)
+        let pitch = Quaternion.axisX(angle: pitchDegrees * degreesToRadians)
+        let roll = Quaternion.axisZ(angle: rollDegrees * degreesToRadians)
         let orientation = yaw * pitch * roll
+        let quaternion = [
+            Float(orientation.x),
+            Float(orientation.y),
+            Float(orientation.z),
+            Float(orientation.w),
+        ]
+        guard quaternion.allSatisfy(\.isFinite) else {
+            throw RoamerError.message("pose 旋转超出 Simulator 可表示范围")
+        }
 
         return HeadPose(
-            x: Float(x),
-            y: Float(y),
-            z: Float(z),
-            quaternionX: Float(orientation.x),
-            quaternionY: Float(orientation.y),
-            quaternionZ: Float(orientation.z),
-            quaternionW: Float(orientation.w)
+            x: position[0],
+            y: position[1],
+            z: position[2],
+            quaternionX: quaternion[0],
+            quaternionY: quaternion[1],
+            quaternionZ: quaternion[2],
+            quaternionW: quaternion[3]
         )
     }
 
