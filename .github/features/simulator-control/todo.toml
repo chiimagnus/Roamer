@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P2-T5"
+current_task_id = "P2-T6"
 
 [[tasks]]
 id = "P1-T1"
@@ -70,18 +70,18 @@ note = "Settings 上下拖动均真实生效；独立 scroll 命令删除。"
 [[tasks]]
 id = "P2-T5"
 title = "实现长按和双击"
-status = "in_progress"
+status = "completed"
 plan = "plan-p2.md#p2-t5"
-commit = ""
-note = "开始实现 long-press 与 double-click，复用现有 pinch transport。"
+commit = "43b6120"
+note = "Maps long-press 真实生成 Marked Location；临时 SwiftUI probe 验证 DOUBLE 0→1、SINGLE 0，frontmost Helium→Helium。"
 
 [[tasks]]
 id = "P2-T6"
 title = "扩展完整 6DoF 头部姿态并实现 Digital Crown"
-status = "pending"
+status = "in_progress"
 plan = "plan-p2.md#p2-t6"
 commit = ""
-note = ""
+note = "开始扩展绝对 6DoF pose，并接入 Digital Crown；同步验证非零 pose 下 gaze/click 坐标语义。"
 
 [[tasks]]
 id = "P2-T7"

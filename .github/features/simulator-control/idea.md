@@ -52,6 +52,8 @@ Roamer 不得：
 
 不使用 macOS 屏幕坐标或 Device Hub 窗口坐标。
 
+坐标表示一条 visionOS 视线，而不是某个窗口的二维局部坐标。多个空间窗口沿同一视线重叠时，最终命中对象由 visionOS hit-testing 决定；v0.1 不增加窗口 ID / 深度穿透选择。
+
 ## 当前已完成
 
 当前 CLI 已真实验证：

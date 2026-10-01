@@ -38,7 +38,7 @@ roamer double-click <x-px> <y-px>
 roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 ```
 
-`gaze`、`click`、`long-press`、`double-click` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。
+`gaze`、`click`、`long-press`、`double-click` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。坐标最终仍由 visionOS 的空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿前景窗口”的深度选择。
 
 例如：
 

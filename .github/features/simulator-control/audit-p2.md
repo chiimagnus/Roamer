@@ -47,6 +47,19 @@
 
 ## 发现项
 
+## 发现 F-05
+
+- 任务：`P2-T5`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`README.md:坐标说明`
+- 摘要：`二维 screenshot 坐标不能消除空间窗口深度歧义`
+- 风险：`多个 visionOS 窗口沿同一 gaze ray 重叠时，用户可能误以为像素坐标能指定被遮挡窗口。`
+- 预期修复：`明确坐标是空间 gaze ray，最终命中由 visionOS hit-testing 决定；v0.1 不提供窗口 ID 或穿透选择。`
+- 验证：`README/idea 明确边界；手势验收使用隔离 scene。`
+- 解决证据：`README 与 idea 已明确空间 hit-testing 边界；P2-T5 使用隔离 scene 与临时 SwiftUI probe 验收 double-click。`
+
+
 ## 发现 F-04
 
 - 任务：`P2-T4`
@@ -115,6 +128,9 @@
 - 正式 `roamer drag` + visionOS Settings 左侧列表 -> PASS：上拖与下拖都能滚动真实纵向列表，frontmost 保持 `WeChat`。
 - `duration=0` / x==width -> PASS：发送 HID 前明确失败。
 - 结论：drag 已覆盖实际 ScrollView；不新增独立 scroll 命令。
+- Maps `long-press 2325 1200 1000` -> PASS：真实生成 Marked Location。
+- 临时 `/tmp` SwiftUI gesture probe -> PASS：`double-click 1920 1335` 使 `DOUBLE 0 → 1`，`SINGLE` 保持 0；frontmost `Helium → Helium`。
+- 多窗口实验 -> 已确认 screenshot pixel 是空间 gaze ray；重叠 scene 由 visionOS hit-testing 决定，不能用二维截图坐标指定被遮挡窗口。
 
 ## Gate（是否允许进入下一阶段）
 
