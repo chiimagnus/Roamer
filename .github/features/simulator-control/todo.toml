@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P3-T4"
+current_task_id = ""
 
 [[tasks]]
 id = "P1-T1"
@@ -126,10 +126,10 @@ note = "实现安全 roamer type：整段文本预校验 + guest 当前输入模
 [[tasks]]
 id = "P3-T4"
 title = "真实文本字段验收"
-status = "in_progress"
+status = "completed"
 plan = "plan-p3.md#p3-t4"
-commit = ""
-note = "开始真实 TextField 验收：中文模式 fail-fast、en_US 英文输入、Return/Delete/方向键、focus 与 Simulator 稳定性。"
+commit = "cf4244b"
+note = "真实 TextField 验收通过：English (US) 下 type/Left/Delete/Return 全部生效；中文模式 fail-fast；恢复原中文输入法；focus 与 Simulator 稳定性通过。"
 
 [[tasks]]
 id = "P4-T1"
