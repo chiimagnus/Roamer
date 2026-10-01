@@ -92,6 +92,18 @@ roamer type
 
 不能用“消息发送成功”代替 UI 验收。
 
+实际回归结果：
+
+- `status / screenshot / launch / terminate / reboot` 全部通过；screenshot 为 `3840×2160`，reboot 后 `launchd_sim` PID 确实变化，App 可重新 launch；
+- `home` 与完整 6DoF `pose` 均产生明显真实画面变化；
+- `gaze` 真实触发标准 Button 的系统高亮；`click / long-press / double-click` 分别使临时 SwiftUI 探针计数变为 `1 / 1 / 1`；
+- `drag` 产生 32 个连续事件；`magnify` 实测 `SCALE 1.500 [32]`；`rotate` 实测 `ROT 30.0 [31]`；
+- `crown 1` 使 SurfBoard 记录的 immersion level 从 `0.000000` 进入 `0.002500`，随后反向恢复；
+- English (US) 模式下，`key a` + `type "Hello 2026"` + `key left/delete/return` 的最终 TextField 为 `aHello 206`，`SUBMIT 1`，共收到 14 个真实 key events；
+- 输入验收期间 macOS frontmost App 与 backboardd PID 均保持稳定；长批次中的一次外部切窗经 magnify/rotate 独立复测排除为 Roamer 行为；
+- 验收结束后已恢复原中文拼音输入模式与键盘顺序，并再次确认 `type "Hello"` 在中文模式下首个 HID 前 fail-fast；
+- 最终 `swift test` 43/43、`swift build -c release`、真实 `roamer status` 通过；回归期间没有新增相关 crash report。
+
 ## P4-T4 完成版本与用户文档
 
 首发版本：
