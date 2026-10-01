@@ -52,7 +52,7 @@ Roamer 不得：
 
 不使用 macOS 屏幕坐标或 Device Hub 窗口坐标。
 
-坐标表示一条 visionOS 视线，而不是某个窗口的二维局部坐标。多个空间窗口沿同一视线重叠时，最终命中对象由 visionOS hit-testing 决定；v0.1 不增加窗口 ID / 深度穿透选择。
+坐标表示一条 visionOS 视线，而不是某个窗口的二维局部坐标。多个空间窗口沿同一视线重叠时，最终命中对象由 visionOS hit-testing 决定；本 feature 不增加窗口 ID / 深度穿透选择。
 
 ## 当前已完成
 
@@ -85,8 +85,7 @@ roamer click <x-px> <y-px>
 6. 验证双手缩放 / 旋转能力；
 7. Simulator keyboard 与快捷键组合；
 8. 在直接 Simulator transport 能力范围内实现 text input；
-9. private API fail-fast 与完整回归；
-10. `v0.1.0` release。
+9. private API fail-fast 与完整回归。
 
 ## 不做
 
@@ -116,11 +115,10 @@ roamer click <x-px> <y-px>
 - drag / long-press / double-click 能真实驱动 visionOS interaction；
 - pose 支持完整 6DoF，Digital Crown 可直接控制 Simulator；
 - 左右手可用于 click / long-press / drag；
-- 双手缩放 / 旋转只有在 Xcode 27 Simulator 运行证据证明可表达时才进入 v0.1；
+- 双手缩放 / 旋转只有在 Xcode 27 Simulator 运行证据证明可表达时才进入正式能力；
 - keyboard 支持单键和常用 modifier/chord；
 - text input 只承诺已由直接 Simulator transport 证明可可靠输入的字符范围；
 - 错误参数和 private API 缺失明确失败；
 - 不移动 macOS 鼠标，不改变 frontmost App；
 - tests、release build、真实 Simulator 回归通过；
-- README 与 CLI 一致；
-- 发布 `v0.1.0`。
+- README 与 CLI 一致。

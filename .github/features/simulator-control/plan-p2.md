@@ -123,7 +123,7 @@ roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 - 非法坐标 / duration 明确失败；
 - visionOS Simulator 不崩溃。
 
-真实验证已经确认 `roamer drag` 可直接滚动 visionOS Settings 的纵向列表：上拖和下拖均生效，release 后稳定。因此 v0.1 **不增加 `roamer scroll`**，避免和 drag 建立重复命令。
+真实验证已经确认 `roamer drag` 可直接滚动 visionOS Settings 的纵向列表：上拖和下拖均生效，release 后稳定。因此**不增加 `roamer scroll`**，避免和 drag 建立重复命令。
 
 历史上错误猜测 `IndigoHIDMessageForScrollEvent` ABI 曾导致 SurfBoard 崩溃；该路线不再进入本 feature。
 
@@ -156,7 +156,7 @@ roamer pose <x> <y> <z> <yaw> <pitch> <roll>
 
 - position：米；
 - rotation：度；
-- 当前未发布的 `roamer pose <yaw>` 直接被新契约替换，不保留兼容 alias。
+- 旧的 `roamer pose <yaw>` 直接被新契约替换，不保留兼容 alias。
 - 为保证独立 CLI 调用下的 screenshot 像素坐标仍可映射到当前世界 gaze，Roamer 仅保存最近一次完整绝对 HeadPose；状态按 Simulator UDID + boot session 隔离，设备重启后自动回到 identity。它不用于“省略参数沿用旧值”，也不是兼容状态。
 - screenshot-space gaze ray 需要乘当前 HeadPose orientation 并带上 position；Paloma manipulation 的 `rightHandPose` 则保持其原有相对手部轨迹，不再额外乘 HeadPose，否则非零 pose 下 drag 会失效。
 
@@ -192,7 +192,7 @@ roamer crown <delta>
 - drag；
 - 后续两手手势。
 
-默认使用 `right`；这是 v0.1 的单一默认值，不保留其它旧参数形式。
+默认使用 `right`；这是唯一默认值，不保留其它旧参数形式。
 
 必须验证至少一个左手 pinch 和一个左手 drag 真正进入 Simulator。
 
@@ -212,4 +212,4 @@ roamer magnify <x-px> <y-px> <scale> [duration-ms]
 roamer rotate <x-px> <y-px> <degrees> [duration-ms]
 ```
 
-若不能可靠表达，则记录为 Xcode 27 Simulator 限制并完成本任务；不阻塞 v0.1，也不使用 mouse/trackpad/host GUI 补洞。
+若不能可靠表达，则记录为 Xcode 27 Simulator 限制并完成本任务；不阻塞本 feature 收口，也不使用 mouse/trackpad/host GUI 补洞。

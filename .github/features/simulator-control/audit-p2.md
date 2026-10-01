@@ -88,7 +88,7 @@
 - 位置：`README.md:坐标说明`
 - 摘要：`二维 screenshot 坐标不能消除空间窗口深度歧义`
 - 风险：`多个 visionOS 窗口沿同一 gaze ray 重叠时，用户可能误以为像素坐标能指定被遮挡窗口。`
-- 预期修复：`明确坐标是空间 gaze ray，最终命中由 visionOS hit-testing 决定；v0.1 不提供窗口 ID 或穿透选择。`
+- 预期修复：`明确坐标是空间 gaze ray，最终命中由 visionOS hit-testing 决定；本 feature 不提供窗口 ID 或穿透选择。`
 - 验证：`README/idea 明确边界；手势验收使用隔离 scene。`
 - 解决证据：`README 与 idea 已明确空间 hit-testing 边界；P2-T5 使用隔离 scene 与临时 SwiftUI probe 验收 double-click。`
 
@@ -127,7 +127,7 @@
 - 位置：`.github/features/simulator-control/plan-p2.md:P2-T8`
 - 摘要：`双手 magnify/rotate 被写成必达功能但缺少 App-facing HID 证据`
 - 风险：`当前证据只有 Device Hub/插件中的 magnification UI 字符串，不能证明 Paloma transport 能向 visionOS App 注入双手缩放/旋转；把它列为完成标准会制造无证据 scope。`
-- 预期修复：`改成能力验证任务：只有运行证据证明 App-facing 两手 manipulation 可表达时才暴露 magnify/rotate；否则记录明确限制，不阻塞 v0.1。`
+- 预期修复：`改成能力验证任务：只有运行证据证明 App-facing 两手 manipulation 可表达时才暴露 magnify/rotate；否则记录明确限制，不阻塞本 feature 收口。`
 - 验证：`真实支持双手手势的 visionOS 目标出现预期 UI 变化；若无法表达则保留证据并不新增命令`
 - 解决证据：`5c1f26b：正式新增 magnify/rotate。临时 SwiftUI 探针真实收到 magnify scale 1.0→2.5 与 1.0→0.4，rotate 请求 +45° 后收到 +45.0°；两类手势均产生 32 个连续事件，backboardd PID、Simulator Booted 与 macOS frontmost 均稳定。`
 

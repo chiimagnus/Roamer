@@ -1,12 +1,12 @@
-# Plan P4 — 稳定性与发布准备
+# Plan P4 — 稳定性与收尾
 
-目标：在不扩功能的前提下，把 Roamer 收口到可发布质量。
+目标：在不扩功能的前提下，把 Roamer 收口到稳定可用状态。
 
 ## P4-T1 最终术语与死代码扫描
 
 基础清理不延后到本任务：旧 HID controller 等遗留命名已经在执行前审计中清理。
 
-本任务只做发布前最后核销：
+本任务只做最终核销：
 
 - 用户文案统一使用 AVP Simulator / visionOS Simulator；
 - 无被新实现取代的旧 helper、旧命令 alias、双轨 transport；
@@ -103,37 +103,3 @@ roamer type
 - 输入验收期间 macOS frontmost App 与 backboardd PID 均保持稳定；长批次中的一次外部切窗经 magnify/rotate 独立复测排除为 Roamer 行为；
 - 验收结束后已恢复原中文拼音输入模式与键盘顺序，并再次确认 `type "Hello"` 在中文模式下首个 HID 前 fail-fast；
 - 最终 `swift test` 43/43、`swift build -c release`、真实 `roamer status` 通过；回归期间没有新增相关 crash report。
-
-## P4-T4 完成版本与用户文档
-
-首发版本：
-
-```text
-0.1.0
-```
-
-增加：
-
-```bash
-roamer --version
-```
-
-版本号只保留一个真源。
-
-README 必须与 CLI 当前能力一致，并写清：
-
-- 构建与使用；
-- 坐标语义；
-- host 无干扰；
-- private API 风险；
-- 当前验证环境；
-- AGPL-3.0。
-
-最终门槛：
-
-```bash
-swift test
-swift build -c release
-.build/release/roamer --version
-.build/release/roamer --help
-```
