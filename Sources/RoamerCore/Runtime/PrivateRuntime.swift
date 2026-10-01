@@ -2,6 +2,14 @@ import Darwin
 import Foundation
 import ObjectiveC.runtime
 
+@objc protocol VirtualHeadsetRemoteMessaging {
+    @objc(initWithDevice:)
+    func initWithDevice(_ device: AnyObject) -> AnyObject
+
+    @objc(changeImmersionLevel:isAbsolute:)
+    func changeImmersionLevel(_ level: Float, isAbsolute: Bool)
+}
+
 @objc protocol LegacyHIDClientMessaging {
     @objc(initWithDevice:error:)
     func initWithDevice(
@@ -70,6 +78,30 @@ final class PrivateRuntime {
         }
 
         throw RoamerError.message("找不到 Simulator：\(udid)")
+    }
+
+    func makeVirtualHeadsetRemoteService(
+        device: AnyObject
+    ) throws -> VirtualHeadsetRemoteMessaging {
+        let plugin = developerDir
+            + "/Platforms/XROS.platform/Library/Developer/CoreSimulator/Profiles/UserInterface/"
+            + "XROS.simdeviceui/Contents/MacOS/XROS"
+        _ = try Self.loadFramework(plugin)
+
+        guard let serviceClass = NSClassFromString("SimVirtualHeadsetRemoteService") else {
+            throw RoamerError.message("找不到 SimVirtualHeadsetRemoteService")
+        }
+        guard
+            let allocated = (serviceClass as AnyObject)
+                .perform(NSSelectorFromString("alloc"))?
+                .takeUnretainedValue()
+        else {
+            throw RoamerError.message("无法分配 SimVirtualHeadsetRemoteService")
+        }
+
+        let service = unsafeBitCast(allocated, to: VirtualHeadsetRemoteMessaging.self)
+            .initWithDevice(device)
+        return unsafeBitCast(service, to: VirtualHeadsetRemoteMessaging.self)
     }
 
     func makeLegacyHIDClient(device: AnyObject) throws -> LegacyHIDClientMessaging {

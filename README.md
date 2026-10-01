@@ -31,6 +31,7 @@ roamer reboot
 
 roamer home
 roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
+roamer crown <delta>
 roamer gaze <x-px> <y-px>
 roamer click <x-px> <y-px>
 roamer long-press <x-px> <y-px> [duration-ms]
@@ -57,7 +58,7 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 - Xcode 27
 - visionOS 27 Simulator
 
-`pose` 使用绝对 6DoF：位置单位为米，旋转单位为度。
+`pose` 使用绝对 6DoF：位置单位为米，旋转单位为度。`crown` 的 `delta` 是整数步数；正负号表示两个旋转方向，每一步按 Simulator 自身的 Digital Crown 沉浸度步长调整。
 
 ## License
 

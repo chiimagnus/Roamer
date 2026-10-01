@@ -83,6 +83,14 @@ struct CLI {
             )
             print("simulator pose: ok")
 
+        case "crown":
+            try requireCount(rest, 1, usage: "roamer crown <delta>")
+            let delta = try parseInt(rest[0], name: "delta")
+            let device = try simulator.bootedAVP()
+            let crown = try SimulatorCrownController(udid: device.udid)
+            crown.rotate(delta: delta)
+            print("simulator crown: ok")
+
         case "gaze":
             try requireCount(rest, 2, usage: "roamer gaze <x-px> <y-px>")
             let x = try parseDouble(rest[0], name: "x")
@@ -183,6 +191,13 @@ struct CLI {
         return result
     }
 
+    private func parseInt(_ value: String, name: String) throws -> Int {
+        guard let result = Int(value) else {
+            throw RoamerError.message("\(name) 必须是整数：\(value)")
+        }
+        return result
+    }
+
     static let help = """
     roamer — 直接控制 Apple Vision Pro Simulator
 
@@ -194,6 +209,7 @@ struct CLI {
       roamer reboot
       roamer home
       roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
+      roamer crown <delta>
       roamer gaze <x-px> <y-px>
       roamer click <x-px> <y-px>
       roamer long-press <x-px> <y-px> [duration-ms]

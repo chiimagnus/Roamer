@@ -166,7 +166,7 @@ roamer pose <x> <y> <z> <yaw> <pitch> <roll>
 roamer crown <delta>
 ```
 
-`IndigoHIDMessageForDigitalCrownEvent` 已由 SimulatorKit 证实存在。
+真实 Xcode 27 XROS Simulator UI 证据表明，AVP 的 Digital Crown 沉浸度控制不走 legacy Crown/Dial HID：`VirtualHMDInputView.increaseImmersion/decreaseImmersion` 直接调用 `SimVirtualHeadsetRemoteService.changeImmersionLevel:isAbsolute:`，每一步为相对 `+0.05/-0.05`。虽然 `SimDeviceLegacyHIDClient` 报告 `hasCrown = false`、`hasDial = true`，并且 XROS 插件内部另有 `DigitalDialEvent(+1/-1)`，真实 environment 验收证明该 Dial HID 不会改变 immersion level，因此不得作为 `roamer crown` transport。production 直接复用 XROS remote service，与 Xcode 自己的沉浸度控制保持一致。
 
 验收：
 
