@@ -13,6 +13,12 @@ struct CLI {
         let rest = Array(arguments.dropFirst())
 
         switch command {
+        case "--version":
+            guard rest.isEmpty else {
+                throw RoamerError.message("--version 不接受额外参数")
+            }
+            print(RoamerVersion.display)
+
         case "help", "-h", "--help":
             guard rest.isEmpty else {
                 throw RoamerError.message("help 不接受额外参数")
@@ -335,6 +341,7 @@ struct CLI {
     roamer — 直接控制 Apple Vision Pro Simulator
 
     用法:
+      roamer --version
       roamer status
       roamer screenshot [path]
       roamer launch <bundle-id>

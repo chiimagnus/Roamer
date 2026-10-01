@@ -10,6 +10,7 @@ Roamer 是一个直接控制 Apple Vision Pro Simulator 的 macOS CLI。
 
 ```bash
 swift build -c release
+.build/release/roamer --version
 .build/release/roamer --help
 ```
 
@@ -22,6 +23,7 @@ swift run roamer status
 ## 命令
 
 ```bash
+roamer --version
 roamer status
 roamer screenshot [path]
 
