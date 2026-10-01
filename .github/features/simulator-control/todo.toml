@@ -1,5 +1,5 @@
 version = 1
-current_task_id = ""
+current_task_id = "P4-T2"
 
 [[tasks]]
 id = "P1-T1"
@@ -121,7 +121,7 @@ title = "实现 roamer type"
 status = "completed"
 plan = "plan-p3.md#p3-t3"
 commit = "96ed209"
-note = "实现安全 roamer type：整段文本预校验 + guest 当前输入模式检测；中文拼音、中文文本和未支持标点均已验证在首个 HID 前失败。"
+note = "实现安全 roamer type：整段文本预校验 + Simulator 当前输入模式检测；中文拼音、中文文本和未支持标点均已验证在首个 HID 前失败。"
 
 [[tasks]]
 id = "P3-T4"
@@ -134,18 +134,18 @@ note = "真实 TextField 验收通过：English (US) 下 type/Left/Delete/Return
 [[tasks]]
 id = "P4-T1"
 title = "统一 Simulator 术语与源码命名"
-status = "pending"
+status = "completed"
 plan = "plan-p4.md#p4-t1"
-commit = ""
-note = ""
+commit = "64a853b"
+note = "统一 AVP/visionOS Simulator 术语；移除 guest 与自有 Legacy 命名；确认无 probe/fallback/compat alias/Paloma raw packet 双轨；39/39 tests、release build、status 通过。"
 
 [[tasks]]
 id = "P4-T2"
 title = "收紧 private API fail-fast 与输入边界"
-status = "pending"
+status = "in_progress"
 plan = "plan-p4.md#p4-t2"
 commit = ""
-note = ""
+note = "开始收紧 private API fail-fast 与输入边界。"
 
 [[tasks]]
 id = "P4-T3"
