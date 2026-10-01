@@ -92,6 +92,14 @@ struct CLI {
             crown.rotate(delta: delta)
             print("simulator crown: ok")
 
+        case "key":
+            try requireCount(rest, 1, usage: "roamer key <key|modifier+key>")
+            let chord = try KeyboardChord(rest[0])
+            let device = try simulator.bootedAVP()
+            let input = try SimulatorHIDController(udid: device.udid)
+            try input.keyChord(chord.usageCodes)
+            print("simulator key: ok")
+
         case "gaze":
             try requireCount(rest, 2, usage: "roamer gaze <x-px> <y-px>")
             let x = try parseDouble(rest[0], name: "x")
@@ -321,6 +329,7 @@ struct CLI {
       roamer home
       roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
       roamer crown <delta>
+      roamer key <key|modifier+key>
       roamer gaze <x-px> <y-px>
       roamer click <x-px> <y-px> [--hand left|right]
       roamer long-press <x-px> <y-px> [duration-ms] [--hand left|right]
@@ -329,6 +338,8 @@ struct CLI {
       roamer rotate <x-px> <y-px> <degrees> [duration-ms]
       roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms] [--hand left|right]
 
+    key 支持 Return/Escape/Delete/Tab/Space/方向键、字母、数字，以及 Shift/Control/Option chord。
+    Xcode 27 Apple Vision Pro Simulator 当前不支持 Command modifier。
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。

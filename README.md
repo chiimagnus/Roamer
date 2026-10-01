@@ -32,6 +32,7 @@ roamer reboot
 roamer home
 roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
 roamer crown <delta>
+roamer key <key|modifier+key>
 roamer gaze <x-px> <y-px>
 roamer click <x-px> <y-px> [--hand left|right]
 roamer long-press <x-px> <y-px> [duration-ms] [--hand left|right]
@@ -41,13 +42,15 @@ roamer rotate <x-px> <y-px> <degrees> [duration-ms]
 roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms] [--hand left|right]
 ```
 
-`click`、`long-press`、`double-click` 和 `drag` 默认使用右手，可用 `--hand left` 切换左手。`magnify` 和 `rotate` 使用双手；v0.1 接受的 `scale` 范围为 0.4～2.5，`degrees` 范围为 -180～180。`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。坐标最终仍由 visionOS 的空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿前景窗口”的深度选择。
+`key` 支持 Return、Escape、Delete、Tab、Space、方向键、字母、数字，以及 Shift / Control / Option 组合键。Xcode 27 的 Apple Vision Pro Simulator 当前不会把 Command HID usage 识别为 Command modifier，因此 `command+...` 会明确报错。`click`、`long-press`、`double-click` 和 `drag` 默认使用右手，可用 `--hand left` 切换左手。`magnify` 和 `rotate` 使用双手；v0.1 接受的 `scale` 范围为 0.4～2.5，`degrees` 范围为 -180～180。`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。坐标最终仍由 visionOS 的空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿前景窗口”的深度选择。
 
 例如：
 
 ```bash
 roamer screenshot /tmp/avp.png
 roamer click 2690 780
+roamer key return
+roamer key shift+tab
 ```
 
 ## 当前限制
