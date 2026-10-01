@@ -29,6 +29,7 @@ import ObjectiveC.runtime
 final class PrivateRuntime {
     let developerDir: String
     let simulatorKitHandle: UnsafeMutableRawPointer
+    private var xrosPluginHandle: UnsafeMutableRawPointer?
 
     init() throws {
         developerDir = try Self.resolveDeveloperDir()
@@ -83,10 +84,7 @@ final class PrivateRuntime {
     func makeVirtualHeadsetRemoteService(
         device: AnyObject
     ) throws -> VirtualHeadsetRemoteMessaging {
-        let plugin = developerDir
-            + "/Platforms/XROS.platform/Library/Developer/CoreSimulator/Profiles/UserInterface/"
-            + "XROS.simdeviceui/Contents/MacOS/XROS"
-        _ = try Self.loadFramework(plugin)
+        _ = try xrosPlugin()
 
         guard let serviceClass = NSClassFromString("SimVirtualHeadsetRemoteService") else {
             throw RoamerError.message("找不到 SimVirtualHeadsetRemoteService")
@@ -136,14 +134,24 @@ final class PrivateRuntime {
     }
 
     func xrosSymbol(_ name: String) throws -> UnsafeMutableRawPointer {
+        let handle = try xrosPlugin()
+        guard let raw = dlsym(handle, name) else {
+            throw RoamerError.message("找不到 XROS HID symbol：\(name)")
+        }
+        return raw
+    }
+
+    private func xrosPlugin() throws -> UnsafeMutableRawPointer {
+        if let xrosPluginHandle {
+            return xrosPluginHandle
+        }
+
         let plugin = developerDir
             + "/Platforms/XROS.platform/Library/Developer/CoreSimulator/Profiles/UserInterface/"
             + "XROS.simdeviceui/Contents/MacOS/XROS"
         let handle = try Self.loadFramework(plugin)
-        guard let raw = dlsym(handle, name) else {
-            throw RoamerError.message("找不到 XROS symbol：\(name)")
-        }
-        return raw
+        xrosPluginHandle = handle
+        return handle
     }
 
     private static func resolveDeveloperDir() throws -> String {
