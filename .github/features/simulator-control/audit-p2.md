@@ -50,6 +50,19 @@
 
 ## 发现项
 
+## 发现 F-07
+
+- 任务：`P2-T6`
+- 严重级别：`Medium`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Runtime/PrivateRuntime.swift`
+- 摘要：`每条 Paloma message 都重复 dlopen XROS.simdeviceui`
+- 风险：`drag/长按等单次命令会连续生成多条 HID message，重复 dlopen 会造成无意义的插件句柄累积与 CoreSimulator 私有连接压力。`
+- 预期修复：`PrivateRuntime 在实例生命周期内缓存唯一 XROS plugin handle；Paloma builder 与 VirtualHeadsetRemoteService 统一复用。`
+- 验证：`17/17 tests + release build；8 次连续 drag 后 backboardd PID 不变、设备仍 Booted、Mac frontmost 不变、无新增相关 crash report。`
+- 解决证据：`b3be9e6：XROS plugin handle 改为每个 PrivateRuntime 只加载一次；17/17 tests 与 release build 通过；8 次连续 drag 后 backboardd 23030→23030，AVP 仍 Booted，frontmost Helium→Helium，未新增 backboardd/CoreSimulatorBridge/RealityLauncher crash report。`
+
+
 ## 发现 F-06
 
 - 任务：`P2-T6`
