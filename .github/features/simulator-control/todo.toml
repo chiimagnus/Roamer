@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P2-T6"
+current_task_id = ""
 
 [[tasks]]
 id = "P1-T1"
@@ -78,18 +78,18 @@ note = "Maps long-press 真实生成 Marked Location；临时 SwiftUI probe 验�
 [[tasks]]
 id = "P2-T6"
 title = "扩展完整 6DoF 头部姿态并实现 Digital Crown"
-status = "in_progress"
+status = "completed"
 plan = "plan-p2.md#p2-t6"
-commit = ""
-note = "开始扩展绝对 6DoF pose，并接入 Digital Crown；同步验证非零 pose 下 gaze/click 坐标语义。"
+commit = "93483c6"
+note = "完整6DoF、Digital Crown、非零姿态click/drag、macOS focus与Simulator稳定性均已真实验收。"
 
 [[tasks]]
 id = "P2-T7"
 title = "支持左手 / 右手选择"
-status = "pending"
+status = "completed"
 plan = "plan-p2.md#p2-t7"
-commit = ""
-note = ""
+commit = "4720756"
+note = "左右手官方Paloma字段已映射；left click 与 left drag 已真实Simulator验收，focus与稳定性通过。"
 
 [[tasks]]
 id = "P2-T8"
