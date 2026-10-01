@@ -132,13 +132,13 @@
 
 - 任务：`P2-T6`
 - 严重级别：`Medium`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`Sources/RoamerCore/Input/IndigoMessages.swift:63-76`
 - 摘要：`6DoF 计划没有处理 gaze 与 head pose 的坐标关系`
 - 风险：`当前 collection 把 gaze origin 固定为零，并直接使用屏幕角度作为方向；一旦头部发生平移/旋转，gaze/click/drag 可能不再命中截图中的同一目标。`
 - 预期修复：`把当前 head pose 纳入 P2-T1/P2-T6：先用 SimVirtualHeadsetRemoteService.getPose 确认矩阵约定，再让 gaze origin/direction 随当前 pose 变换，并在非零 pose 下回归 click。`
 - 验证：`非零平移和 yaw/pitch/roll 后，screenshot pixel click 仍命中同一视觉目标`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`93483c6：HeadPose.gazeRay 使用当前 pose 的 position 作为 origin，并把 screenshot-space local ray 旋转到 world space；P2-T6 已在非零 yaw/pitch/roll/translation 下真实验证 click/drag 命中，Simulator 与 macOS focus 稳定。`
 
 
 <在此之下由 `finding add` 命令追加发现项，不要手工照抄模板>

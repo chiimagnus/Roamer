@@ -94,10 +94,10 @@ note = "左右手官方Paloma字段已映射；left click 与 left drag 已真�
 [[tasks]]
 id = "P2-T8"
 title = "实现双手缩放和旋转"
-status = "pending"
+status = "completed"
 plan = "plan-p2.md#p2-t8"
-commit = ""
-note = ""
+commit = "5c1f26b"
+note = "正式 magnify/rotate 已通过 SwiftUI 手势探针真实 Simulator 验收：scale 2.5/0.4、rotate +45°，32 个连续事件；backboardd、Booted 与 macOS focus 稳定。"
 
 [[tasks]]
 id = "P3-T1"
