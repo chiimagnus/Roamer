@@ -33,9 +33,10 @@ roamer home
 roamer pose <yaw-deg>
 roamer gaze <x-px> <y-px>
 roamer click <x-px> <y-px>
+roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 ```
 
-`gaze` 和 `click` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。
+`gaze`、`click` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。
 
 例如：
 
@@ -54,7 +55,7 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 - Xcode 27
 - visionOS 27 Simulator
 
-目前 head pose 只支持 yaw；尚不支持完整 6DoF、drag、键盘输入和文本输入。
+目前 head pose 只支持 yaw；尚不支持完整 6DoF、键盘输入和文本输入。
 
 ## License
 

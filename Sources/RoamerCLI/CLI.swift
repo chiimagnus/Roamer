@@ -87,6 +87,32 @@ struct CLI {
             try input.click(x: x, y: y, geometry: geometry)
             print("simulator click: ok")
 
+        case "drag":
+            guard rest.count == 4 || rest.count == 5 else {
+                throw RoamerError.message(
+                    "用法: roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]"
+                )
+            }
+            let fromX = try parseDouble(rest[0], name: "from-x")
+            let fromY = try parseDouble(rest[1], name: "from-y")
+            let toX = try parseDouble(rest[2], name: "to-x")
+            let toY = try parseDouble(rest[3], name: "to-y")
+            let duration = try rest.count == 5
+                ? parseDouble(rest[4], name: "duration-ms")
+                : 500
+            let device = try simulator.bootedAVP()
+            let geometry = try simulator.displayGeometry(for: device)
+            let input = try SimulatorHIDController(udid: device.udid)
+            try input.drag(
+                fromX: fromX,
+                fromY: fromY,
+                toX: toX,
+                toY: toY,
+                durationMilliseconds: duration,
+                geometry: geometry
+            )
+            print("simulator drag: ok")
+
         default:
             throw RoamerError.message("未知命令：\(command)\n\n\(Self.help)")
         }
@@ -122,8 +148,9 @@ struct CLI {
       roamer pose <yaw-deg>
       roamer gaze <x-px> <y-px>
       roamer click <x-px> <y-px>
+      roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 
-    gaze/click 坐标来自 roamer screenshot 生成的 Simulator 图片。
+    gaze/click/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。
     """
 }
