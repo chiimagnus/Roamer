@@ -66,6 +66,30 @@ final class HandTrajectoryTests: XCTestCase {
         )
     }
 
+    func testRejectsDurationThatCannotBecomeSampleCount() {
+        let duration = Double.greatestFiniteMagnitude
+
+        XCTAssertThrowsError(
+            try HandTrajectory.samples(
+                from: GazeAngles(yaw: 0, pitch: 0),
+                to: GazeAngles(yaw: 10, pitch: 0),
+                durationMilliseconds: duration
+            )
+        )
+        XCTAssertThrowsError(
+            try HandTrajectory.magnifySamples(
+                scale: 1.5,
+                durationMilliseconds: duration
+            )
+        )
+        XCTAssertThrowsError(
+            try HandTrajectory.rotateSamples(
+                degrees: 30,
+                durationMilliseconds: duration
+            )
+        )
+    }
+
     func testMagnifySamplesMatchRequestedScale() throws {
         let samples = try HandTrajectory.magnifySamples(
             scale: 2.5,
