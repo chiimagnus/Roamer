@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P2-T1"
+current_task_id = "P2-T2"
 
 [[tasks]]
 id = "P1-T1"
@@ -28,18 +28,18 @@ note = "原生 SimDevice AX：Button 0→1、TextField value a、实体AX差异�
 [[tasks]]
 id = "P2-T1"
 title = "接入来源明确的 observe 输出与已验证原生信息"
-status = "in_progress"
+status = "completed"
 plan = "plan-p2.md#p2-t1"
-commit = ""
-note = ""
+commit = "45ee1b295025bfccc9008cefedb1c86d1a60eeba"
+note = "9 observation/68全量测试、release与fixture build PASS；正式click/text前后与oracle一致、重启新PID、HappyPianist38节点、拒绝/无设备/焦点验证见native-probe.md P2-T1；删除重复AX探针"
 
 [[tasks]]
 id = "P2-T2"
 title = "接入显式原生 XYZ 与边界调试画面"
-status = "blocked"
+status = "in_progress"
 plan = "plan-p2.md#p2-t2"
 commit = ""
-note = "P1已定位入口尚未建立原生Axes/Bounds无头控制与原值恢复契约；不得猜ABI或拿布局图冒充；独立P2-T1可继续"
+note = "新证据：DebugHelperSupportUI的com.apple.DebugHelper DTX协议；先只读核对当前状态/目标恢复，不向未知ABI写入"
 
 [[tasks]]
 id = "P3-T1"
