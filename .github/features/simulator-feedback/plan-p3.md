@@ -21,6 +21,8 @@
 
 ## P3-T1
 
+**P1 已选捕获与格式：** 原生 LLDB 附加当前明确绑定 PID，载入 Apple 官方 `libViewDebuggerSupport.dylib`，清理本会话 DebugHierarchyTargetHub 缓存再从 SpatialSceneDebugRepresentationWrapper 读取 `sceneDebugRepresentation` NSData。精确 ABI、UUID 新文件、detach 所有权/失败检查与 binary plist v2.0 格式见 `native-probe.md`。configuration.bundleID 绑定目标；Transform quaternion `[x,y,z,w]` + scale + translation 逐父链复合；ModelComponent.mesh.bounds 为自身局部边界，米制。无相机矩阵证据。fixture 与 HappyPianist 沉浸空间已通过，不把空的唱片窗口当完整几何。正式实现仍须解决本捕获临时文件清理、进程超时/中断恢复及逐任务测试，不能仅复制原型就宣布完成。
+
 **接入指定 App 的原生实体快照**
 
 **Files:**

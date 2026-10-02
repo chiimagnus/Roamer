@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Simulator 实际画面 | 既有 `simctl io screenshot`，3840×2160 | 已有能力 |
 | 指定 App AX | fixture Button/TextField 变化、蓝色实体、HappyPianist UI 读取成功 | 可支持普通 observe；生产后端尚未接入 |
-| RealityKit 数字实体 | 官方调试支持库返回 7 实体；其中 5 个 fixture 实体 ID、父级矩阵、自身模型边界匹配独立 oracle | fixture 成立；跨 App 验证进行中，不能宣传任意 App |
+| RealityKit 数字实体 | 官方库返回 fixture 7 实体/5 oracle 匹配；HappyPianist 虚拟钢琴 101 实体、90 自身模型 | fixture + 未修改 App 沉浸场景成立；不能宣传任意引擎/窗口 |
 | 原生 Axes/Bounds 实时覆盖层 | 文档有 Xcode 功能；已定位候选框架未建立无头控制/原值恢复契约 | 未成立，不实现猜测 selector/fallback |
 | 相机/玩家测量 pose | 本次场景配置只有 contentOrigin，未证明相机矩阵 | 不输出测量值；Roamer 历史 pose 不是真值 |
 
@@ -94,7 +94,9 @@ encodedScene 指向官方生成 `.reality` 文件，外层 plist 并非自包含
 有效核对：`native-scene-before.data` / `native-oracle-before.json`；`native-scene-typed-reset2.data` / `native-oracle-moved.json`；yaw20 后 `native-scene-pose2.data` / `native-oracle-pose.json`；重启后的 `native-restarted.data`；修复关闭状态后的 `native-fixed.data` / `fixed-before.json`。均 5 个 oracle 实体真实 ID/完整矩阵/自身边界匹配。
 失败证据不混为通过：`native-capture-reset-request.log` 命令失败后拷贝的文件是旧文件；`native-capture-typed-reset.log` 是原型编译错误；`native-capture-pose.log` 是旧持久表达式错误。后续 self-contained typed-reset2/pose2 才是有效证据。
 调试库第一次加载/广泛符号查询曾耗时很长；不得在活 App 上再进行全模块正则扫描。短路径 capture → detach 后真实截图仍有实体；关闭/重开 bug 是 fixture 状态职责问题，已由 `45d269e` 修复并实测。
-HappyPianist 当前唱片窗口 capture 返回成功空 group（`happypianist-capture.log`），不能算跨 App 3D PASS；已沿目标实际源码定位虚拟钢琴沉浸入口，继续真实 UI 验证。
+HappyPianist 唱片窗口 capture 返回成功空 group（`happypianist-capture.log`），不算跨 App 3D PASS。沿目标实际源码定位“选择钢琴 → 虚拟钢琴”入口后，真实 HID 打开沉浸空间。`piano-space-capture.log` 有 written=1 / OWNED DETACH success / PROBE COMPLETE，`native-happypianist-space.data` 配置绑定真实 bundleID，含 101 实体、90 自身模型及有限数 Transform。`piano-space-before-capture.png` / `piano-space-after-capture.png` 是真实钢琴画面，释放后仍显示。没有改源码、重打包或集成 Roamer SDK。未触发播放、练习或导入；选型和默认放置沿源码仅改变运行期状态，后续关闭本轮打开的窗口/空间与 App。
+
+P1 调查已形成逐渠道准入结论：普通 AX 观察可实现；数字几何具备实测入口；原生实时覆盖层尚无可恢复的无头控制契约。后者保留为 P2-T2 的阻塞项，不移走、不假装完成。P3 仍须遵守前置阶段门禁。
 
 ## 覆盖层与文档证据边界
 

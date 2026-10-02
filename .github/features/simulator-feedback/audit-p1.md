@@ -17,9 +17,9 @@
   - `f9f1371`：`Tests/SimulatorFixture/App.swift` → `SpatialSceneView.swift` / `SpatialSceneState.swift`；`Info.plist` 多 scene 声明；`Tools/verify-spatial.py` 与 README。
   - `45d269e`：`SpatialSceneControls` 在显式 dismiss 完成后同步 `finish()`，修复 F-01。
 - P1-T2
-  - `probes/native-scene/`，原生 LLDB → 官方 libViewDebuggerSupport → 场景二进制；`native-probe.md`。仍在跨 App 与覆盖层调查，不是生产能力。
+  - `730cd98` / `probes/native-scene/`：原生 LLDB → 官方 libViewDebuggerSupport → 场景二进制；`native-probe.md`。fixture/new PID/pose 与 HappyPianist 虚拟钢琴实测；覆盖层未成立，不是生产能力。
 - P1-T3
-  - `probes/native-accessibility/Probe.swift` → `PrivateRuntime.resolveDevice` → 原生 SimDevice AX；`native-probe.md`。仍待探索结论归档。
+  - `730cd98` / `probes/native-accessibility/Probe.swift` → `PrivateRuntime.resolveDevice` → 原生 SimDevice AX；`native-probe.md`。实际 Button/value/实体差异/跨 App 验证，不是正式 CLI 后端。
 
 ## 发现项
 
@@ -49,17 +49,18 @@
 - `verify-spatial.py .build/simulator-feedback` → PASS，原始点击/拖动/重入及父级矩阵。
 - `verify-snapshot.py native-fixed.data fixed-before.json` → 5 实体原生矩阵/自身模型边界 PASS。
 - 真实 capture → close → reopen：`fixed-before.json` / `fixed-closed.json` / `fixed-reopened.json` → PASS，关闭 false、新 session 和计数归零。
-- AX Button `CLICK 0` → `CLICK 1`，TextField 原生 value=`a` / `TEXT [a] SUBMIT 1`，HappyPianist 未修改 App UI 树 → PASS。P1-T2/P1-T3 尚在调查，不据此完成整个 phase。
+- AX Button `CLICK 0` → `CLICK 1`，TextField 原生 value=`a` / `TEXT [a] SUBMIT 1`，HappyPianist 未修改 App UI 树 → PASS。
+- HappyPianist 虚拟钢琴原生捕获 → 101 实体/90 自身模型、bundleID/有限数 Transform、detach 成功及真实钢琴截图 → PASS。唱片窗口的空捕获单独记录，不计成功。
 
 ## Gate（是否允许进入下一阶段）
 
-- 结论：`No-Go`（当前中间状态，尚未结束 phase audit）
-- 理由：F-01 已修复；覆盖层、跨 App 数值几何尚待验证/准入结论，不能提前进入依赖它们的实现。
+- 结论：`Go`
+- 理由：P1 是逐渠道取证，不是产品全部实现；空间基准、AX 和数字几何有真实验证，F-01 已解决，探索结论/后续准确接口已归档。只准入已成立通路；P2-T2 未有控制/恢复契约，保留 blocked，不生成空壳后端或假覆盖层。
 
 ## 最终状态与剩余风险
 
-- 当前状态：`Open`
-- 剩余风险：原生 Axes/Bounds 的无头控制尚未成立；HappyPianist 唱片窗口的捕获为空，正在核对真实沉浸空间。合法调试仍可能有暂停及官方库导出的临时文件副作用，生产实现尚未接入。
+- 当前状态：`Resolved`（P1 取证审计，不代表整个 feature 完成）
+- 剩余风险：原生 Axes/Bounds 的无头控制尚未成立，依赖的 P2-T2 仍未完成；数值捕获只证明当前 RealityKit 沉浸场景，未覆盖任意引擎/窗口。正式实现需拥有正确的暂停/临时文件恢复和输出错误处理。普通 observe 不应沿用此调试暂停路径。
 
 ## 审计约束
 

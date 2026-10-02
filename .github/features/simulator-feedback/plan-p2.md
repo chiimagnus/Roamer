@@ -21,6 +21,8 @@
 
 ## P2-T1
 
+**P1 已选接口：** `simctl spawn <UDID> launchctl list` 的精确 `UIKitApplication:<bundle-id>[...]` job 绑定当前 PID；不调用 launch。通过既有 PrivateRuntime 的 SimDevice `sendAccessibilityRequestAsync:completionQueue:completionHandler:` 读取 AXPTranslator，type 2 属性/type 9 supportedActions，PID/对象 ID 绑定和原生逐属性错误保留。详见 `native-probe.md`。Frame 是未转换的原生平台/窗口坐标，不输出截图 pixel 框。缺少原生接口与读取失败分别报告，不以空树代替。
+
 **接入来源明确的 observe 输出**
 
 **Files:**
