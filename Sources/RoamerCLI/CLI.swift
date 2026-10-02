@@ -43,6 +43,10 @@ struct CLI {
             try requireCount(rest, 2, usage: "roamer observe <bundle-id> <new-output-dir>")
             print(try SimulatorObservation.capture(bundleID: rest[0], outputPath: rest[1]))
 
+        case "scene":
+            try requireCount(rest, 2, usage: "roamer scene <bundle-id> <new-output-dir>")
+            print(try SimulatorSceneSnapshot.capture(bundleID: rest[0], outputPath: rest[1]))
+
         case "launch":
             try requireCount(rest, 1, usage: "roamer launch <bundle-id>")
             let device = try simulator.bootedAVP()
@@ -349,6 +353,7 @@ struct CLI {
       roamer status
       roamer screenshot [path]
       roamer observe <bundle-id> <new-output-dir>
+      roamer scene <bundle-id> <new-output-dir>
       roamer launch <bundle-id>
       roamer terminate <bundle-id>
       roamer reboot
@@ -372,6 +377,7 @@ struct CLI {
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     observe 保存实际截图与指定运行 App 的原生 AX；须使用新目录且父目录已存在，不自动启动 App。
+    scene 显式短暂 attach/暂停目标，读取原生实体后 detach；不接管既有调试会话。
     AX frame 是未转换的平台/窗口坐标，不是截图 pixels 或 XYZ。渠道失败记录在 observation.json。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。
     """

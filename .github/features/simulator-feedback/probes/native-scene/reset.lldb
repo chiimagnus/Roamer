@@ -1,2 +1,0 @@
-expression -l objc++ -- @import Foundation; @import ObjectiveC;
-expression -l objc++ -O -- ({ id hub = [(id)NSClassFromString(@"DebugHierarchyTargetHub") performSelector:NSSelectorFromString(@"sharedHub")]; SEL selector = NSSelectorFromString(@"clearAllRequestsAndData"); void (*clear)(id, SEL) = (void (*)(id, SEL))method_getImplementation(class_getInstanceMethod(object_getClass(hub), selector)); clear(hub, selector); @"Native cache cleared"; })

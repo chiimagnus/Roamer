@@ -16,7 +16,7 @@
 - P1-T2 必须已证明数字几何、目标绑定、单位/参考空间、恢复行为和跨 App 读取；任何必要事实未知时，本阶段不得以“后面再补”为理由开始。
 - 只接入已经选定的实际捕获格式，实施前由 P1 补齐准确符号/协议/解析字段锚点；不预写兼容格式、多 provider 或回退到测试 JSON。
 - 本阶段不改变旧输入、坐标投递和 `SimulatorStateStore` 的职责。scene 捕获相机/空间与 Roamer 缓存 pose 不能混为一谈。
-- 本地 feature/audit/evidence 不提交，独立源码改动验证后中文原子提交；源自用户 App 的真实捕获物不作为仓库公开测试样本。
+- 用户明确授权 feature/audit/probe 文本入库；真实截图/用户 App 捕获物仅保留在忽略的 `.build/simulator-feedback/`，不作为公开测试样本。独立源码改动验证后中文原子提交。
 
 ---
 
@@ -28,7 +28,7 @@
 
 **Files:**
 - Modify: `Sources/RoamerCLI/CLI.swift::run(arguments:)` / `help`，新增 `scene` 的实际入口。
-- Modify: `Sources/RoamerCore/Runtime/SimulatorObservationRuntime.swift`，实现 P1-T2 已证实的快照请求；复用连接所有权和调试清理，不复制第二套设备选择。
+- Add: `Sources/RoamerCore/Runtime/SimulatorSceneRuntime.swift`，实现 P1-T2 已证实的显式 LLDB 捕获与本会话清理；只读 AX 与暂停目标的 debugger 职责不同，不把两种传输塞入同一 runtime。复用 SimulatorService 的设备/PID 绑定。
 - Reuse: `SimulatorObservation` 的新目录/实际画面/来源输出；`SimulatorService.screenshot`。
 - Add: `Sources/RoamerCore/Simulator/SimulatorSceneSnapshot.swift`，负责选定原始格式的解析和参考空间内的实体/几何表达。
 - Add: `Tests/RoamerCoreTests/SimulatorSceneSnapshotTests.swift`；必要的最小脱敏响应样本。

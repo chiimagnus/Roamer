@@ -50,7 +50,7 @@ swift build -c release
 ## 数字几何：原生 LLDB + 官方支持库
 
 只附加本轮指定 PID，成功 attach 才拥有 detach；失败不解除他人的调试连接。
-运行 `probes/native-scene/lldb-inspect.py`，finally 使用 `SBProcess.Detach()` 检查实际结果。
+P1 原型曾使用 `lldb-inspect.py`，finally 检查 `SBProcess.Detach()`；现已迁入正式 `roamer scene` 并删除重复原型。
 **LLDB batch 的进程退出码可能在 Python 失败时仍为 0**。必须检查日志 `PROBE COMPLETE`，以及 getter 的 written=1/非空结果后才接受新产物。
 曾因沿用固定旧文件误得 PASS，已识别为无效证据；后续输出用 UUID 文件名。最终生产输出不得依赖此原型的固定诊断日志或旧文件。
 
@@ -64,16 +64,10 @@ swift build -c release
 **根因发现：原生调试缓存会返回旧 geometry。**
 `native-scene-before.data` 与第一次 `native-scene-moved.data` hash 相同，但独立 oracle 点击从 0 到 1。每次清理本会话原生缓存后重新取 group/property，`native-scene-typed-reset2.data` 才与移动后的实际矩阵一致。不能以 UUID 未变判断新旧，也不能只检测文件存在。
 
-复跑（必须先确认没有其他调试器；会短暂停 App，载入 Apple 官方库，并在 App tmp 生成二进制/.reality 临时文件）：
+正式复跑（会短暂停 App，载入 Apple 官方库，detach 后清理本次拥有的临时资产；拒绝已有调试会话）：
 
 ```sh
-cat .github/features/simulator-feedback/probes/native-scene/{load-support.lldb,reset.lldb,capture.lldb} \
-  > .build/simulator-feedback/fresh-capture.lldb
-ROAMER_PROBE_PID=<actual-pid> \
-ROAMER_PROBE_COMMANDS=.build/simulator-feedback/fresh-capture.lldb \
-xcrun lldb --batch -o 'script exec(open(".github/features/simulator-feedback/probes/native-scene/lldb-inspect.py").read())' \
-  > .build/simulator-feedback/capture.log 2>&1
-rg '^PROBE COMPLETE$' .build/simulator-feedback/capture.log
+.build/release/roamer scene com.chiimagnus.RoamerTestApp .build/simulator-feedback/fresh-scene
 ```
 
 数据版本 2.0，外层 binary plist；internals.sceneConfiguration 与 sceneDebugRepresentation 为嵌套 binary plist。
@@ -93,6 +87,16 @@ HappyPianist 唱片窗口 capture 返回成功空 group（`happypianist-capture.
 P1 调查已形成逐渠道准入结论：普通 AX 观察可实现；数字几何具备实测入口；原生实时覆盖层尚无可恢复的无头控制契约。后者保留为 P2-T2 的阻塞项，不移走、不假装完成。P3 仍须遵守前置阶段门禁。
 
 ## 覆盖层与文档证据边界
+
+### P3-T1 正式捕获续验（2026-10-03）
+
+- `p3-release-before` / `p3-release-click` / `p3-release-drag` 来自正式 release `scene`：每次 7 实体，与独立 oracle 的五个真实实体逐项 ID、局部/父链矩阵和自身边界匹配。点击增加一次；拖动 33 changed / 1 ended，目标位置实际改变，相邻父级/橙色实体/平面不动。原始捕获不是 oracle 导出。`p3-assets-before.txt` / `p3-assets-after.txt` 一致，本轮新 `.reality` 已清理，旧资产未动。
+- `p3-refused-debugger.log`：独立拥有的 LLDB 先暂停 HappyPianist PID 62428，正式 CLI 拒绝且不建目录，进程仍为 TXs；原拥有者随后 detach 成功，进程回 Ss。不是以第二个 attach 失败代替所有权检查。
+- `p3-interrupted-attached`：确认目标处于 attach 暂停后发送 SIGINT，正式 CLI exit 1、未发布 scene.json、已 detach；`p3-after-attached-interrupt` 实际 observe 成功。较早 `p3-interrupted` 信号落在 attach 前，exit 0，不计中断覆盖。
+- `p3-timeout-runtime2/result.json` / `p3-timeout-test2.log`：复用生产内嵌 LLDB 脚本，对本轮 fixture 执行 20 秒 sleep 表达式；10 秒 expression timeout 触发 unwind，14.98 秒整个 LLDB 请求退出，reply 有错误、detached=true、cleanupError=null。PID 64923 回 Ss，`p3-after-timeout2.png` 可截图。这是表达式超时恢复证据，不声称测试了 SIGKILL 后的恢复。
+- `p3-restarted-empty` 是冷启动尚未准备完时的原生 CFString 符号错误，已 detach，未发布成功清单；确认 UI 后新请求 `p3-restarted-empty-ready` 成功空 scenes，PID 64923 与之前 47918 不同。HappyPianist 唱片窗口 `p3-piano-empty` 也是真空 group，不算跨 App 3D 验收。
+- 旧目录及不存在目标均 exit 1；`p3-parser-boundaries.log` 10 项解析/运行状态回归、`p3-t1-full-final.log` 78 项全量测试通过，release/fixture build 通过。fixture 构建出现 xcrun 默认 macOS link SDK 警告，显式 `--sdk xrsimulator` 的独立编译无警告，后续构建收尾修正。
+- 跨 App 非空实体及 pose-only 正式验收仍待本轮显式 pose 基线决定；P3-T1 保持进行中，不因提交或文件存在标成完成。被正式路径取代的七份 LLDB 捕获/扫描原型已删除，独立 `verify-snapshot.py` 保留。
 
 候选元数据/符号保存于 runtime-methods、headset-service-methods、reality-tools-exports 等日志。SimVirtualHeadsetRemoteService 当前方法没有 Axes/Bounds 开关；RealityKitInspection 的已定位 exporter 是 ARView 路径。它们不证明全平台无能力，只证明本次尚未建立控制通道。
 原生 SDK 调试可视化、数字快照与后续包围盒布局图是不同产物；不能拿 renderer 冒充 native overlay。

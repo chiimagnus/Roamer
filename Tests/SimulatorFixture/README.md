@@ -47,6 +47,8 @@ cat "$data_dir/Documents/spatial.json"
 
 空间回归时，分别保存实际 `spatial.json` 为 `spatial-before.json`、`spatial-click.json`、`spatial-drag.json`、`spatial-closed.json`、`spatial-reopened.json`，再执行 `python3 Tests/SimulatorFixture/Tools/verify-spatial.py <证据目录>`。前三份必须属于同一 session；采集前轮询预期的计数、ended 或 open 状态，不用固定睡眠当作场景已完成。这个轻量检查只读取证据，不投递动作，也不读取生产观察结果来充当独立 oracle。
 
+正式实体捕获用 `.build/release/roamer scene com.chiimagnus.RoamerTestApp <新目录>`，不从 `spatial.json` 导出生产数据。Open space 后，核对 `scene.json` 中五个 oracle 实体的真实 ID、局部矩阵、父链复合矩阵与自身局部边界；复合矩阵对应本 fixture 的 `worldTransformColumns`。点击/拖动前后同一 PID/session 中，蓝色目标变化而父级、橙色物体和平面不动。关闭空间及新 PID 应重新捕获，不复用旧结果。scene 会显式短暂 attach/暂停后 detach；不要同时用其他调试器。原始 plist 的临时资产链接不是完整网格导出。
+
 Home、重启和头部 pose 用 Simulator 画面/进程变化验收；Crown 调的是系统沉浸度，不是 App 的 `digitalCrownRotation` 值，应检查 SurfBoard immersion 日志。真实纵向 ScrollView 和横向唱片列表仍需在 Settings / HappyPianist 中验收，不能拿计数替代滚动效果。
 
 不要并行发送多个 HID 测试序列。测试期间监测宿主焦点与鼠标，但不激活 Simulator、不发送 macOS 输入。结束后恢复原输入模式和 Simulator 启停状态。

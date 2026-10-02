@@ -1,5 +1,5 @@
 version = 1
-current_task_id = ""
+current_task_id = "P3-T1"
 
 [[tasks]]
 id = "P1-T1"
@@ -44,10 +44,10 @@ note = "DTX读写/真实XYZ边界/正常与失败恢复已实证；setter回包�
 [[tasks]]
 id = "P3-T1"
 title = "接入指定 App 的原生实体快照"
-status = "pending"
+status = "in_progress"
 plan = "plan-p3.md#p3-t1"
 commit = ""
-note = ""
+note = "实现与78项测试/构建、5 oracle点击拖动、新PID空场景、既有调试拒绝、中断及表达式超时恢复已验证；跨App实体与pose验收等待基线授权，尚不标完成"
 
 [[tasks]]
 id = "P3-T2"

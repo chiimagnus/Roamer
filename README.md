@@ -27,6 +27,7 @@ roamer --version
 roamer status
 roamer screenshot [path]
 roamer observe <bundle-id> <new-output-dir>
+roamer scene <bundle-id> <new-output-dir>
 
 roamer launch <bundle-id>
 roamer terminate <bundle-id>
@@ -71,9 +72,23 @@ roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-after
 
 清单记录设备、bundle ID、PID、实际图片尺寸，以及截图/AX 各自的采集区间。截图是整个 Simulator 显示，不是目标 App 的独占截图；各渠道不是原子同帧快照。AX 保留对象 ID、标签、值、role/traits 的原生代码、支持动作和逐属性 error code。`available` 包含真实结果（可能没有子元素），`unavailable` 表示缺少已验证原生接口，`failed` 表示读取失败；后两种有原因、没有假空树。命令生成有效清单不代表 AX 或业务操作必定成功，应检查渠道 status。
 
-AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不发送 AX actions、不改变输入法。`scene`、空间三视图和原生实时 Axes/Bounds 仍未正式实现，不由此命令冒充提供。
+AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不发送 AX actions、不改变输入法。原生实时 Axes/Bounds 尚无可靠的自动截图同步契约，未提供 `--debug`。
 
 App 刚启动但 UI 尚未就绪时，原生 AX 可能返回错误；这会记录为 `failed`，不会自动重启 App、重放动作或伪装成空树。确认 UI 就绪后，可向另一个新目录发起新的观察。
+
+## 实体快照
+
+`scene` 是显式调试请求：通过本次拥有的 LLDB 会话短暂暂停指定 App，加载 Apple 官方 `libViewDebuggerSupport.dylib`，清除原生调试捕获缓存并读取新实体数据，随后 detach。目标必须正在运行且允许调试；已有调试器或暂停的进程会被拒绝，不接管其他会话。不修改目标安装包、不要求植入 SDK、不自动启动 App 或改变 pose。
+
+```bash
+roamer scene com.chiimagnus.RoamerTestApp /tmp/roamer-scene
+```
+
+新目录中的 `scene.json` 记录设备、PID、来源和捕获区间，每个原生 scene 单独保留实体 ID/名字、父子关系、列主序局部及父链复合矩阵、米制模型自身局部边界和已提供的状态。没有自身模型的 group 不制造盒子；缺失/无效边界保留错误，零厚度平面合法。`active/enabled` 不等于屏幕可见。参考空间是本 App 的原生场景，不是玩家相机，不与其他 scene/App 擅自合并，也不能据此生成截图点击坐标。ID 不承诺跨重启稳定。
+
+`native-scene-<index>.plist` 保留原始 binary plist v2.0，内含本次捕获的几何和配置；其 `.reality` 链接所指资产在 detach 后清理，因此它不是自包含 mesh/纹理导出。`screenshot.png` 是 detach 后另行取得的整个 Simulator 画面，不是几何捕获的同一帧。成功的空 scene 与原生通道失败严格区分；未验证版本、缺失必要变换或目标实例改变会失败，不回退到旧文件或 fixture JSON。
+
+捕获有 60 秒会话期限和 10 秒表达式期限，回复上限 64 MiB。SIGINT/SIGTERM 会请求中断并 detach；错误和清理失败均可见，失败目录仅保留部分证据，不发布成功清单。只删除本次原生回复明确指向的全新临时资产；无法证明归属的残留保留并报错。极端 debugger 不响应时会终止本次 debugger 子进程并报错，不能保证此时目标已恢复，须检查目标状态；不杀目标 App。空间概览与三视图将在后续任务接入。
 
 ## 当前限制
 

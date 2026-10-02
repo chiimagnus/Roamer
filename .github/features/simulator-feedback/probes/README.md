@@ -5,11 +5,8 @@
 - `runtime-methods.py`：仅枚举当前 Xcode 的指定 ObjC 类/方法编码。
 - `native-overlay/Probe.swift`：DebugHelper DTX 实验。默认仅绑定查询目标并读取真实开关；额外 screenshot-path 会暂时开启实体轴/边界、截图并恢复原值。`--axis-only --hold` 仅供独占验收构造既有开启状态；输入换行后截图并恢复，不能用终止进程代替结束。尚无渲染完成 fence、并发会话仲裁或信号中断恢复，**不是正式 --debug 后端，不得在共享调试会话运行**。编译/有效结果见 `../native-probe.md` 的 P2-T2 续验。
 - 原生 AX prototype 已由正式 `roamer observe` 取代并删除；历史 ABI 和原始证据索引仍见 `../native-probe.md`，不维护第二套连接后端。
-- `native-scene/lldb-inspect.py`：拥有成功 attach 才在 finally detach。需要传 PID/command path；只接受 `PROBE COMPLETE` 与实际 getter 成功的新文件。
-- `load-support.lldb` / `reset.lldb` / `capture.lldb`：目前成立的官方库加载、typed cache reset、新 UUID 数字捕获；会暂停 App 并生成 tmp 资产。
-- `verify-snapshot.py`：读取原生 plist，独立 oracle 仅用于断言，不充当捕获后端。
-- `metadata.lldb` / `wrapper.lldb`：历史定位命令，末尾广泛 symbol lookup 曾导致长暂停，**不要在真实目标上整体重放**；新调查必须限定已知具体模块/符号。
-- `reset-request.lldb`：备选原生 resetRequest 入口尚未验证，不是默认成功路径。
+- 原生 scene 的 LLDB 捕获、缓存 reset 与符号扫描原型已由正式 `roamer scene` 取代并删除；历史结论与证据索引仍见 `../native-probe.md`。
+- `native-scene/verify-snapshot.py`：保留独立原生 plist/oracle 数值核对，不作为捕获后端。
 - `ax-request-types.swift`：只构造请求读取 description，不向 App 发送请求；可暂停自己的 metadata helper。
 - `ax-dispatch.py`：本机当时的宿主 shared-cache dispatch 定位记录，地址仅对应该次 helper/runtime，**不能跨版本重放或用于目标 App**。
 
