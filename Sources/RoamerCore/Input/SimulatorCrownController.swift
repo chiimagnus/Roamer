@@ -9,10 +9,16 @@ package final class SimulatorCrownController {
         remote = try runtime.makeVirtualHeadsetRemoteService(device: device)
     }
 
+    init(remote: VirtualHeadsetRemoteMessaging) {
+        self.remote = remote
+    }
+
     package func rotate(delta: Int) throws {
-        let rotation = try CrownRotation(delta: delta)
-        for _ in 0..<rotation.stepCount {
-            remote.changeImmersionLevel(rotation.step, isAbsolute: false)
+        guard (-20...20).contains(delta) else {
+            throw RoamerError.message("crown delta 必须在 -20...20 之间")
+        }
+        if delta != 0 {
+            remote.changeImmersionLevel(Float(delta) * 0.05, isAbsolute: false)
         }
     }
 }

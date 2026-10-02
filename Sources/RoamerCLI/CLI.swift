@@ -363,7 +363,7 @@ struct CLI {
     key 支持 Return/Escape/Delete/Tab/Space/方向键、字母、数字，以及 Shift/Control/Option chord。
     type 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格；不会自动切换输入法。
     Xcode 27 Apple Vision Pro Simulator 当前不支持 Command modifier。
-    crown delta 范围为 -20...20，每步对应 Simulator 的 0.05 沉浸度变化。
+    crown delta 范围为 -20...20，总相对增量为 delta × 0.05，最终沉浸度由 Simulator 处理。
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。
