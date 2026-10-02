@@ -66,26 +66,26 @@ roamer terminate <bundle-id>
 roamer reboot
 
 roamer home
-roamer pose <yaw-deg>
+roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
 roamer gaze <x-px> <y-px>
-roamer click <x-px> <y-px>
+roamer click <x-px> <y-px> [--hand left|right]
+roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms] [--hand left|right]
+roamer long-press <x-px> <y-px> [duration-ms] [--hand left|right]
+roamer double-click <x-px> <y-px> [--hand left|right]
+roamer magnify <x-px> <y-px> <scale> [duration-ms]
+roamer rotate <x-px> <y-px> <degrees> [duration-ms]
+roamer crown <delta>
+roamer key <key|modifier+key>
+roamer type <text>
 ```
 
 其中 `click` 已在 HappyPianist 中真实触发 visionOS 控件。
 
 正式入口已迁移为 SwiftPM CLI；旧 shell wrapper 已删除。
 
-## 还要完成
+19 个实施任务已提交实现；独立复审以各 phase 顶部本轮证据与 Gate 为准，不把 todo 的 completed 当成正确性证明。纵向滚动复用 drag，不增加独立 scroll；文本只承诺已实测的 English (US) 字母、数字和空格，Command / Unicode 不伪装支持。
 
-1. 真正的 drag，并仅在必要时增加独立 scroll；
-2. 长按和双击；
-3. 完整 6DoF 头部姿态；
-4. Digital Crown；
-5. 左右手选择；
-6. 验证双手缩放 / 旋转能力；
-7. Simulator keyboard 与快捷键组合；
-8. 在直接 Simulator transport 能力范围内实现 text input；
-9. private API fail-fast 与完整回归。
+真实 UI 测试探针现合并为仓库内一个 App：`Tests/SimulatorFixture/`，按入口、状态落盘、交互、SwiftUI 按键、UIKit 原始键码拆分文件。它只用于验证，不进入 CLI production。
 
 ## 不做
 

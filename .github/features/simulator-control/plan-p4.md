@@ -92,6 +92,8 @@ roamer type
 
 不能用“消息发送成功”代替 UI 验收。
 
+可复跑 UI 探针统一纳入 `Tests/SimulatorFixture/`：一个 App，入口、状态记录、交互、SwiftUI 按键、UIKit 原始键码各自独立文件。构建脚本和验收说明随源码入库，编译产物忽略；不新增测试框架或 production 调试入口。
+
 实际回归结果：
 
 - `status / screenshot / launch / terminate / reboot` 全部通过；screenshot 为 `3840×2160`，reboot 后 `launchd_sim` PID 确实变化，App 可重新 launch；

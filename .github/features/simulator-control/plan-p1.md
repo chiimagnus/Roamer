@@ -39,12 +39,12 @@ swift build -c release
 
 ```bash
 roamer home
-roamer pose <yaw-deg>
+roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
 roamer gaze <x-px> <y-px>
 roamer click <x-px> <y-px>
 ```
 
-`pose 0` 与 `pose 15` 的 Simulator screenshot 出现明确整体视角变化，证明 Paloma pose 路径真实生效。
+历史 P1 的 yaw-only pose 已被 P2 的绝对 6DoF 替换，不保留兼容入口。当前使用 `pose 0 0 0 0 0 0` 与 `pose 0 0 0 15 0 0` 对照截图；六个轴也分别验收。
 
 `SimVirtualHeadsetRemoteService.getPose` 仍返回 identity，说明它不是 Paloma pose 的等价状态源，不能作为这条 HID 路径的成功 oracle。
 

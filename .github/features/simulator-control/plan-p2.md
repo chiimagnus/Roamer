@@ -11,32 +11,7 @@
 
 ## P2-T1 还原 Manipulator state machine 与真实 right-hand pose
 
-当前任务。
-
-已确认：
-
-```text
-Manipulator
-  size = 120
-  pose @ 16
-  inverseProjMatrix @ 48
-  pitch @ 112
-  yaw @ 116
-
-ManipulatorState
-  size = 352
-  left @ 16
-  right @ 144
-  gazeRay @ 272
-  options @ 320
-
-Options
-  size = 32
-  useSphericalMovement @ 0
-  radius @ 4
-  rotationSensitivity @ 8
-  rightPivotPosition @ 16
-```
+研究已完成。正式消息由 Xcode 官方 Paloma builder 构造，不再保留与 production 无关的 Device Hub 内部结构偏移清单，也不复刻其鼠标状态机。
 
 已观察到状态：
 
@@ -71,7 +46,7 @@ Roamer 不需要复刻 Device Hub 的 `inverseProjMatrix` 鼠标投影过程：R
 
 当前 head pose 与 screenshot 坐标关系属于 P2-T6 的 6DoF 验收，不再阻塞本任务。
 
-研究实验保留在 `/tmp`，不进入 production。
+ABI 研究实验不进入 production；可复跑的 UI 探针已合并到 `Tests/SimulatorFixture/` 的一个测试 App，按职责拆分源码，不再依赖散落 `/tmp` 的多个 App。
 
 ## P2-T2 在 RoamerCore 实现 right-hand drag
 

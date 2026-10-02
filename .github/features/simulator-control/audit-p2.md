@@ -75,39 +75,39 @@
 
 - 任务：`P2-T5`
 - 严重级别：`Medium`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`Sources/RoamerCore/Input/SimulatorHIDController.swift:278`
 - 摘要：`pinch 只在 send(down) 成功返回后才设置 isPinching；send 的5秒超时不证明HID未投递，catch 会跳过release；drag/双手路径已经无条件release`
 - 风险：`明确要求的失败release不变量在单手长按/点击/双击共享路径中未成立`
 - 预期修复：`删除 isPinching 围栏，在 down 尝试之后的 catch 总是发送 release；不增加重试框架`
 - 验证：`失败投递后release的最小可控HID回归 + 真实左右手pinch`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`a5da6a9；SimulatorHIDControllerTests 注入已经投递down但completion报错的client，左右手均记录 false/true/false；修复前失败、修复后通过；统一App左右手点击/长按及drag/magnify/rotate均正确release。`
 
 
 ## 发现 F-1002
 
 - 任务：`P2-T2`
 - 严重级别：`Low`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`Sources/RoamerCore/Input/SimulatorHIDController.swift:201`
 - 摘要：`轨迹由 0...max(6,count) 生成，first/last 不可能缺失，max(1,count-1) 与报空轨迹分支没有可达作用`
 - 风险：`维护不可能状态和重复围栏，掩盖真实时长边界`
 - 预期修复：`直接使用非空轨迹端点与真实 sample interval；保留失败 release`
 - 验证：`HandTrajectoryTests；真实左右手drag/magnify/rotate release`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`b7e2171；轨迹生成最少7项的不变量有单测，删除空数组和分母max守卫；真实单手/双手正常手势及边界均通过。`
 
 
 ## 发现 F-1001
 
 - 任务：`P2-T2`
 - 严重级别：`High`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`Sources/RoamerCore/Input/HandTrajectory.swift:99`
 - 摘要：`e30dd3f 只挡住 Int 转换溢出，drag duration=1e20 仍以 SIGABRT 退出并报告巨量内存分配失败`
 - 风险：`drag/magnify/rotate 共享 sampleCount，用户合法有限数值仍可使 CLI 崩溃；long-press 同样未限制可执行时长`
 - 预期修复：`统一声明实际支持的手势时长为 0 < duration <= 60000ms，四种手势在任何 HID 前校验；补齐 README 和边界回归`
 - 验证：`三个连续手势 1e20、长按超大时长均退出1且无HID；最大支持时长纯逻辑回归`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`b7e2171；HandTrajectoryTests 12/12，60000ms=3751样本，60001/1e20/NaN/Inf/负数拒绝；统一App四个1e20命令均exit1且状态不变，普通手势有真实ended。`
 
 
 ## 发现 F-07

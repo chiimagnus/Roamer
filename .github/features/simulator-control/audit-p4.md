@@ -47,6 +47,19 @@
 
 ## 发现项
 
+## 发现 F-1001
+
+- 任务：`P4-T3`
+- 严重级别：`Medium`
+- 状态：`Resolved`
+- 位置：`.github/features/simulator-control/todo.toml:176`
+- 摘要：`回归提交只有文字证据，多个测试 App 源码散落 /tmp，无法从仓库复跑`
+- 风险：`真实手势和键盘验收不可复现；用户明确要求统一测试 App 入库`
+- 预期修复：`合并重复探针为一个原生 visionOS App，纳入源码、构建脚本及验收说明，不引入新依赖或编译产物`
+- 验证：`从仓库构建安装，真实模拟器验证交互、SwiftUI key events、UIKit raw key codes 三个页面`
+- 解决证据：`9e06a50；Tests/SimulatorFixture按五个Swift文件单一职责合为一个App，无新增依赖/工程；仓库构建安装，interaction、SwiftUI按键、UIKit原始usage三个页面均真实收到事件，文本编辑及中文拒绝通过；bash -n、plutil、55/55 tests、release build通过。`
+
+
 ## 发现 F-01
 
 - 任务：`P4-T2`

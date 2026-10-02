@@ -81,7 +81,7 @@ roamer type "中文"
 
 当前实现与证据：
 
-- Simulator 当前输入模式从该设备 `dataPath/Library/Preferences/com.apple.keyboard.preferences.plist` 的 `KeyboardsCurrentAndNext[0]` 读取，不依赖 macOS 当前输入法；
+- Simulator 当前输入模式通过该设备 `simctl spawn <udid> defaults export com.apple.keyboard.preferences -` 查询实时 CFPreferences 的 `KeyboardsCurrentAndNext[0]`，不依赖 macOS 输入法或可能尚未落盘的缓存 plist；
 - 真实切换到 English (US) 后，xrOS 27 报告的当前模式为 `en_US@sw=QWERTY;hw=Automatic`；仅精确识别这个已验证标识，其他标识全部 fail-fast，不推断、不兼容猜测；
 - 当前 `type` 字符集收敛为英文字母、数字和空格；大写字母使用已验证 Shift HID；
 - 整段文本先生成完整按键计划，再确认 Simulator 输入模式，两个 preflight 都完成后才创建 HID controller；

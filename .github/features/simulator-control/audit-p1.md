@@ -50,26 +50,26 @@
 
 - 任务：`P1-T3`
 - 严重级别：`High`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`Sources/RoamerCore/Input/ScreenProjection.swift:35`
 - 摘要：`偏离中线的 pitch 投影忽略水平偏移：方向重投影不能回到目标像素；yaw50/pitch20 下 click 3448 1470 未命中截图中的按钮，clicks 保持3`
 - 风险：`所有像素坐标输入共享错误射线，角落或非零头部姿态下会点错或丢失手势`
 - 预期修复：`pitch 使用水平平面距离 hypot(focal,horizontalOffset)，保持球面轨迹与完整 HeadPose 世界变换；补全四角/非方形显示 round-trip 测试`
 - 验证：`ScreenProjectionTests；相同 screenshot 像素真实 click 由3增加到4；相邻 drag`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`09ea869；ScreenProjectionTests 5/5，四角射线 round-trip 覆盖；真实 yaw=50/pitch=20 截图像素3448,1470在修复前未命中，修复后 clicks 3→4；统一 App 的非零6DoF click/drag也真实生效。`
 
 
 ## 发现 F-1001
 
 - 任务：`P1-T1`
 - 严重级别：`High`
-- 状态：`Open`
+- 状态：`Resolved`
 - 位置：`Sources/RoamerCore/Support/ProcessRunner.swift:26`
 - 摘要：`ProcessRunner 在读取 stdout/stderr 前 waitUntilExit，超过 pipe 容量时永久阻塞；128KiB 双通道输出已复现`
 - 风险：`所有 simctl lifecycle 与 inventory 路径共享此 helper；输出足够多时 CLI 卡死`
 - 预期修复：`在等待退出前并行排空两个 pipe，不引入超时重试或 GUI fallback`
 - 验证：`ProcessRunner 双通道大输出回归；swift test；真实 lifecycle`
-- 解决证据：`<commit diff note or test/build output>`
+- 解决证据：`8a64fa6；ProcessRunnerTests 3/3；原 128KiB stdout/stderr 双管道卡死复现，修复后两路各 131072 字节完整返回。全套 swift test 55/55。`
 
 
 ## 发现 F-05
