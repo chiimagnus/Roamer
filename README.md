@@ -71,6 +71,10 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 
 `long-press`、`drag`、`magnify`、`rotate` 的 `duration-ms` 必须大于 0 且不超过 60000；超出范围会在发送手势前报错。
 
+## 验证
+
+纯逻辑与错误释放回归运行 `swift test`。真实 Simulator 测试使用仓库内的单一 [测试 App](Tests/SimulatorFixture/README.md)，包含手势、文本编辑及键盘事件探针；构建产物不入库。
+
 ## License
 
 AGPL-3.0。见 `LICENSE`。
