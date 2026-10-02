@@ -49,7 +49,7 @@
 - HID / XROS builder 继续按命令所需 symbol 逐个 `dlsym`，不存在即失败；
 - 唯一 booted AVP、screenshot 半开坐标范围、双手 scale/rotation、正 duration、`type` 字符集/输入模式等既有边界继续保留；
 - `pose` 新增 Double→Float 可表示性检查，避免有限 Double 在私有 ABI 边界变成 Inf/NaN；
-- `crown` 收敛到 `-20...20` 整数步，对应 0.05/step 的完整 0...1 沉浸度范围，避免无意义的大循环；
+- `crown` 收敛到 `-20...20` 整数步，聚合成一次 `delta × 0.05` 的相对 remote 输入；系统原生负责沉浸度曲线和限幅，不把输入步数当作线性 UI 沉浸度，也不逐步循环投递；
 - 没有增加 Xcode 多版本兼容层，也没有 host fallback；
 - 纯逻辑测试新增 Crown 范围与 pose Float 溢出边界；43/43 tests、release build、真实 `pose / crown / key` capability smoke 均通过，macOS focus 保持不变。
 
@@ -94,7 +94,7 @@ roamer type
 
 可复跑 UI 探针统一纳入 `Tests/SimulatorFixture/`：一个 App，入口、状态记录、交互、SwiftUI 按键、UIKit 原始键码各自独立文件。构建脚本和验收说明随源码入库，编译产物忽略；不新增测试框架或 production 调试入口。
 
-实际回归结果：
+初次实施回归记录（历史，本轮独立复审见 `audit-p4.md` 顶部）：
 
 - `status / screenshot / launch / terminate / reboot` 全部通过；screenshot 为 `3840×2160`，reboot 后 `launchd_sim` PID 确实变化，App 可重新 launch；
 - `home` 与完整 6DoF `pose` 均产生明显真实画面变化；

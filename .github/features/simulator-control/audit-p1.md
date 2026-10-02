@@ -11,7 +11,31 @@
 | P1-T3 | fa33788、06594db | CLI → SimulatorHIDController → IndigoMessages → PrivateRuntime → SimulatorKit；后续由 7759aa5 替换手写 Paloma 包 |
 | P1-T4 | fa33788 | lib/ 与 scripts/ 的全部旧入口已删除；production 无 host GUI 输入或 fallback |
 
-本轮验证证据目录：`/tmp/roamer-audit-20261002/`。最终 Gate 在本轮验证完成后回填。
+本轮验证证据目录：`/tmp/roamer-audit-20261002/`。下列结论取代历史 Gate，不引用历史 audit 作为证据。
+
+### 本轮 Gate：Go
+
+- 任务验收：4/4；本轮 F-1001、F-1002、F-1003 全部 Resolved，没有未解决的验收阻塞。
+- P1-T1：SwiftPM executable → CLI → Core 实际接通；release build、`roamer --help`、`roamer --version`（0.1.0）通过，没有孤立 target。
+- P1-T2：真实 3840×2160 截图、launch 后进程出现、terminate 后进程消失。reboot 的 launchd_sim PID 从 97338 变为 21052，boot session 标识也变化；重启后 App 可启动。结束恢复 Shutdown，`status` 明确失败而非误选其他设备。
+- P1-T3：Home 截图显示系统 App 网格；gaze 使 Button 高亮；左右手 click 均增加真实计数。yaw=50/pitch=20 的离中心目标在修复投影前未命中，修复后计数 3→4；六轴与重启姿态状态由 P2 同时验收。
+- P1-T4：原 lib/scripts 入口确已删除；production 没有 macOS GUI input、AX、AppleScript 或 host fallback。只读宿主监测中 Simulator 从未成为前台 App；统一手势批次的 13 个动作时间窗内，前台 Helium 和鼠标位置均未变化。其余时段存在外部鼠标操作，不把整场鼠标不变写成事实。
+
+### 本轮修复与验证日志
+
+| 提交 | 根因修复与验证 |
+| --- | --- |
+| 8a64fa6 | ProcessRunner 在等待退出前并发排空 stdout/stderr；原实现大量输出挂起，修复后各 128KiB 完整返回，成功/错误/不可执行三条回归通过 |
+| 09ea869 | screenshot 像素→球面 pitch 使用透视几何，不再把 yaw/pitch 当独立平面角；中心/四角/离中心投影往返测试及真实非零 pose 点击通过 |
+| fec3d91 | Home 的 down 已发送但 completion 失败时仍尝试 up；回归由仅 [down] 变为 [down, up]，保留原始错误；正式 Home 的 UI 效果已实测 |
+
+最终共同验证：`rtk swift test` 59/59、`rtk swift build -c release`、`git diff --check` 通过。证据：`swift-test-final.log`、`release-build-final.log`、`home-final.png`、`projection-fixed-*`、`reboot-before.json`、`reboot-after.json`、`shutdown-status.log`、`focus-mouse.log`。
+
+保留唯一 booted AVP、半开像素范围和 private API capability 检查：它们承担设备选择、坐标和 ABI 信任边界，不是可删除的兼容围栏。本轮实际平台为 Apple Silicon / Xcode 27 / visionOS 27，不宣称其他 SDK 已验收。
+
+## 审计台账（含保留的历史记录）
+
+本轮发现使用 F-100x 编号；其余历史记录不作为本轮 Gate 的依据。
 
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p1.md`

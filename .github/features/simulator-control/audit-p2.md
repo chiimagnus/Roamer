@@ -6,7 +6,7 @@
 
 | Task | 逐提交核对 | 当前接入 / 真实文件 |
 | --- | --- | --- |
-| P2-T1 | 44c8f9c（研究记录） | HandTrajectory 球面轨迹；临时 App DragGesture 的连续事件与 release 用于独立复验 |
+| P2-T1 | 44c8f9c（研究记录） | HandTrajectory 球面轨迹；已入库的统一测试 App 的 DragGesture 连续事件与 release 用于独立复验 |
 | P2-T2 | 006bffe | HandTrajectory.samples → SimulatorHIDController.drag → collection + pinch + hand pose |
 | P2-T3 | 3dc3802 | CLI.drag 已接入共享 HID，非移动 gaze 的假拖动 |
 | P2-T4 | f9b446d（验收记录） | 纵向 scroll 复用正式 drag，不另建 scroll transport |
@@ -15,7 +15,33 @@
 | P2-T7 | 4720756 | HandSide/--hand → 官方 builder 的左右手字段；click/long-press/drag 已真实收到左右手输入 |
 | P2-T8 | 5c1f26b | CLI.magnify/rotate → HandTrajectory → twoHandGesture；真实 scale=0.4、rotation=-45°、各 64 个连续事件/2 次 ended |
 
-还审查了后续 e30dd3f 的时长溢出修复；发现它未覆盖可转换为 Int 但会造成巨量分配的输入。新证据位于 `/tmp/roamer-audit-20261002/`。
+还审查了后续 e30dd3f 的时长溢出修复；发现它未覆盖可转换为 Int 但会造成巨量分配的输入。新证据位于 `/tmp/roamer-audit-20261002/`。下列 Gate 取代历史结论。
+
+### 本轮 Gate：Go
+
+- 任务验收：8/8；本轮 F-1001～F-1004 全部 Resolved，没有未解决的验收阻塞。研究/验收任务没有 production commit 是合理边界，不补造没有必要的生产模块。
+- P2-T1/T2/T3：正式 CLI 的球面手部轨迹产生连续 DragGesture，而不是只移动 gaze。HappyPianist 当前挂载的是 LibraryRecordCarousel，不是旧 Book Flow：左拖前/中/后从绿色 Bohemian Rhapsody 连续位移到橙色 DESPACITO。反向恢复并重新启动 App 后，确认原选中项已恢复；没有执行纵拖导入/删除。
+- P2-T4：Settings 原生纵向 ScrollView 上拖使侧栏/Siri 位置移动，下拖复原；横向与纵向都使用现有 drag，独立 scroll 不需要存在。
+- P2-T5/T7：最终统一 App 中左右手 click=2、longs=2、doubles=2、singles=0；左右手 drag 共 54 个连续事件、2 次 ended，随后的 click 仍可工作。最终长按按默认 700ms 独立验证；早期 650ms 批次曾未触发，不把该次作为通过证据，也不承诺任意目标 App/负载下所有自定义时长都会跨过其识别阈值。
+- P2-T6：x/y/z 平移、yaw/pitch/roll 分别改变真实截图中的位置/尺寸/旋转；组合 pose 后 click/drag 仍真实命中。保存非零 pose 后正式 reboot，再不执行 pose reset 即可按 identity 截图点击（计数 0→1），证明旧 boot session 的姿态没有污染新会话。Crown ±1、±4、±20 均有 SurfBoard 沉浸度变化；修复前 +4 与 +1 一样只到 0.0025，修复后 +4 到 0.04，+20 到 1，反向回到 0。
+- P2-T8：实际 App 接收到放大 2.5/1.5、缩小 0.4、旋转 +45/+30/-45 度；最终批次 magnify/rotate 各 63 个连续事件与 2 次 ended。以目标 App 数值及 ended 验收，不以发送成功或固定事件数量代替。
+
+### 本轮修复与验证日志
+
+| 提交 | 根因修复与验证 |
+| --- | --- |
+| b7e2171 | 共享 duration 校验为有限且 0 < ms ≤ 60000，覆盖 drag/magnify/rotate/long-press；1e20 修复前 SIGABRT，修复后四个正式命令均 exit 1 且未增加相关手势计数。删除不可能为空的轨迹守卫与冗余分母围栏；60000ms 至多 3751 个样本 |
+| a5da6a9 | 单手 down 已投递但完成回调失败时仍 release；删去不能证明投递状态的 isPinching 标志，失败后释放回归通过 |
+| 8d2f388 | 补齐左右手 drag 与双手轨迹中途失败的 release 回归；投递失败后的 pinch-off 实际出现在消息记录中 |
+| 1546a1f | Crown 多次快速调用读取同一旧动画状态而丢失增量；在拥有该职责的 controller 一次发送 delta×0.05。删除 CrownRotation 逐步包装与其失真的纯逻辑测试，新增实际 remote 调用回归；±4/±20 实测通过 |
+
+最终共同验证：59/59 tests、release build、diff check 通过。证据：`carousel-before.png`、`carousel-mid.png`、`carousel-after.png`、`happy-restore-check.png`、`settings-up-before.png`、`settings-up-after.png`、`settings-down-after.png`、`pose-check.jsonl`、`post-reboot-click.json`、`crown-fixed-multiple.log`、`final-fixture-check.jsonl`。
+
+保留 finite/Float 可表示性、duration 上限、scale/rotation 范围、boot-session 姿态缓存：它们分别保护实际 ABI、内存/执行成本、已验证手势域和已证明的重启状态隔离。Crown 的 0.05 是 remote 相对输入，不是线性 UI 沉浸度；曲线/限幅由系统处理。DeviceHub offset 表和未来兼容猜测不进入 production 或当前实施要求。
+
+## 审计台账（含保留的历史记录）
+
+本轮发现使用 F-100x 编号；其余历史记录不作为本轮 Gate 的依据。
 
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p2.md`

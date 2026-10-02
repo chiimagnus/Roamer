@@ -10,7 +10,34 @@
 | P4-T2 | 8c204d3 | capability selector 检查、Float 可表示性、crown 参数校验已真实接入；它们保护 ABI/输入信任边界，不删除 |
 | P4-T3 | a0dabba | 此提交仅修改 plan 的验收记录，没有 production 回归脚本；本轮重新执行全部正式命令，不把记录提交当成实测通过 |
 
-补核不在 todo 中的 ad0933b（--version 真正接入）与 e30dd3f（超大时长修复仍不完整）。本轮新证据集中在 `/tmp/roamer-audit-20261002/`，最终 Gate 待本轮结果回填。
+补核不在 todo 中的 ad0933b（--version 真正接入）与 e30dd3f（超大时长修复仍不完整）。本轮新证据集中在 `/tmp/roamer-audit-20261002/`，下列 Gate 取代历史结论。
+
+### 本轮 Gate：Go
+
+- 任务验收：3/3；本轮 F-1001、F-1002 全部 Resolved，没有未解决的验收阻塞。
+- 总体核对：19 个任务、15 个 todo 直接关联的不同提交，以及研究/验收/后续支撑提交均逐一读取并沿真实 CLI 执行路径核对。没有把 completed 标签、audit 文件存在或记录型提交当作实现证明。各任务的提交映射见本轮四份 audit 顶部。
+- P4-T1：旧 lib/scripts、内部 Legacy 命名、raw packet/host GUI fallback 已不存在；本轮又删除未声明键名 alias、逐次键盘包装、不可达轨迹围栏和 Crown 逐步包装。保留的 Xcode 私有 Legacy 类名是真实运行时名称；Crown remote 与 HID client 是不同职责，不是兼容双轨。
+- P4-T2：实际坏 `DEVELOPER_DIR=/tmp` fail-fast；像素半开范围、非有限/Float 溢出 pose、无效手侧、Crown/scale/rotation 越界、四个超大 duration 命令均真实拒绝，对应动作没有增加手势计数或改写文本。selector/symbol/ABI capability 检查仍是必要边界，不按版本号堆叠兼容分支。
+- P4-T3：全部公开命令均有 App、UI、系统进程或 SurfBoard 日志证据；横向列表和纵向系统 ScrollView 都有真实效果。源码新增的功能全部经正式 CLI 接入，没有 production 孤立试验模块。失败完成回调后的单手、双手、键盘、Home release 留下最小可运行回归。
+
+### 本轮修复与验证日志
+
+| 提交 | 修复与验证 |
+| --- | --- |
+| 9e06a50 | 将多份临时探针合并为 `Tests/SimulatorFixture/` 的单一 RoamerTestApp。App、JSON 状态、手势/文本、SwiftUI 按键、UIKit 原始键码五个 Swift 文件按职责拆分；同一 bundle、三个页面，无新依赖或新测试框架。直接从仓库源码编译、安装、冷启动三页，再以正式 CLI 与页面按钮验收切换及真实事件；产物只在忽略的 .build 中 |
+| 6c04b0b | 回归说明对齐当前 HappyPianist 横向唱片列表，不再要求旧 Book Flow；本地 plan 同时纠正 Crown 的单次相对输入与原生非线性契约 |
+
+最终命令与结果：`rtk swift test` 59/59；`rtk swift build -c release` 成功；`roamer --version` 为 0.1.0；`git diff --check` 通过。构建/安装/复跑入口在 `Tests/SimulatorFixture/README.md`、`Tests/SimulatorFixture/build.sh`，并已由项目 README 链接。
+
+宿主只读监测：第一段始终为 Helium，第二段始终为远程控制客户端，Simulator 从未成为前台；外部操作者在部分时段移动鼠标，因此仅以无外部移动的独立手势窗口证明动作不移动宿主鼠标。两个监测进程已经结束。回归后扫描 host DiagnosticReports 与该 device CrashReporter：本轮只有修复前超大 duration 复现产生的 roamer SIGABRT（12:27:59），没有新增 SurfBoard/backboardd/CoreSimulatorBridge 崩溃。
+
+收尾已恢复原中文输入模式和键盘 preferences、HappyPianist 原选中唱片、Simulator 原 Shutdown 状态；保留一个已安装的 `com.chiimagnus.RoamerTestApp` 供复跑，仅卸载本轮两个旧临时测试 App，没有删除用户其他 App 或数据。证据：`cleanup-summary.json`、`keyboard-restored.plist`、`restored-mode-rejection.log`、`shutdown-status.log`、`happy-restore-check.png`。
+
+已知支持范围：Apple Silicon / Xcode 27 / visionOS 27；type 的 ASCII/English (US) 与 Command 不支持边界保持明确。其他 SDK 的 private API 行为没有实测保证；不以猜测兼容层补齐。Go 表示本轮需求、可达不变量及相称验证满足，不表示对所有未来环境作“零 bug”保证。
+
+## 审计台账（含保留的历史记录）
+
+本轮发现使用 F-100x 编号；其余历史记录不作为本轮 Gate 的依据。
 
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p4.md`
@@ -46,6 +73,19 @@
   - `README.md`
 
 ## 发现项
+
+## 发现 F-1002
+
+- 任务：`P4-T3`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`Tests/SimulatorFixture/README.md:49`
+- 摘要：`新回归说明仍指向旧Book Flow；plan-p4仍把Crown的0.05相对输入描述成线性系统沉浸度和逐步循环`
+- 风险：`复跑者会寻找当前App没有挂载的旧页面，或用错误的线性沉浸度预期判断Crown`
+- 预期修复：`对齐当前HappyPianist横向唱片列表和单次聚合Crown输入，保留系统原生曲线与限幅事实`
+- 验证：`对照本轮carousel before/mid/after、恢复截图和crown-fixed-multiple.log及当前controller；文档diff检查`
+- 解决证据：`当前LibraryRecordCarousel以ScrollView(.horizontal)挂载；本轮carousel-before/mid/after.png确认连续滚动，happy-restore-check.png确认恢复。SimulatorCrownController只调用一次delta*0.05；crown-fixed-multiple.log验证±4/±20及原生非线性。已修正文档与本地plan；git diff --check通过。`
+
 
 ## 发现 F-1001
 
