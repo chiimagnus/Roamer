@@ -39,6 +39,10 @@ struct CLI {
             try simulator.screenshot(path, from: device)
             print(path)
 
+        case "observe":
+            try requireCount(rest, 2, usage: "roamer observe <bundle-id> <new-output-dir>")
+            print(try SimulatorObservation.capture(bundleID: rest[0], outputPath: rest[1]))
+
         case "launch":
             try requireCount(rest, 1, usage: "roamer launch <bundle-id>")
             let device = try simulator.bootedAVP()
@@ -344,6 +348,7 @@ struct CLI {
       roamer --version
       roamer status
       roamer screenshot [path]
+      roamer observe <bundle-id> <new-output-dir>
       roamer launch <bundle-id>
       roamer terminate <bundle-id>
       roamer reboot
@@ -366,6 +371,8 @@ struct CLI {
     crown delta 范围为 -20...20，总相对增量为 delta × 0.05，最终沉浸度由 Simulator 处理。
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
+    observe 保存实际截图与指定运行 App 的原生 AX；须使用新目录且父目录已存在，不自动启动 App。
+    AX frame 是未转换的平台/窗口坐标，不是截图 pixels 或 XYZ。渠道失败记录在 observation.json。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。
     """
 }

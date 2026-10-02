@@ -5,7 +5,7 @@
 | 渠道 | 实际证据 | 当前准入 |
 | --- | --- | --- |
 | Simulator 实际画面 | 既有 `simctl io screenshot`，3840×2160 | 已有能力 |
-| 指定 App AX | fixture Button/TextField 变化、蓝色实体、HappyPianist UI 读取成功 | 可支持普通 observe；生产后端尚未接入 |
+| 指定 App AX | fixture Button/TextField 变化、蓝色实体、HappyPianist UI 读取成功 | 已接入普通 observe；本轮正式 CLI 验证见 P2-T1 |
 | RealityKit 数字实体 | 官方库返回 fixture 7 实体/5 oracle 匹配；HappyPianist 虚拟钢琴 101 实体、90 自身模型 | fixture + 未修改 App 沉浸场景成立；不能宣传任意引擎/窗口 |
 | 原生 Axes/Bounds 实时覆盖层 | 文档有 Xcode 功能；已定位候选框架未建立无头控制/原值恢复契约 | 未成立，不实现猜测 selector/fallback |
 | 相机/玩家测量 pose | 本次场景配置只有 contentOrigin，未证明相机矩阵 | 不输出测量值；Roamer 历史 pose 不是真值 |
@@ -28,17 +28,11 @@ application factory 首次 callback token 为空；设备由当前 bridge 明确
 属性 ID：children=8、frame=21、label=33、role=45、value=53、traits=77。
 每属性保留实际 error code；例如无 value 的 App root 返回 3，不把它当空字符串，也不能把整个请求失败当空树。
 
-复跑：
+复跑（原型已迁入正式 CLI；不再按旧 PID 单独调用探针）：
 
 ```sh
-xcrun swiftc -package-name Roamer \
-  Sources/RoamerCore/Support/{RoamerError.swift,ProcessRunner.swift} \
-  Sources/RoamerCore/Runtime/PrivateRuntime.swift \
-  .github/features/simulator-feedback/probes/native-accessibility/Probe.swift \
-  -o .build/simulator-feedback/native-ax-probe
-# PID 必须重新从当前 device 的 UIKitApplication job 读取，不能沿用本文旧 PID。
-xcrun simctl spawn booted launchctl list
-.build/simulator-feedback/native-ax-probe <UDID> <PID> <new-json-path>
+swift build -c release
+.build/release/roamer observe <bundle-id> <new-output-dir>
 ```
 
 本次实证：
@@ -104,3 +98,20 @@ P1 调查已形成逐渠道准入结论：普通 AX 观察可实现；数字几�
 原生 SDK 调试可视化、数字快照与后续包围盒布局图是不同产物；不能拿 renderer 冒充 native overlay。
 
 官方依据：[Xcode 原生 Axes/Bounds](https://developer.apple.com/documentation/xcode/diagnosing-issues-in-the-appearance-of-your-running-app)、[RealityKit Debugger 演示](https://developer.apple.com/videos/play/wwdc2024/10172/)、[RealityKit AX 由 App 提供](https://developer.apple.com/documentation/visionos/improving-accessibility-support-in-your-app)、[dismiss 当前空间](https://developer.apple.com/documentation/swiftui/dismissimmersivespaceaction/callasfunction())。
+
+## P2-T1 正式 CLI 复验（2026-10-02）
+
+用户本轮确认接管暂存实现、独占 Simulator。开始时设备已 Booted、fixture PID 32652；结束恢复 Booted 和原先运行的 fixture/Calendar，不沿用 P1 的 Shutdown 初态。
+
+- `p2-checked-before` → 正式 `click 1519 893` → `p2-click-after`：同 PID 的原生 AX `CLICK 0` → `CLICK 1`。坐标来自本次 3840×2160 截图。
+- 正式 click 字段、`type 'Hello 2026'`、`key return` → `p2-text-after`：TextField value 和 `TEXT [Hello 2026] SUBMIT 1` 均正确；独立 oracle `p2-interaction-after.json` 的 clicks=1/text/submits=1 匹配。
+- `p2-unchanged`：再次观察的 AX nodes 与 PID 不变；前后键盘 `KeyboardsCurrentAndNext` 不变。无 attach/暂停、AX action、GUI 操作或输入法切换。
+- fixture 冷启动后 `p2-restarted` 返回原生 children error=3，正确记录 `failed`，不计成功；UI 就绪后的 `p2-focus-check` 得到新 PID 57810、`CLICK 0` 与 `TEXT [] SUBMIT 0`，所有 ID 绑定新 PID。
+- 未修改 HappyPianist：冷启动 `p2-happypianist` 同样如实失败；就绪后 `p2-happypianist-ready` 为 `available`，38 个原生节点，目标 PID 57894。结束已关闭本轮启动的 App。
+- `p2-rejections.json`：旧目录/未知 App/无效 bundle ID/尚未实现的 --debug/错误参数均非零退出；旧 observation 字节未变，没有创建拒绝请求的目录。
+- `p2-no-device.log`：真实 shutdown 后 observe 拒绝且不建目录，help 正常；finally 恢复 boot 并启动原 fixture/Calendar。未改变原 pose 或调试覆盖层。
+- 首次长间隔焦点采样 Helium→Zed，不冒称稳定；紧邻正式观察的 `p2-focus-check.log` 为 Zed→Zed，代码没有激活宿主应用的调用。
+- 原生边界检查缺失 selector/ABI 时拒绝；必需 children 缺失不再视为成功空树；拒绝 NUL 路径防止 POSIX 路径截断。AX prototype 已删除，正式后端仅一份。
+- 9 个 observation tests、全量 68 tests、release build 均 PASS；fixture build PASS（既有 sysroot warning）。日志为 `p2-swift-test.log` / `p2-release-build.log`。
+
+以上文件均位于忽略的 `.build/simulator-feedback/`；用户内容/图片不提交。本段仅证明 P2-T1，不替代原生覆盖层或几何/三视图验收。

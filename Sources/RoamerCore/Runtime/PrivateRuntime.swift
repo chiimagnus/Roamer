@@ -211,7 +211,7 @@ final class PrivateRuntime {
         return selector
     }
 
-    private static func requireInstanceMethod(
+    static func requireInstanceMethod(
         _ runtimeClass: AnyClass,
         _ name: String
     ) throws -> Selector {
