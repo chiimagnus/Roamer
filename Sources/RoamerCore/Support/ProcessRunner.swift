@@ -1,5 +1,9 @@
 import Foundation
 
+private final class ProcessOutput: @unchecked Sendable {
+    var data = Data()
+}
+
 package struct ProcessResult: Sendable {
     package let stdout: String
     package let stderr: String
@@ -23,14 +27,22 @@ package enum ProcessRunner {
             throw RoamerError.message("无法运行 \(executable)：\(error)")
         }
 
+        let stdoutOutput = ProcessOutput()
+        let stdoutReady = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            stdoutOutput.data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+            stdoutReady.signal()
+        }
+        let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
+        stdoutReady.wait()
 
         let stdout = String(
-            decoding: stdoutPipe.fileHandleForReading.readDataToEndOfFile(),
+            decoding: stdoutOutput.data,
             as: UTF8.self
         )
         let stderr = String(
-            decoding: stderrPipe.fileHandleForReading.readDataToEndOfFile(),
+            decoding: stderrData,
             as: UTF8.self
         )
         let result = ProcessResult(stdout: stdout, stderr: stderr, status: process.terminationStatus)

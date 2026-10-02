@@ -2,8 +2,7 @@ import Foundation
 
 package struct SimulatorDevice: Sendable {
     package let udid: String
-    package let name: String
-    package let runtimeIdentifier: String
+    package let dataPath: String
 }
 
 package struct DisplayGeometry: Sendable, Equatable {
@@ -16,16 +15,19 @@ private struct SimctlList: Decodable {
 }
 
 private struct SimctlDevice: Decodable {
-    let state: String
-    let name: String
     let udid: String
-    let isAvailable: Bool?
+    let dataPath: String
+    let deviceTypeIdentifier: String
 }
 
 package struct SimulatorService: Sendable {
     private let xcrun = "/usr/bin/xcrun"
+    private let stateStore: SimulatorStateStore
 
-    package init() {}
+    package init() {
+        stateStore = SimulatorStateStore()
+    }
+
 
     package func bootedAVP() throws -> SimulatorDevice {
         let result = try ProcessRunner.run(
@@ -43,19 +45,16 @@ package struct SimulatorService: Sendable {
             throw RoamerError.message("无法解析 simctl device 列表：\(error)")
         }
 
-        let matches = inventory.devices.flatMap { runtime, devices in
+        let matches = inventory.devices.values.flatMap { devices in
             devices.compactMap { device -> SimulatorDevice? in
-                guard
-                    device.name == "Apple Vision Pro",
-                    device.state == "Booted",
-                    device.isAvailable != false
-                else {
+                guard device.deviceTypeIdentifier.hasPrefix(
+                    "com.apple.CoreSimulator.SimDeviceType.Apple-Vision-Pro"
+                ) else {
                     return nil
                 }
                 return SimulatorDevice(
                     udid: device.udid,
-                    name: device.name,
-                    runtimeIdentifier: runtime
+                    dataPath: device.dataPath
                 )
             }
         }
@@ -70,8 +69,15 @@ package struct SimulatorService: Sendable {
         return matches[0]
     }
 
-    package func bootedDevicesDescription() throws -> String {
-        try ProcessRunner.run(xcrun, ["simctl", "list", "devices", "booted"]).stdout
+
+    package func keyboardInputMode(
+        for device: SimulatorDevice
+    ) throws -> SimulatorKeyboardInputMode {
+        let output = try ProcessRunner.run(
+            xcrun,
+            ["simctl", "spawn", device.udid, "defaults", "export", "com.apple.keyboard.preferences", "-"]
+        ).stdout
+        return try SimulatorKeyboardInputMode.decode(from: Data(output.utf8))
     }
 
     package func displayGeometry(for device: SimulatorDevice) throws -> DisplayGeometry {
@@ -93,7 +99,7 @@ package struct SimulatorService: Sendable {
         }
 
         guard let width, let height, width > 0, height > 0 else {
-            throw RoamerError.message("无法读取 AVP guest display 尺寸。")
+            throw RoamerError.message("无法读取 AVP Simulator display 尺寸。")
         }
 
         return DisplayGeometry(width: width, height: height)
@@ -117,6 +123,44 @@ package struct SimulatorService: Sendable {
         _ = try ProcessRunner.run(xcrun, ["simctl", "shutdown", device.udid])
         _ = try ProcessRunner.run(xcrun, ["simctl", "boot", device.udid])
         _ = try ProcessRunner.run(xcrun, ["simctl", "bootstatus", device.udid, "-b"])
+    }
+
+    package func headPose(for device: SimulatorDevice) throws -> HeadPose {
+        try stateStore.loadHeadPose(
+            udid: device.udid,
+            bootIdentifier: try bootIdentifier(for: device)
+        )
+    }
+
+    package func saveHeadPose(
+        _ headPose: HeadPose,
+        for device: SimulatorDevice
+    ) throws {
+        try stateStore.saveHeadPose(
+            headPose,
+            udid: device.udid,
+            bootIdentifier: try bootIdentifier(for: device)
+        )
+    }
+
+    private func bootIdentifier(for device: SimulatorDevice) throws -> String {
+        let bootstrapPath = URL(fileURLWithPath: device.dataPath)
+            .appendingPathComponent("var/run/launchd_bootstrap.plist")
+            .path
+        let attributes: [FileAttributeKey: Any]
+        do {
+            attributes = try FileManager.default.attributesOfItem(atPath: bootstrapPath)
+        } catch {
+            throw RoamerError.message("无法读取 AVP Simulator boot 标识：\(error)")
+        }
+
+        guard
+            let inode = attributes[.systemFileNumber] as? NSNumber,
+            let creationDate = attributes[.creationDate] as? Date
+        else {
+            throw RoamerError.message("AVP Simulator boot 标识不完整。")
+        }
+        return "\(inode.uint64Value):\(creationDate.timeIntervalSince1970)"
     }
 
     package func screenshot(_ path: String, from device: SimulatorDevice) throws {

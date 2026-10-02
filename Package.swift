@@ -11,7 +11,14 @@ let package = Package(
         .executable(name: "roamer", targets: ["RoamerCLI"])
     ],
     targets: [
-        .target(name: "RoamerCore"),
+        .target(
+            name: "RoamerPrivateABI",
+            publicHeadersPath: "include"
+        ),
+        .target(
+            name: "RoamerCore",
+            dependencies: ["RoamerPrivateABI"]
+        ),
         .executableTarget(
             name: "RoamerCLI",
             dependencies: ["RoamerCore"]
