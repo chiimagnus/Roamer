@@ -5,6 +5,7 @@ struct InteractionView: View {
     @State private var session = UUID().uuidString
     @State private var clicks = 0
     @State private var longs = 0
+    @State private var longPressTrace: [[String: Any]] = []
     @State private var doubles = 0
     @State private var singles = 0
     @State private var dragEvents = 0
@@ -23,12 +24,22 @@ struct InteractionView: View {
         writeProbeState([
             "session": session,
             "clicks": clicks, "longs": longs, "doubles": doubles, "singles": singles,
+            "longPressTrace": longPressTrace,
             "dragEvents": dragEvents, "dragEnds": dragEnds,
             "dx": translation.width, "dy": translation.height,
             "scale": scale, "magEvents": magEvents, "magEnds": magEnds,
             "rotation": rotation, "rotEvents": rotEvents, "rotEnds": rotEnds,
             "text": text, "submits": submits,
         ], name: "interaction.json")
+    }
+
+    private func recordLongPress(_ phase: String) {
+        if phase == "pressing" { longPressTrace = [] }
+        longPressTrace.append([
+            "phase": phase,
+            "uptime": ProcessInfo.processInfo.systemUptime,
+        ])
+        record()
     }
 
     var body: some View {
@@ -39,7 +50,11 @@ struct InteractionView: View {
                     .frame(width: 210, height: 70)
                 Text("LONG \(longs)").frame(width: 210, height: 70)
                     .background(.orange.opacity(0.5)).contentShape(Rectangle())
-                    .onLongPressGesture(minimumDuration: 0.5) { longs += 1; record() }
+                    .onLongPressGesture(minimumDuration: 0.5, perform: {
+                        longs += 1; recordLongPress("recognized")
+                    }, onPressingChanged: { pressing in
+                        recordLongPress(pressing ? "pressing" : "not-pressing")
+                    })
                 Text("DOUBLE \(doubles) SINGLE \(singles)").frame(width: 280, height: 70)
                     .background(.green.opacity(0.4)).contentShape(Rectangle())
                     .onTapGesture(count: 2) { doubles += 1; record() }

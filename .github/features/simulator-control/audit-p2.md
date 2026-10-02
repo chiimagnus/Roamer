@@ -1,5 +1,22 @@
 # Audit P2 - simulator-control
 
+## 2026-10-02 补充：650ms 长按定向复测
+
+本次只追踪 P2-T5 的 CLI → longPress → 共享 pinch → Paloma collection → App 长按识别路径，并覆盖共享 pinch 的 click/double-click 和左右手切换。没有依据历史 audit 下判断，也没有因为单次漏识别直接增大生产延时或添加重试。
+
+- 平台：原 AVP 设备 `28DABA38-C30B-44B1-9C2B-65D50F7FCC55`，Xcode 27 / visionOS 27；原状态 Shutdown。独占、串行 HID；先冷启动同一个 RoamerTestApp，按最新截图确认页面、目标位置及 identity pose。
+- 原测试 App 未加诊断前，baseline 38 个动作全部通过：650ms 12 次、700ms 6 次、400ms 2 次，以及 click/double-click/drag 18 次。交错左右手并复现原先 click → long-press → double-click → drag 的操作序列，而不只在静止目标上重复长按。
+- 在同一 App 增加最近一次长按的 `pressing / recognized / not-pressing` 单调时间记录后，timing 20 个测试全部通过，覆盖左右手 400/550/600/650/700ms。400ms 不识别，其他时长均只增加一次 longs。
+- 将动作后的等待从 1.5s 降到 50ms，burst 连续批次 38 个动作全部通过；左右手、长按和邻近动作均没有残留按压。所有长按的计数在 CLI 返回时已符合预期，继续观察没有迟到的额外识别。
+- 总计 96 个动作、60 次长按：650ms 28/28（左右各 14）、700ms 16/16、550ms 4/4、600ms 4/4；400ms 8/8 正确不识别。650ms 的 16 条 App 时序记录中，pressing 状态持续 626.54～668.78ms，recognized 回调距 pressing 回调 497.37～501.88ms；不把 App 回调时间当作 HID 发送时间或精确物理按压时钟。
+- 原始一次 650ms 漏识别本次没有复现，原因仍不能确定。新证据证明当前正常路径和连续操作能成功，不证明历史失败必然只是 App/负载问题，也不作所有环境下零偶发的承诺。没有新确认的生产 bug，不新造 finding；原 Go 维持，不凭猜测更改 HID、默认 700ms 或增加围栏。
+
+诊断源码和复跑说明提交：`f29dd7b`，只修改 `Tests/SimulatorFixture/InteractionView.swift` 与 `Tests/SimulatorFixture/README.md`，仍为一个 App、五个 Swift 职责模块。使用现有 build.sh 从仓库编译、安装，再用正式 release CLI 验收，没有新增 test framework 或 production 调试入口。onPressingChanged 的语义参照 [Apple 原生 API](https://developer.apple.com/documentation/swiftui/view/onlongpressgesture(minimumduration:maximumdistance:perform:onpressingchanged:))；500ms 是该测试 App 配置的阈值。
+
+证据目录：`/tmp/roamer-audit-20261002/`；复测命令为 `rtk python3 longpress-retest.py <App data container> baseline|timing|burst`，记录在 `longpress-baseline.jsonl`、`longpress-timing.jsonl`、`longpress-burst.jsonl`。最终截图 `longpress-final.png` 显示 LONG 34、CLICK 6、DOUBLE 6 / SINGLE 0、DRAG 126 / 6（诊断 App 重启后的计数）。
+
+验证：App 编译与真实运行通过；`rtk swift test` 59/59、`rtk swift build -c release`、`git diff --check` 通过。测试期间 launchd_sim/SurfBoard/backboardd PID 为 51739/51741/51763，未重启；宿主前台始终为 Zed Preview，没有激活 Simulator。未主动切换输入法或操作其他用户 App；测试结束终止测试 App 并恢复原 Shutdown，保留已安装的单一测试 App。
+
 ## 2026-10-02 独立逐提交复审
 
 历史审计不参与本轮判断；下表来自真实提交及源码。没有 production commit 的研究/验收任务，重新用正式 CLI + 真正 visionOS App 验证，而不是相信 todo 的 completed 标记。
