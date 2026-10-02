@@ -35,6 +35,7 @@ cat "$data_dir/Documents/raw-keys.json"
 各页面出现后写入新 `session`；等待新 session，而不是把 launch 成功或上次遗留的 JSON 当成 App 已就绪。切换页面会重置该页面的计数。
 
 - **Interaction**：标准 Button 计数验证 gaze 高亮和 click；橙色区域验证至少 500ms 长按；绿色区域验证双击只增加 doubles、不增加 singles。蓝色区域记录 drag/magnify/rotate 的连续事件及 ended，`dx/dy`、`scale`、`rotation` 是 App 实际收到的值。验证左右手、横/纵拖动、放大/缩小、正/负旋转；松手后必须出现 ended，接着 click 应仍可工作。
+- **长按时序**：`longPressTrace` 记录最近一次手势的 `pressing`、`recognized`、`not-pressing` 与单调 `uptime`。正常识别时，`recognized - pressing` 约为 500ms；400ms 应没有 `recognized`，650ms 应使 longs 增加一次。记录的是 App 的手势状态回调，不是 HID 投递时间；先确认页面就绪，再区分未命中、按压状态提前结束和识别回调延迟，不能用 CLI 总耗时代替实际按压时序。
 - **Interaction 文本字段**：点击字段获取焦点。在已由用户切换至 English (US) 的输入模式下，`type "Hello 2026"`，再 `key left`、`key delete`、`key return`，应得到 `Hello 206`、submits=1。输入法切换是异步的；先用 `xcrun simctl spawn booted defaults export com.apple.keyboard.preferences -` 确认 `KeyboardsCurrentAndNext` 首项稳定为 `en_US@sw=QWERTY;hw=Automatic` 再输入，不读可能滞后的磁盘 plist。中文模式和不支持的文本应报错且不修改字段；不要为测试自动改变用户输入法。
 - **Key events**：自动聚焦字段并消费按键，不用于文本编辑。每个键应有 `.down`/`.up`，Shift/Control/Option 的 SwiftUI modifiers 分别为 2/4/8；下一次普通键应回到 0。记录字符和修饰键，用来判断真正进入 App，而非仅 HID 投递成功。
 - **Raw key codes**：UIKit first responder 记录 USB HID usage、modifierFlags 与 down/up，供核对底层键盘 transport；切换离开后不再接收键盘。
