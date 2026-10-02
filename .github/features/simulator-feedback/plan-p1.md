@@ -27,7 +27,9 @@
 - Add: `Tests/SimulatorFixture/SpatialSceneView.swift`，负责空间入口、退出和 RealityView/ImmersiveSpace 呈现。
 - Add: `Tests/SimulatorFixture/SpatialSceneState.swift`，负责实体构造、交互后的实际属性与独立测试记录。
 - Reuse: `Tests/SimulatorFixture/ProbeState.swift::writeProbeState`。
+- Add: `Tests/SimulatorFixture/Tools/verify-spatial.py`，使用标准库复核真实记录的父级矩阵、零厚度平面与交互、重入结果，不引入测试框架。
 - Modify: `Tests/SimulatorFixture/README.md`；`build.sh` 仅在合法调试连接确实需要时调整调试构建参数。
+- Modify: `Tests/SimulatorFixture/Info.plist`，声明 `UIApplicationSceneManifest.UIApplicationSupportsMultipleScenes = true`，这是窗口并存 ImmersiveSpace 的系统前提；真实拒绝日志见 `.build/simulator-feedback/open-space-failure.log`。
 
 **当前行为与不变量：** fixture 只有窗口内的平面手势与键盘页面；没有能够校对世界/父子变换的 3D 场景。新增内容必须挂载在原 App，而不是另建 App 或工程。
 

@@ -1,0 +1,5 @@
+expression -l objc++ -- @import Foundation; @import ObjectiveC;
+expression -l objc++ -O -- [(id)NSClassFromString(@"libViewDebuggerSupport.SpatialSceneDebugRepresentationWrapper") performSelector:NSSelectorFromString(@"fallback_debugHierarchyGroupingIDs")]
+expression -l objc++ -O -- [(id)NSClassFromString(@"libViewDebuggerSupport.SpatialSceneDebugRepresentationWrapper") performSelector:NSSelectorFromString(@"fallback_debugHierarchyPropertyDescriptions")]
+expression -l objc++ -O -- [(id)[(id)NSClassFromString(@"DebugHierarchyRequest") alloc] init]
+image lookup -rn 'RealityKit.Debugger|RE.*(Debug.*(Coordinate|Bounding|Drawing|Entity)|Scene.*(Serialize|Export)|DebugDraw.*(Axes|Bounds))'

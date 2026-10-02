@@ -6,14 +6,16 @@ Roamer 已能向 AVP Simulator 投递动作和保存截图，但投递成功不�
 
 主路线是复用 Simulator/Xcode 的原生观测与调试能力，尽可能适用于未经修改的 App。不能把“每个目标 App 都集成自定义导出 SDK”作为解决办法。测试 App 的内部记录只用于核对结果，不是生产观测后端。
 
-本次授权仅创建 feature plan，不实施功能、不启动 Simulator 或附加调试器。后续执行按 `todo.toml` 跟进；阶段结束进入 `plan-task-auditor`，逐任务核对源码、提交和真实证据，不借用旧 feature 的 audit 结论。
+用户已于 2026-10-02 授权执行本 feature。执行按 `todo.toml` 跟进；阶段结束进入 `plan-task-auditor`，逐任务核对源码、提交和真实证据，不借用旧 feature 的 audit 结论。
+
+用户随后明确要求计划、审计与探索脚本也提交到 Git，覆盖 Skill 的默认本地保存规则。只提交文本计划/脚本；`.build/simulator-feedback/` 的二进制、截图和真实 App 内容继续忽略，不公开。
 
 ## 当前事实与依据
 
 - `CLI.run(arguments:)` 的 `screenshot` 经 `SimulatorService.screenshot` 调用 `simctl io screenshot`；没有观察、无障碍或实体导出命令。`SimulatorHIDController.send` 只等待输入完成回调。
 - `SimulatorService.bootedAVP` 已负责唯一启动 AVP 的选择；`PrivateRuntime` 已负责当前 Xcode、CoreSimulator 设备和 SimulatorKit 的连接。新能力应沿这些入口接入，不建立第二套设备选择或宿主输入路径。
 - `SimulatorStateStore` 保存 Roamer 发出的头部姿态，不是 Simulator 回读的相机/传感器值；缺失记录还会返回 identity，不能据此推断真实视角。
-- 仓库只有一个 `RoamerTestApp`，现有三个页面验证手势、文本与键盘；尚无 RealityKit 空间基准。构建脚本仅编译目录顶层的 Swift 文件，测试 App 不属于生产 SwiftPM target。
+- 仓库只有一个 `RoamerTestApp`，前三页验证手势、文本与键盘；P1-T1 已提交第四页 RealityKit 空间基准。构建脚本编译目录顶层模块，测试 App 不属于生产 SwiftPM target。
 - 苹果确认 immersive 内容可显示坐标轴和包围盒。Axes/Bounds 针对被调试 App；Collision Shapes & Axes 在 Shared Space 的覆盖更广，不能等同于全部 App 的完整实体树。[原生可视化说明](https://developer.apple.com/documentation/xcode/diagnosing-issues-in-the-appearance-of-your-running-app)
 - RealityKit Debugger 可捕获实体层级和 3D 快照，但官方展示的是 Xcode 工作流，没有据此证明无头调用已经可用。[官方演示](https://developer.apple.com/videos/play/wwdc2024/10172/)
 - RealityKit 实体需要 App 提供无障碍描述，AX 树不等于几何树；当前官方文档限制原生 visionOS App 的 UI Testing，不能套用 iOS 的 XCUI 抓树方案。[visionOS 无障碍](https://developer.apple.com/documentation/visionos/improving-accessibility-support-in-your-app)、[XCUIAutomation](https://developer.apple.com/documentation/xcuiautomation)
