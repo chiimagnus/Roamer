@@ -6,7 +6,7 @@ package struct KeyboardChord: Equatable, Sendable {
     package init(_ specification: String) throws {
         let tokens = specification
             .split(separator: "+", omittingEmptySubsequences: false)
-            .map { String($0).lowercased() }
+            .map { String($0) }
 
         guard !tokens.isEmpty, tokens.allSatisfy({ !$0.isEmpty }) else {
             throw RoamerError.message("key chord 格式无效：\(specification)")
@@ -19,7 +19,7 @@ package struct KeyboardChord: Equatable, Sendable {
         var usages: [UInt32] = []
 
         for token in modifierTokens {
-            let modifier = try KeyboardModifier(token)
+            let modifier = try KeyboardModifier(token.lowercased())
             guard seenModifiers.insert(modifier).inserted else {
                 throw RoamerError.message("modifier 不能重复：\(token)")
             }
@@ -59,8 +59,10 @@ private enum KeyboardModifier: String, Hashable {
 
 private enum KeyboardKey {
     static func usageCode(for token: String) throws -> UInt32 {
-        if token.count == 1, let scalar = token.unicodeScalars.first {
+        if token.unicodeScalars.count == 1, let scalar = token.unicodeScalars.first {
             switch scalar.value {
+            case 65...90:
+                return 0x04 + (scalar.value - 65)
             case 97...122:
                 return 0x04 + (scalar.value - 97)
             case 49...57:
@@ -72,7 +74,7 @@ private enum KeyboardKey {
             }
         }
 
-        switch token {
+        switch token.lowercased() {
         case "return": return 0x28
         case "escape": return 0x29
         case "delete": return 0x2A

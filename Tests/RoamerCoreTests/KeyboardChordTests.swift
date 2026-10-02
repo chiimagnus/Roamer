@@ -16,6 +16,7 @@ final class KeyboardChordTests: XCTestCase {
 
     func testLettersAndDigitsUseUSBKeyboardUsages() throws {
         XCTAssertEqual(try KeyboardChord("a").usageCodes, [0x04])
+        XCTAssertEqual(try KeyboardChord("A").usageCodes, [0x04])
         XCTAssertEqual(try KeyboardChord("z").usageCodes, [0x1D])
         XCTAssertEqual(try KeyboardChord("1").usageCodes, [0x1E])
         XCTAssertEqual(try KeyboardChord("9").usageCodes, [0x26])
@@ -24,6 +25,7 @@ final class KeyboardChordTests: XCTestCase {
 
     func testVerifiedModifiersPrecedeKey() throws {
         XCTAssertEqual(try KeyboardChord("shift+tab").usageCodes, [0xE1, 0x2B])
+        XCTAssertEqual(try KeyboardChord("SHIFT+TAB").usageCodes, [0xE1, 0x2B])
         XCTAssertEqual(try KeyboardChord("control+a").usageCodes, [0xE0, 0x04])
         XCTAssertEqual(try KeyboardChord("option+left").usageCodes, [0xE2, 0x50])
         XCTAssertEqual(
@@ -49,6 +51,12 @@ final class KeyboardChordTests: XCTestCase {
     func testUndocumentedCompatibilityAliasesFail() {
         for alias in ["enter", "esc", "backspace"] {
             XCTAssertThrowsError(try KeyboardChord(alias))
+        }
+    }
+
+    func testUnsupportedUnicodeIsNotConvertedToASCIIKeys() {
+        for key in ["a\u{0301}", "1\u{FE0F}\u{20E3}", "İ", "shift+a\u{0301}", "K", "shift+K"] {
+            XCTAssertThrowsError(try KeyboardChord(key))
         }
     }
 }
