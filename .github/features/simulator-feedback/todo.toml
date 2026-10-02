@@ -1,0 +1,66 @@
+version = 1
+current_task_id = ""
+
+[[tasks]]
+id = "P1-T1"
+title = "建立单一测试 App 的空间观测基准"
+status = "pending"
+plan = "plan-p1.md#p1-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P1-T2"
+title = "验证原生调试覆盖层与实体快照无头通道"
+status = "pending"
+plan = "plan-p1.md#p1-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P1-T3"
+title = "验证 Simulator 原生 AX 读取支持范围"
+status = "pending"
+plan = "plan-p1.md#p1-t3"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T1"
+title = "接入来源明确的 observe 输出与已验证原生信息"
+status = "pending"
+plan = "plan-p2.md#p2-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T2"
+title = "接入显式原生 XYZ 与边界调试画面"
+status = "pending"
+plan = "plan-p2.md#p2-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T1"
+title = "接入指定 App 的原生实体快照"
+status = "pending"
+plan = "plan-p3.md#p3-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T2"
+title = "从同一次真实快照生成空间概览与三视图"
+status = "pending"
+plan = "plan-p3.md#p3-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T3"
+title = "完成跨 App 反馈闭环复测与文档收尾"
+status = "pending"
+plan = "plan-p3.md#p3-t3"
+commit = ""
+note = ""
