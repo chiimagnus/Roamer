@@ -7,7 +7,7 @@
 | Simulator 实际画面 | 既有 `simctl io screenshot`，3840×2160 | 已有能力 |
 | 指定 App AX | fixture Button/TextField 变化、蓝色实体、HappyPianist UI 读取成功 | 已接入普通 observe；本轮正式 CLI 验证见 P2-T1 |
 | RealityKit 数字实体 | 官方库返回 fixture 7 实体/5 oracle 匹配；HappyPianist 虚拟钢琴 101 实体、90 自身模型 | fixture + 未修改 App 沉浸场景成立；不能宣传任意引擎/窗口 |
-| 原生 Axes/Bounds 实时覆盖层 | 文档有 Xcode 功能；已定位候选框架未建立无头控制/原值恢复契约 | 未成立，不实现猜测 selector/fallback |
+| 原生 Axes/Bounds 实时覆盖层 | DebugHelper DTX 已读写真实开关、截图看到 XYZ/边界，正常/抓图失败均恢复原值 | 实验成立；自动截图渲染同步及并发会话安全尚未满足正式准入，见 P2-T2 续验 |
 | 相机/玩家测量 pose | 本次场景配置只有 contentOrigin，未证明相机矩阵 | 不输出测量值；Roamer 历史 pose 不是真值 |
 
 环境：2026-10-02，Apple Silicon，Xcode 27 beta `27A5209h`，xrOS 27 `24M5306g`。
@@ -115,3 +115,46 @@ P1 调查已形成逐渠道准入结论：普通 AX 观察可实现；数字几�
 - 9 个 observation tests、全量 68 tests、release build 均 PASS；fixture build PASS（既有 sysroot warning）。日志为 `p2-swift-test.log` / `p2-release-build.log`。
 
 以上文件均位于忽略的 `.build/simulator-feedback/`；用户内容/图片不提交。本段仅证明 P2-T1，不替代原生覆盖层或几何/三视图验收。
+
+## P2-T2 续验（2026-10-03）
+
+本轮重新检查时设备为 Shutdown，与上一轮结束时不同；沿既有独占授权启动验收，不操作宿主 GUI、输入法或安全设置。只打开测试 App 的 mixed 空间，未操作用户的业务数据。
+
+### 已核对的原生链路
+
+- Xcode `DebugHelperSupportUI.ideplugin` → `RealityToolsDeviceSupport.DTXServiceConnection` → capability `com.apple.DebugHelper` v1。没有实例化 Xcode UI controller。
+- `IDEiOSSupportCore` 的 Simulator transport：SimDevice `lookup:error:` 查找 `com.apple.instruments.dtservicehub.sim`；`DTXMachTransport.fileDescriptorHandshakeWithSendPort:`；`DTXConnection.initWithTransport:`、resume；`DTServiceHubClient.blessSimulatorServiceHub:error:`。只连接 Apple 原有服务，无自定义驻留 agent。
+- 核实 ABI：lookup `I32@0:8@16^@24`；handshake `@20@0:8I16`；bless `B32@0:8@16^@24`；DTXChannel `sendControlAsync:replyHandler:` 为 `v32@0:8@16@?24`。JSON Data 通过 DTXMessage `messageWithData:` 发送 control，而不是猜测 selector 或命令格式。
+- Server 为 runtime 自带 `DebugHelperDTXService.bundle` 与 `DebugHelperXPCService.xpc`。`setEntityDebugOptionsTarget` 验证运行目标后更新 manager 的 applicationBundleID，并触发 getter；实体选项使用 RSSDebugService 按 bundleID 查询/设置，global 选项为另一类。绑定查询目标不是直接设置一个系统全局目标，但尚未证明所有并发客户端的 manager/状态互不干扰。
+- Command JSON 是 unkeyed array：`["setEntityDebugOptionsTarget", "<bundle-id>"]`；设置采用 `["visualizationsUpdated", ["entity_axis", true, "entity_bounds", true]]`。字典按枚举键交错编码为数组，不是普通 JSON object。Update 同样使用 `visualizationsUpdated`。
+- 初始 `[]` 是尚未载入状态，**不是所有开关关闭**。完整读回含十项 Bool。只发起连接但立即结束/只接受第一条消息，会丢掉后续真实状态；`p2-overlay-bound-complete.log` 才是有效完整查询。
+- channel 创建后不可再次 resume；先前错误 resume 导致自己的 helper 在 `_dispatch_lane_resume` trap，不是 Simulator 崩溃。修正为只对拥有的 connection 平衡 suspend/resume，handler 装好后再恢复分发。所有结束路径取消自己的 channel/connection，不接管既有连接。
+
+复跑编译（实验材料，不是产品命令）：
+
+```sh
+xcrun swiftc -package-name Roamer \
+  Sources/RoamerCore/Support/RoamerError.swift \
+  Sources/RoamerCore/Support/ProcessRunner.swift \
+  Sources/RoamerCore/Runtime/PrivateRuntime.swift \
+  .github/features/simulator-feedback/probes/native-overlay/Probe.swift \
+  -o .build/simulator-feedback/overlay-probe
+.build/simulator-feedback/overlay-probe <UDID> <running-bundle-id>
+```
+
+### 实测与反证
+
+- fixture PID 47918，mixed 空间已真实打开。`p2-overlay-cycle.log`：取得原始 axis=false/bounds=false → true/true → false/false；`p2-overlay-independent-readback.log` 使用新连接确认恢复，不仅看本地变量。
+- **反证**：`p2-overlay-enabled.png` 在状态回包后立即截图，没有看到覆盖层。不能把 `visualizationsUpdated` 等同于已渲染，更不能宣布自动 capture 成功。
+- `p2-overlay-held.log` 保持同一已开启会话，另一个只读连接在 `p2-overlay-held-readback.log` 确认 true/true；`p2-overlay-held-independent.png` / `p2-overlay-held.png` 真实出现 RGB XYZ 轴及绿色边界，涵盖测试窗口与空间实体。截图没有后期贴标；手工继续后恢复，非固定 sleep，也不构成自动同步契约。
+- `p2-overlay-axis-baseline.log` 构造 axis=true/bounds=false 的既有状态；嵌套正常捕获 `p2-overlay-preserved.log` 恢复 true/false，独立 `p2-overlay-preserved-readback.log` 确认。证明不是“全部关闭”。
+- `p2-overlay-capture-failure.log` 用不存在的父目录造成真正 simctl screenshot 失败，仍恢复 true/false 并取消自有连接；`p2-overlay-failure-readback.log` 独立确认。该版 helper 的顶层 Swift throw 导致自身 exit 133；归档版本改为 stderr/exit 1，不能将旧错误退出误算为测试 App 崩溃。
+- 外层会话结束后 `p2-overlay-final-state.log` 再次独立读回 axis=false/bounds=false，全部十项与本轮原值一致。实验前后 `spatial.json` 与 `p2-overlay-oracle-before.json` 字节一致，无实体/点击/拖动状态变化。
+
+### 尚未满足的准入
+
+1. 没有建立“选项已作用于当前渲染帧”的原生 completion/fence；已实测存在 setter 状态正确而截图仍旧的窗口。不可堆固定等待或把任意画面变化当作覆盖层出现。
+2. 还没有跨客户端选项所有权/冲突拒绝契约，以及进程中断时可靠恢复的产品实现。多个会话设置同一 bundleID 会触及同一组选项，不能把独占测试授权当作产品天然独占。
+3. 未修改第二个 3D App 的覆盖层验收尚未完成；既有 HappyPianist 数字几何证据不能替代它。
+
+因此不添加猜测时序的正式 `--debug`，P2-T2 不标记完成，P2 不给 Go。已成立的读写与恢复证据保留，剩余问题不是“完全找不到原生入口”。用户已于 2026-10-03 明确允许调整门禁，先实施独立的 P3 实体快照与三视图；完整 feature 验收不因此缩减。

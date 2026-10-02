@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P2-T2"
+current_task_id = ""
 
 [[tasks]]
 id = "P1-T1"
@@ -36,10 +36,10 @@ note = "9 observation/68全量测试、release与fixture build PASS；正式clic
 [[tasks]]
 id = "P2-T2"
 title = "接入显式原生 XYZ 与边界调试画面"
-status = "in_progress"
+status = "blocked"
 plan = "plan-p2.md#p2-t2"
 commit = ""
-note = "新证据：DebugHelperSupportUI的com.apple.DebugHelper DTX协议；先只读核对当前状态/目标恢复，不向未知ABI写入"
+note = "DTX读写/真实XYZ边界/正常与失败恢复已实证；setter回包先于画面，尚无渲染完成及并发会话契约。用户2026-10-03授权门禁例外先实施P3；native-probe.md续验"
 
 [[tasks]]
 id = "P3-T1"

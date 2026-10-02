@@ -3,6 +3,7 @@
 用户明确要求入库；它们是实验材料，不是正式 CLI 的第二套后端。有效调用、ABI 与证据见 `../native-probe.md`，原始用户内容在忽略的 `.build/simulator-feedback/`。
 
 - `runtime-methods.py`：仅枚举当前 Xcode 的指定 ObjC 类/方法编码。
+- `native-overlay/Probe.swift`：DebugHelper DTX 实验。默认仅绑定查询目标并读取真实开关；额外 screenshot-path 会暂时开启实体轴/边界、截图并恢复原值。`--axis-only --hold` 仅供独占验收构造既有开启状态；输入换行后截图并恢复，不能用终止进程代替结束。尚无渲染完成 fence、并发会话仲裁或信号中断恢复，**不是正式 --debug 后端，不得在共享调试会话运行**。编译/有效结果见 `../native-probe.md` 的 P2-T2 续验。
 - 原生 AX prototype 已由正式 `roamer observe` 取代并删除；历史 ABI 和原始证据索引仍见 `../native-probe.md`，不维护第二套连接后端。
 - `native-scene/lldb-inspect.py`：拥有成功 attach 才在 finally detach。需要传 PID/command path；只接受 `PROBE COMPLETE` 与实际 getter 成功的新文件。
 - `load-support.lldb` / `reset.lldb` / `capture.lldb`：目前成立的官方库加载、typed cache reset、新 UUID 数字捕获；会暂停 App 并生成 tmp 资产。
