@@ -18,6 +18,7 @@ struct SpatialSceneControls: View {
                 Task {
                     if state.isOpen {
                         await dismissImmersiveSpace()
+                        state.finish()
                     } else {
                         switch await openImmersiveSpace(id: "SpatialScene") {
                         case .opened: break
