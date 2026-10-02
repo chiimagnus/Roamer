@@ -42,6 +42,50 @@ final class SimulatorHIDControllerTests: XCTestCase {
         XCTAssertEqual(client.keys.map(\.usage), [0xE0, 0xE1, 0x04, 0x04, 0xE1, 0xE0])
         XCTAssertEqual(client.keys.map(\.operation), [1, 1, 1, 2, 2, 2])
     }
+
+    func testFailedDragMovementReleasesEitherHand() throws {
+        for hand in [HandSide.left, .right] {
+            let client = FailingHIDClient(failureIndex: 3)
+            let controller = SimulatorHIDController(
+                client: client,
+                messages: IndigoMessages(runtime: try PrivateRuntime())
+            )
+
+            XCTAssertThrowsError(try controller.drag(
+                fromX: 1920, fromY: 1080, toX: 2200, toY: 1080,
+                durationMilliseconds: 100, hand: hand,
+                geometry: DisplayGeometry(width: 3840, height: 2160)
+            ))
+            XCTAssertEqual(client.pinches, [false, true, true, false])
+        }
+    }
+
+    func testFailedTwoHandMovementReleasesBothHands() throws {
+        let gestures: [(SimulatorHIDController) throws -> Void] = [
+            { controller in
+                try controller.magnify(
+                    x: 1920, y: 1080, scale: 1.5, durationMilliseconds: 100,
+                    geometry: DisplayGeometry(width: 3840, height: 2160)
+                )
+            },
+            { controller in
+                try controller.rotate(
+                    x: 1920, y: 1080, degrees: 45, durationMilliseconds: 100,
+                    geometry: DisplayGeometry(width: 3840, height: 2160)
+                )
+            },
+        ]
+        for gesture in gestures {
+            let client = FailingHIDClient(failureIndex: 3)
+            let controller = SimulatorHIDController(
+                client: client,
+                messages: IndigoMessages(runtime: try PrivateRuntime())
+            )
+
+            XCTAssertThrowsError(try gesture(controller))
+            XCTAssertEqual(client.pinches, [false, true, true, false])
+        }
+    }
 }
 
 private final class FailingHIDClient: NSObject, SimulatorHIDClientMessaging {
