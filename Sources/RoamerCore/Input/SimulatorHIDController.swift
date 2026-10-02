@@ -18,6 +18,12 @@ package final class SimulatorHIDController {
         self.headPose = headPose
     }
 
+    init(client: SimulatorHIDClientMessaging, messages: IndigoMessages) {
+        self.client = client
+        self.messages = messages
+        headPose = .identity
+    }
+
     package func home() throws {
         try send(messages.homeButton(eventType: 1))
         usleep(60_000)
@@ -45,14 +51,6 @@ package final class SimulatorHIDController {
         return pose
     }
 
-    package func keyDown(usageCode: UInt32) throws {
-        try send(messages.keyboard(usageCode: usageCode, isDown: true))
-    }
-
-    package func keyUp(usageCode: UInt32) throws {
-        try send(messages.keyboard(usageCode: usageCode, isDown: false))
-    }
-
     package func keyChord(_ usageCodes: [UInt32]) throws {
         guard !usageCodes.isEmpty else {
             throw RoamerError.message("key chord 不能为空")
@@ -61,17 +59,17 @@ package final class SimulatorHIDController {
         var pressed: [UInt32] = []
         do {
             for usageCode in usageCodes {
-                try keyDown(usageCode: usageCode)
                 pressed.append(usageCode)
+                try send(messages.keyboard(usageCode: usageCode, isDown: true))
                 usleep(15_000)
             }
             for usageCode in pressed.reversed() {
-                try keyUp(usageCode: usageCode)
+                try send(messages.keyboard(usageCode: usageCode, isDown: false))
                 usleep(15_000)
             }
         } catch {
             for usageCode in pressed.reversed() {
-                try? keyUp(usageCode: usageCode)
+                try? send(messages.keyboard(usageCode: usageCode, isDown: false))
             }
             throw error
         }
@@ -272,7 +270,6 @@ package final class SimulatorHIDController {
         )
         usleep(50_000)
 
-        var isPinching = false
         do {
             try send(
                 collection(
@@ -281,7 +278,6 @@ package final class SimulatorHIDController {
                     pinching: true
                 )
             )
-            isPinching = true
             Thread.sleep(forTimeInterval: holdMilliseconds / 1000)
             try send(
                 collection(
@@ -291,15 +287,13 @@ package final class SimulatorHIDController {
                 )
             )
         } catch {
-            if isPinching {
-                try? send(
-                    collection(
-                        gazeRay: gazeRay,
-                        hand: hand,
-                        pinching: false
-                    )
+            try? send(
+                collection(
+                    gazeRay: gazeRay,
+                    hand: hand,
+                    pinching: false
                 )
-            }
+            )
             throw error
         }
     }
