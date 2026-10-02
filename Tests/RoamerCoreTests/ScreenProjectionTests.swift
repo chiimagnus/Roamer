@@ -54,4 +54,29 @@ final class ScreenProjectionTests: XCTestCase {
             )
         )
     }
+
+    func testOffCenterGazeRaysProjectBackToScreenshotPixels() throws {
+        for geometry in [
+            DisplayGeometry(width: 3840, height: 2160),
+            DisplayGeometry(width: 1920, height: 1920),
+        ] {
+            for (pixelX, pixelY) in [
+                (0.0, 0.0),
+                (geometry.width - 1, 0),
+                (0, geometry.height - 1),
+                (geometry.width - 1, geometry.height - 1),
+                (geometry.width / 2, geometry.height / 2),
+                (geometry.width * 0.8, geometry.height * 0.7),
+            ] {
+                let angles = try ScreenProjection.angles(x: pixelX, y: pixelY, geometry: geometry)
+                let ray = HeadPose.identity.gazeRay(for: angles)
+                let focal = geometry.width / 2
+                let projectedX = geometry.width / 2 - Double(ray.directionX / ray.directionZ) * focal
+                let projectedY = geometry.height / 2 + Double(ray.directionY / ray.directionZ) * focal
+
+                XCTAssertEqual(projectedX, pixelX, accuracy: 0.001)
+                XCTAssertEqual(projectedY, pixelY, accuracy: 0.001)
+            }
+        }
+    }
 }

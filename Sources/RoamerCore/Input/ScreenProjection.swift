@@ -32,7 +32,7 @@ enum ScreenProjection {
         // 使用 width/2 作为投影焦距，与已真实验证的 gaze/click 映射保持一致。
         let focal = geometry.width / 2
         let yaw = atan((x - geometry.width / 2) / focal) * 180 / .pi
-        let pitch = atan((geometry.height / 2 - y) / focal) * 180 / .pi
+        let pitch = atan((geometry.height / 2 - y) / hypot(focal, x - geometry.width / 2)) * 180 / .pi
         return GazeAngles(yaw: yaw, pitch: pitch)
     }
 }
