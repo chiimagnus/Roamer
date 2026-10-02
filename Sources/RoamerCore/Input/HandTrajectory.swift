@@ -92,15 +92,14 @@ enum HandTrajectory {
         durationMilliseconds: Double,
         gesture: String
     ) throws -> Int {
-        guard durationMilliseconds.isFinite, durationMilliseconds > 0 else {
-            throw RoamerError.message("\(gesture) duration 必须大于 0")
-        }
+        try validateDuration(durationMilliseconds, gesture: gesture)
+        return max(6, Int(ceil(durationMilliseconds / 16)))
+    }
 
-        let requestedCount = ceil(durationMilliseconds / 16)
-        guard let count = Int(exactly: requestedCount) else {
-            throw RoamerError.message("\(gesture) duration 过大")
+    static func validateDuration(_ milliseconds: Double, gesture: String) throws {
+        guard milliseconds.isFinite, milliseconds > 0, milliseconds <= 60_000 else {
+            throw RoamerError.message("\(gesture) duration 必须大于 0 且不超过 60000ms")
         }
-        return max(6, count)
     }
 
     private static func horizontalPair(halfWidth: Double) -> HandPosePair {

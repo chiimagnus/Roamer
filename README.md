@@ -69,6 +69,8 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 
 `pose` 使用绝对 6DoF：位置单位为米，旋转单位为度。`crown` 的 `delta` 是 -20～20 的整数步数；正负号表示两个旋转方向，每一步按 Simulator 自身的 0.05 沉浸度步长调整。
 
+`long-press`、`drag`、`magnify`、`rotate` 的 `duration-ms` 必须大于 0 且不超过 60000；超出范围会在发送手势前报错。
+
 ## License
 
 AGPL-3.0。见 `LICENSE`。

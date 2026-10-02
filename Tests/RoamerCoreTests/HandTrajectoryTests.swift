@@ -105,6 +105,40 @@ final class HandTrajectoryTests: XCTestCase {
         XCTAssertEqual(last.right.y, 0)
     }
 
+    func testSharedDurationBoundaryRejectsHugeButIntRepresentableValues() {
+        for duration in [0, -1, .nan, .infinity, 60_001, 1e20] {
+            XCTAssertThrowsError(try HandTrajectory.validateDuration(duration, gesture: "long-press"))
+            XCTAssertThrowsError(try HandTrajectory.samples(
+                from: GazeAngles(yaw: 0, pitch: 0),
+                to: GazeAngles(yaw: 10, pitch: 0),
+                durationMilliseconds: duration
+            ))
+            XCTAssertThrowsError(try HandTrajectory.magnifySamples(
+                scale: 1.5, durationMilliseconds: duration
+            ))
+            XCTAssertThrowsError(try HandTrajectory.rotateSamples(
+                degrees: 30, durationMilliseconds: duration
+            ))
+        }
+    }
+
+    func testSupportedDurationEndpointsProduceNonemptyTrajectories() throws {
+        for (duration, count) in [(0.001, 7), (60_000.0, 3751)] {
+            try HandTrajectory.validateDuration(duration, gesture: "long-press")
+            XCTAssertEqual(try HandTrajectory.samples(
+                from: GazeAngles(yaw: 0, pitch: 0),
+                to: GazeAngles(yaw: 10, pitch: 0),
+                durationMilliseconds: duration
+            ).count, count)
+            XCTAssertEqual(try HandTrajectory.magnifySamples(
+                scale: 1.5, durationMilliseconds: duration
+            ).count, count)
+            XCTAssertEqual(try HandTrajectory.rotateSamples(
+                degrees: 30, durationMilliseconds: duration
+            ).count, count)
+        }
+    }
+
     func testMagnifySamplesSupportShrink() throws {
         let samples = try HandTrajectory.magnifySamples(
             scale: 0.5,

@@ -117,9 +117,7 @@ package final class SimulatorHIDController {
         hand: HandSide = .right,
         geometry: DisplayGeometry
     ) throws {
-        guard durationMilliseconds.isFinite, durationMilliseconds > 0 else {
-            throw RoamerError.message("long-press duration 必须大于 0")
-        }
+        try HandTrajectory.validateDuration(durationMilliseconds, gesture: "long-press")
         let angles = try ScreenProjection.angles(x: x, y: y, geometry: geometry)
         try pinch(at: angles, holdMilliseconds: durationMilliseconds, hand: hand)
     }
@@ -198,9 +196,8 @@ package final class SimulatorHIDController {
             to: end,
             durationMilliseconds: durationMilliseconds
         )
-        guard let firstPose = poses.first, let lastPose = poses.last else {
-            throw RoamerError.message("无法生成 drag hand trajectory")
-        }
+        let firstPose = poses[0]
+        let lastPose = poses[poses.count - 1]
 
         let gazeRay = headPose.gazeRay(for: start)
         try send(
@@ -225,7 +222,7 @@ package final class SimulatorHIDController {
             )
             usleep(80_000)
 
-            let delay = useconds_t(durationMilliseconds * 1000 / Double(max(1, poses.count - 1)))
+            let delay = useconds_t(durationMilliseconds * 1000 / Double(poses.count - 1))
             for pose in poses.dropFirst() {
                 releasePose = pose
                 try send(
@@ -312,9 +309,8 @@ package final class SimulatorHIDController {
         samples: [HandPosePair],
         durationMilliseconds: Double
     ) throws {
-        guard let first = samples.first, let last = samples.last else {
-            throw RoamerError.message("无法生成双手 gesture trajectory")
-        }
+        let first = samples[0]
+        let last = samples[samples.count - 1]
 
         try send(
             messages.collection(
@@ -339,7 +335,7 @@ package final class SimulatorHIDController {
             usleep(80_000)
 
             let delay = useconds_t(
-                durationMilliseconds * 1000 / Double(max(1, samples.count - 1))
+                durationMilliseconds * 1000 / Double(samples.count - 1)
             )
             for sample in samples.dropFirst() {
                 releasePose = sample
