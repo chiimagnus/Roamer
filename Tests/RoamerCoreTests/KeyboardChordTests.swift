@@ -45,4 +45,10 @@ final class KeyboardChordTests: XCTestCase {
         XCTAssertThrowsError(try KeyboardChord("meta+a"))
         XCTAssertThrowsError(try KeyboardChord("unknown"))
     }
+
+    func testUndocumentedCompatibilityAliasesFail() {
+        for alias in ["enter", "esc", "backspace"] {
+            XCTAssertThrowsError(try KeyboardChord(alias))
+        }
+    }
 }

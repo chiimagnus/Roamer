@@ -73,9 +73,9 @@ private enum KeyboardKey {
         }
 
         switch token {
-        case "return", "enter": return 0x28
-        case "escape", "esc": return 0x29
-        case "delete", "backspace": return 0x2A
+        case "return": return 0x28
+        case "escape": return 0x29
+        case "delete": return 0x2A
         case "tab": return 0x2B
         case "space": return 0x2C
         case "right": return 0x4F
