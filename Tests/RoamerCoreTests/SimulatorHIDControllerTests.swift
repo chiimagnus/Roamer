@@ -3,6 +3,17 @@ import XCTest
 @testable import RoamerCore
 
 final class SimulatorHIDControllerTests: XCTestCase {
+    func testFailedHomeDownStillReleasesButton() throws {
+        let client = FailingHIDClient(failureIndex: 1)
+        let controller = SimulatorHIDController(
+            client: client,
+            messages: IndigoMessages(runtime: try PrivateRuntime())
+        )
+
+        XCTAssertThrowsError(try controller.home())
+        XCTAssertEqual(client.keys.map(\.operation), [1, 2])
+    }
+
     func testFailedPinchDownStillReleasesBothHandSelections() throws {
         for hand in [HandSide.left, .right] {
             let client = FailingHIDClient(failureIndex: 2)

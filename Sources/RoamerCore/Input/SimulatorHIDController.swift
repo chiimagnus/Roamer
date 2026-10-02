@@ -25,9 +25,14 @@ package final class SimulatorHIDController {
     }
 
     package func home() throws {
-        try send(messages.homeButton(eventType: 1))
-        usleep(60_000)
-        try send(messages.homeButton(eventType: 2))
+        do {
+            try send(messages.homeButton(eventType: 1))
+            usleep(60_000)
+            try send(messages.homeButton(eventType: 2))
+        } catch {
+            try? send(messages.homeButton(eventType: 2))
+            throw error
+        }
     }
 
     @discardableResult
