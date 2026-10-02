@@ -52,6 +52,16 @@ final class SimulatorKeyboardInputModeTests: XCTestCase {
         )
     }
 
+    func testDecodesLiveDefaultsXMLExport() throws {
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: ["KeyboardsCurrentAndNext": ["en_US@sw=QWERTY;hw=Automatic"]],
+            format: .xml,
+            options: 0
+        )
+
+        XCTAssertTrue(try SimulatorKeyboardInputMode.decode(from: data).supportsVerifiedTextTyping)
+    }
+
     private func plistData(_ value: [String: Any]) throws -> Data {
         try PropertyListSerialization.data(
             fromPropertyList: value,
