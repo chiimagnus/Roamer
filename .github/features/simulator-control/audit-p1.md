@@ -46,6 +46,19 @@
 
 ## 发现项
 
+## 发现 F-1003
+
+- 任务：`P1-T3`
+- 严重级别：`Medium`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Input/SimulatorHIDController.swift:27`
+- 摘要：`Home down 已投递但 completion 报错时没有发送 up，与其它输入的 release 不变量不一致`
+- 风险：`home 按钮可能残留按下状态；现有单手/键盘修复未覆盖该入口`
+- 预期修复：`在 home 方法拥有的 down/up 序列内，失败时最佳努力发送 up，再保留原错误`
+- 验证：`注入已投递 down 后返回错误的 client，核对事件为 down/up；真实 Home UI 回归`
+- 解决证据：`fec3d91；修复前注入已投递Home down的client仅记录[1]，修复后记录[1,2]；SimulatorHIDControllerTests 6/6，真实home-final.png显示visionOS App网格；58/58 tests和release build通过`
+
+
 ## 发现 F-1002
 
 - 任务：`P1-T3`

@@ -79,7 +79,7 @@ gaze(from)
 roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms]
 ```
 
-主验收目标：HappyPianist Book Flow。
+主验收目标：HappyPianist 曲库横向 ScrollView（当前为 `LibraryRecordCarousel`；旧版本称 Book Flow）。不为了旧组件名称而要求被测 App 回退。
 
 必须证明：
 
@@ -145,6 +145,8 @@ roamer crown <delta>
 ```
 
 真实 Xcode 27 XROS Simulator UI 证据表明，AVP 的 Digital Crown 沉浸度控制不走 legacy Crown/Dial HID：`VirtualHMDInputView.increaseImmersion/decreaseImmersion` 直接调用 `SimVirtualHeadsetRemoteService.changeImmersionLevel:isAbsolute:`，每一步为相对 `+0.05/-0.05`。虽然 `SimDeviceLegacyHIDClient` 报告 `hasCrown = false`、`hasDial = true`，并且 XROS 插件内部另有 `DigitalDialEvent(+1/-1)`，真实 environment 验收证明该 Dial HID 不会改变 immersion level，因此不得作为 `roamer crown` transport。production 直接复用 XROS remote service，与 Xcode 自己的沉浸度控制保持一致。
+
+独立复审实测发现循环连发会读取动画尚未更新的旧基准：`crown 4` 四次均作用于0，仅产生一个0.05 dial目标。正式实现改为一次相对调用 `Float(delta) * 0.05`，删除循环和只服务循环的 CrownRotation 类型。原生系统对 dial 与 environment 的转换非线性；验收检查实际系统状态，不承诺 environment 线性增加。实测±4的目标增量为±0.2，20/-20可进入/退出完整沉浸。
 
 验收：
 

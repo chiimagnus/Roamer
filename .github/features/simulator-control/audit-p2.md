@@ -71,6 +71,19 @@
 
 ## 发现项
 
+## 发现 F-1004
+
+- 任务：`P2-T6`
+- 严重级别：`High`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Input/SimulatorCrownController.swift:14`
+- 摘要：`Crown 多步循环基于未完成动画的旧沉浸度，crown 4 实际只增加一步`
+- 风险：`所有绝对值大于1的delta不按命令契约生效；只测±1无法发现`
+- 预期修复：`一次原生relative调用发送Float(delta)*0.05，删除逐步循环与仅服务该循环的CrownRotation类型`
+- 验证：`mock remote确认一次聚合调用、0和越界不调用；真实±4/±20日志核对0.2/1.0并恢复0`
+- 解决证据：`1546a1f；修复前crown 4四次均从0到0.0025，mock有8条失败断言；改一次delta*0.05相对调用并删除CrownRotation后mock 3/3，真实+4到0.04、+20到1、反向恢复0，crown-fixed-multiple.log；58/58 tests和release build通过`
+
+
 ## 发现 F-1003
 
 - 任务：`P2-T5`
