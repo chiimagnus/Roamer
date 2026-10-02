@@ -18,22 +18,15 @@ enum SimulatorSceneRuntime {
         let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("roamer-scene-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: false,
                                                 attributes: [.posixPermissions: 0o700])
-        do {
-            let data = try runDebugger(pid: pid, scratch: scratch, appTemporary: appTemporary)
-            try requireUntracedRunningProcess(pid)
-            try FileManager.default.removeItem(at: scratch)
-            return data
-        } catch {
-            var stateError: String?
-            do { try requireUntracedRunningProcess(pid) }
-            catch { stateError = "；目标状态尚未确认恢复：\(error)" }
-            do { try FileManager.default.removeItem(at: scratch) }
-            catch let cleanupError {
-                throw RoamerError.message("\(error)；捕获临时目录清理失败：\(cleanupError)")
-            }
-            if let stateError { throw RoamerError.message("\(error)\(stateError)") }
-            throw error
-        }
+        let result = Result { try runDebugger(pid: pid, scratch: scratch, appTemporary: appTemporary) }
+        var failures: [String] = []
+        if case let .failure(error) = result { failures.append(String(describing: error)) }
+        do { try requireUntracedRunningProcess(pid) }
+        catch { failures.append("目标状态尚未确认恢复：\(error)") }
+        do { try FileManager.default.removeItem(at: scratch) }
+        catch { failures.append("捕获临时目录清理失败：\(error)") }
+        guard failures.isEmpty else { throw RoamerError.message(failures.joined(separator: "；")) }
+        return try result.get()
     }
 
     static func requireUntracedRunningProcess(_ pid: Int32) throws {
