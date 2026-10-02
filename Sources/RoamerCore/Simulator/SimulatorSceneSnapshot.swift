@@ -65,6 +65,7 @@ package struct SimulatorSceneSnapshot: Encodable {
     let capturesAreAtomic = false
     let screenshot: ObservationManifest.Screenshot
     let scenes: [SpatialScene]
+    let layouts: [SceneDebugLayout]
 
     package static func capture(bundleID: String, outputPath: String) throws -> String {
         let simulator = SimulatorService()
@@ -86,6 +87,7 @@ package struct SimulatorSceneSnapshot: Encodable {
         try simulator.screenshot(image.path, from: device)
         let screenshotFinish = Date()
         let size = try SimulatorObservation.imageDimensions(image)
+        let layouts = try SceneDebugRenderer.render(scenes: scenes, directory: directory)
         guard try simulator.runningPID(bundleID, on: device) == pid else {
             throw RoamerError.message("实体捕获期间目标运行实例改变；未发布 scene.json")
         }
@@ -93,7 +95,7 @@ package struct SimulatorSceneSnapshot: Encodable {
             deviceUDID: device.udid, bundleID: bundleID, pid: pid,
             startedAt: start, finishedAt: finish, debuggerDetached: true,
             screenshot: .init(startedAt: screenshotStart, finishedAt: screenshotFinish,
-                              width: size.width, height: size.height), scenes: scenes
+                              width: size.width, height: size.height), scenes: scenes, layouts: layouts
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

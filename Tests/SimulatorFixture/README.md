@@ -49,6 +49,8 @@ cat "$data_dir/Documents/spatial.json"
 
 正式实体捕获用 `.build/release/roamer scene com.chiimagnus.RoamerTestApp <新目录>`，不从 `spatial.json` 导出生产数据。Open space 后，核对 `scene.json` 中五个 oracle 实体的真实 ID、局部矩阵、父链复合矩阵与自身局部边界；复合矩阵对应本 fixture 的 `worldTransformColumns`。点击/拖动前后同一 PID/session 中，蓝色目标变化而父级、橙色物体和平面不动。关闭空间及新 PID 应重新捕获，不复用旧结果。scene 会显式短暂 attach/暂停后 detach；不要同时用其他调试器。原始 plist 的临时资产链接不是完整网格导出。
 
+同一目录的四张布局 PNG 由本次捕获生成，不是 screenshot 的变形或猜测深度。逐图核对俯视的 −Z 向上、正视 X/Y、侧视 Z/Y，三图 `pixelsPerMeter` 相同，绿色零厚度平面在正/侧视投影为线，group 没有额外聚合盒子。XYZ 轴的起点是实体原点，父级旋转应改变蓝色模型轴向。`scene-overview.png` 是固定轴测概览；另行采集的 `screenshot.png` 才是实际 Simulator 画面。
+
 Home、重启和头部 pose 用 Simulator 画面/进程变化验收；Crown 调的是系统沉浸度，不是 App 的 `digitalCrownRotation` 值，应检查 SurfBoard immersion 日志。真实纵向 ScrollView 和横向唱片列表仍需在 Settings / HappyPianist 中验收，不能拿计数替代滚动效果。
 
 不要并行发送多个 HID 测试序列。测试期间监测宿主焦点与鼠标，但不激活 Simulator、不发送 macOS 输入。结束后恢复原输入模式和 Simulator 启停状态。

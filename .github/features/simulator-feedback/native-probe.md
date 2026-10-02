@@ -88,6 +88,12 @@ P1 调查已形成逐渠道准入结论：普通 AX 观察可实现；数字几�
 
 ## 覆盖层与文档证据边界
 
+### P3-T2 图片实现续验（2026-10-03）
+
+- `p3-renderer-tests4.log`：7 项通过，覆盖坐标约定/负 Z、完整父级非均匀缩放及 8 角点、原点而非盒心、退化轴/平面、三图共同比例、实际 PNG 像素与可解码/确定性、空 group、多个 scene 分开、写图失败、标签上限及几何溢出。`p3-renderer-full.log` 全量 85 项通过，release build 通过。
+- `p3-fixture-layout-inspect/{scene-overview,top,front,side}.png`：用已构建的同一 RoamerCore renderer 对本轮正式 `p3-release-drag/native-scene-0.plist` 生成，逐图查看通过，3 个自身模型 / 7 实体；正/侧视绿色平面为线，父级旋转与实际矩阵一致，三视图均 307.1428623734689 px/m。这是既有真实捕获的绘图检查，不冒称新的 CLI 非空场景端到端验收。
+- 正式 CLI `p3-empty-with-views` 已实际调用 capture → renderer → scene.json，四 PNG 与 layouts 清单成立；后续 final-layouts 是最新 renderer 的重新空场景捕获。非空场景的正式 CLI 四图及动作前后投影比较仍待 pose 基线授权，不把 unit/helper 通过当完整 P3-T2 验收。
+
 ### P3-T1 正式捕获续验（2026-10-03）
 
 - `p3-release-before` / `p3-release-click` / `p3-release-drag` 来自正式 release `scene`：每次 7 实体，与独立 oracle 的五个真实实体逐项 ID、局部/父链矩阵和自身边界匹配。点击增加一次；拖动 33 changed / 1 ended，目标位置实际改变，相邻父级/橙色实体/平面不动。原始捕获不是 oracle 导出。`p3-assets-before.txt` / `p3-assets-after.txt` 一致，本轮新 `.reality` 已清理，旧资产未动。

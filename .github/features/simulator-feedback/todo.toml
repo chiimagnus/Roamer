@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P3-T1"
+current_task_id = "P3-T2"
 
 [[tasks]]
 id = "P1-T1"
@@ -52,10 +52,10 @@ note = "实现与78项测试/构建、5 oracle点击拖动、新PID空场景、�
 [[tasks]]
 id = "P3-T2"
 title = "从同一次真实快照生成空间概览与三视图"
-status = "pending"
+status = "in_progress"
 plan = "plan-p3.md#p3-t2"
 commit = ""
-note = ""
+note = "P3-T1实现已验证提交但跨App/pose仍待验收；先推进不依赖pose的同快照纯投影和PNG回归"
 
 [[tasks]]
 id = "P3-T3"
