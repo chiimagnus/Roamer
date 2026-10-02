@@ -1,5 +1,17 @@
 # Audit P4 - simulator-control
 
+## 2026-10-02 独立逐提交复审
+
+旧 audit 不作为本轮事实或 Gate 的依据。当前任务与提交逐项核对：
+
+| Task | 逐提交核对 | 当前接入 / 真实文件 |
+| --- | --- | --- |
+| P4-T1 | 64a853b | CLI 文案/PrivateRuntime/SimulatorHIDController；仅真实私有类名仍含 Legacy，无旧 shell/raw packet/host fallback |
+| P4-T2 | 8c204d3 | capability selector 检查、Float 可表示性、crown 参数校验已真实接入；它们保护 ABI/输入信任边界，不删除 |
+| P4-T3 | a0dabba | 此提交仅修改 plan 的验收记录，没有 production 回归脚本；本轮重新执行全部正式命令，不把记录提交当成实测通过 |
+
+补核不在 todo 中的 ad0933b（--version 真正接入）与 e30dd3f（超大时长修复仍不完整）。本轮新证据集中在 `/tmp/roamer-audit-20261002/`，最终 Gate 待本轮结果回填。
+
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p4.md`
 - feature 目录：`.github/features/simulator-control/`
@@ -87,4 +99,3 @@
 
 - 本文件对应一个 phase，不对应单个 task
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
-

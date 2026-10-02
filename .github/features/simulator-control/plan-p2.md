@@ -90,7 +90,7 @@ gaze(from)
 要求：
 
 - 位移来自 hand pose，不来自 gaze；
-- duration 决定连续 sample；
+- duration 决定连续 sample，正式手势支持 `0 < duration-ms <= 60000`；超出范围在首个 HID 前失败；
 - 失败时不能留下持续 pinching 状态；
 - 无法构造真实 pose 时直接失败。
 
@@ -139,6 +139,7 @@ roamer double-click <x-px> <y-px>
 要求：
 
 - `long-press` = gaze → pinch down → 保持 → pinch up；
+- long-press、drag、magnify、rotate 共用 `0 < duration-ms <= 60000` 时长边界；已复现极大但可转 Int 的时长造成巨量轨迹分配崩溃，不再只检查 Int 转换；
 - `double-click` = 两次独立 click，间隔受控；
 - 复用现有 pinch message，不新增 transport；
 - 中途失败必须确保最终 release，不留下持续 pinching 状态；

@@ -1,5 +1,22 @@
 # Audit P2 - simulator-control
 
+## 2026-10-02 独立逐提交复审
+
+历史审计不参与本轮判断；下表来自真实提交及源码。没有 production commit 的研究/验收任务，重新用正式 CLI + 真正 visionOS App 验证，而不是相信 todo 的 completed 标记。
+
+| Task | 逐提交核对 | 当前接入 / 真实文件 |
+| --- | --- | --- |
+| P2-T1 | 44c8f9c（研究记录） | HandTrajectory 球面轨迹；临时 App DragGesture 的连续事件与 release 用于独立复验 |
+| P2-T2 | 006bffe | HandTrajectory.samples → SimulatorHIDController.drag → collection + pinch + hand pose |
+| P2-T3 | 3dc3802 | CLI.drag 已接入共享 HID，非移动 gaze 的假拖动 |
+| P2-T4 | f9b446d（验收记录） | 纵向 scroll 复用正式 drag，不另建 scroll transport |
+| P2-T5 | 43b6120 | CLI.long-press/double-click → pinch；左右手计数 LONG=2，DOUBLE=1/SINGLE=0 |
+| P2-T6 | f9f2161、ebd2177、7759aa5、b3be9e6、93483c6 | 完整 pose、官方 C ABI builder、XROS 句柄复用、crown remote service、按 boot session 保存姿态均已逐份审查；todo 只列最后一个提交，不代表前四个没实现 |
+| P2-T7 | 4720756 | HandSide/--hand → 官方 builder 的左右手字段；click/long-press/drag 已真实收到左右手输入 |
+| P2-T8 | 5c1f26b | CLI.magnify/rotate → HandTrajectory → twoHandGesture；真实 scale=0.4、rotation=-45°、各 64 个连续事件/2 次 ended |
+
+还审查了后续 e30dd3f 的时长溢出修复；发现它未覆盖可转换为 Int 但会造成巨量分配的输入。新证据位于 `/tmp/roamer-audit-20261002/`。
+
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p2.md`
 - feature 目录：`.github/features/simulator-control/`
@@ -53,6 +70,45 @@
   - 临时 `/tmp` SwiftUI `MagnifyGesture` / `RotationGesture` 探针
 
 ## 发现项
+
+## 发现 F-1003
+
+- 任务：`P2-T5`
+- 严重级别：`Medium`
+- 状态：`Open`
+- 位置：`Sources/RoamerCore/Input/SimulatorHIDController.swift:278`
+- 摘要：`pinch 只在 send(down) 成功返回后才设置 isPinching；send 的5秒超时不证明HID未投递，catch 会跳过release；drag/双手路径已经无条件release`
+- 风险：`明确要求的失败release不变量在单手长按/点击/双击共享路径中未成立`
+- 预期修复：`删除 isPinching 围栏，在 down 尝试之后的 catch 总是发送 release；不增加重试框架`
+- 验证：`失败投递后release的最小可控HID回归 + 真实左右手pinch`
+- 解决证据：`<commit diff note or test/build output>`
+
+
+## 发现 F-1002
+
+- 任务：`P2-T2`
+- 严重级别：`Low`
+- 状态：`Open`
+- 位置：`Sources/RoamerCore/Input/SimulatorHIDController.swift:201`
+- 摘要：`轨迹由 0...max(6,count) 生成，first/last 不可能缺失，max(1,count-1) 与报空轨迹分支没有可达作用`
+- 风险：`维护不可能状态和重复围栏，掩盖真实时长边界`
+- 预期修复：`直接使用非空轨迹端点与真实 sample interval；保留失败 release`
+- 验证：`HandTrajectoryTests；真实左右手drag/magnify/rotate release`
+- 解决证据：`<commit diff note or test/build output>`
+
+
+## 发现 F-1001
+
+- 任务：`P2-T2`
+- 严重级别：`High`
+- 状态：`Open`
+- 位置：`Sources/RoamerCore/Input/HandTrajectory.swift:99`
+- 摘要：`e30dd3f 只挡住 Int 转换溢出，drag duration=1e20 仍以 SIGABRT 退出并报告巨量内存分配失败`
+- 风险：`drag/magnify/rotate 共享 sampleCount，用户合法有限数值仍可使 CLI 崩溃；long-press 同样未限制可执行时长`
+- 预期修复：`统一声明实际支持的手势时长为 0 < duration <= 60000ms，四种手势在任何 HID 前校验；补齐 README 和边界回归`
+- 验证：`三个连续手势 1e20、长按超大时长均退出1且无HID；最大支持时长纯逻辑回归`
+- 解决证据：`<commit diff note or test/build output>`
+
 
 ## 发现 F-07
 
@@ -187,4 +243,3 @@
 
 - 本文件对应一个 phase，不对应单个 task
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
-

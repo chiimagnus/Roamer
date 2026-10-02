@@ -1,5 +1,18 @@
 # Audit P1 - simulator-control
 
+## 2026-10-02 独立逐提交复审
+
+本轮只从 idea、plan、todo、提交 diff、当前源码和新运行证据判断；历史审计内容不作为结论依据。历史段落保留，仅供追溯。
+
+| Task | 逐提交核对 | 当前接入 / 真实文件 |
+| --- | --- | --- |
+| P1-T1 | fa33788 | Package.swift → RoamerCLI/main.swift → CLI.run → RoamerCore；SwiftPM describe/build/help 已核对 |
+| P1-T2 | fa33788、06594db | SimulatorService.bootedAVP/displayGeometry/launch/terminate/reboot/screenshot → ProcessRunner → xcrun simctl |
+| P1-T3 | fa33788、06594db | CLI → SimulatorHIDController → IndigoMessages → PrivateRuntime → SimulatorKit；后续由 7759aa5 替换手写 Paloma 包 |
+| P1-T4 | fa33788 | lib/ 与 scripts/ 的全部旧入口已删除；production 无 host GUI 输入或 fallback |
+
+本轮验证证据目录：`/tmp/roamer-audit-20261002/`。最终 Gate 在本轮验证完成后回填。
+
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p1.md`
 - feature 目录：`.github/features/simulator-control/`
@@ -32,6 +45,32 @@
   - `README.md`
 
 ## 发现项
+
+## 发现 F-1002
+
+- 任务：`P1-T3`
+- 严重级别：`High`
+- 状态：`Open`
+- 位置：`Sources/RoamerCore/Input/ScreenProjection.swift:35`
+- 摘要：`偏离中线的 pitch 投影忽略水平偏移：方向重投影不能回到目标像素；yaw50/pitch20 下 click 3448 1470 未命中截图中的按钮，clicks 保持3`
+- 风险：`所有像素坐标输入共享错误射线，角落或非零头部姿态下会点错或丢失手势`
+- 预期修复：`pitch 使用水平平面距离 hypot(focal,horizontalOffset)，保持球面轨迹与完整 HeadPose 世界变换；补全四角/非方形显示 round-trip 测试`
+- 验证：`ScreenProjectionTests；相同 screenshot 像素真实 click 由3增加到4；相邻 drag`
+- 解决证据：`<commit diff note or test/build output>`
+
+
+## 发现 F-1001
+
+- 任务：`P1-T1`
+- 严重级别：`High`
+- 状态：`Open`
+- 位置：`Sources/RoamerCore/Support/ProcessRunner.swift:26`
+- 摘要：`ProcessRunner 在读取 stdout/stderr 前 waitUntilExit，超过 pipe 容量时永久阻塞；128KiB 双通道输出已复现`
+- 风险：`所有 simctl lifecycle 与 inventory 路径共享此 helper；输出足够多时 CLI 卡死`
+- 预期修复：`在等待退出前并行排空两个 pipe，不引入超时重试或 GUI fallback`
+- 验证：`ProcessRunner 双通道大输出回归；swift test；真实 lifecycle`
+- 解决证据：`<commit diff note or test/build output>`
+
 
 ## 发现 F-05
 
@@ -131,4 +170,3 @@
 
 - 本文件对应一个 phase，不对应单个 task
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
-
