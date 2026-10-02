@@ -39,6 +39,6 @@ cat "$data_dir/Documents/raw-keys.json"
 - **Key events**：自动聚焦字段并消费按键，不用于文本编辑。每个键应有 `.down`/`.up`，Shift/Control/Option 的 SwiftUI modifiers 分别为 2/4/8；下一次普通键应回到 0。记录字符和修饰键，用来判断真正进入 App，而非仅 HID 投递成功。
 - **Raw key codes**：UIKit first responder 记录 USB HID usage、modifierFlags 与 down/up，供核对底层键盘 transport；切换离开后不再接收键盘。
 
-Home、重启和头部 pose 用 Simulator 画面/进程变化验收；Crown 调的是系统沉浸度，不是 App 的 `digitalCrownRotation` 值，应检查 SurfBoard immersion 日志。真实系统 ScrollView 和 Book Flow 仍需在 Settings / HappyPianist 中验收，不能拿计数替代滚动效果。
+Home、重启和头部 pose 用 Simulator 画面/进程变化验收；Crown 调的是系统沉浸度，不是 App 的 `digitalCrownRotation` 值，应检查 SurfBoard immersion 日志。真实纵向 ScrollView 和横向唱片列表仍需在 Settings / HappyPianist 中验收，不能拿计数替代滚动效果。
 
 不要并行发送多个 HID 测试序列。测试期间监测宿主焦点与鼠标，但不激活 Simulator、不发送 macOS 输入。结束后恢复原输入模式和 Simulator 启停状态。
