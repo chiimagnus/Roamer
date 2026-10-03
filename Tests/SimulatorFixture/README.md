@@ -1,6 +1,6 @@
 # Roamer Simulator 测试 App
 
-这是 Roamer 的单一 visionOS 测试 App，用来验证真实 Simulator 输入、Accessibility、空间实体、调试覆盖层和恢复行为。它只使用系统框架，构建产物留在忽略的 `.build/`，不进入 CLI production target。
+这是 Roamer 的单一 visionOS 测试 App，用来验证真实 Simulator 输入、Accessibility、空间实体、调试覆盖层和恢复行为。完整验收原则、现场保护和问题闭环统一见 [真实 Simulator 验收规范](../../docs/real-simulator-acceptance.md)。本页只负责 Fixture/oracle 的具体使用；构建产物留在忽略的 `.build/`，不进入 CLI production target。
 
 ## 构建与准备
 
