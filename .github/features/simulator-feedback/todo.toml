@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P3-T3"
+current_task_id = ""
 
 [[tasks]]
 id = "P1-T1"
@@ -60,7 +60,7 @@ note = "正式fixture三模型/四图逐图核对、动作后投影、平面成�
 [[tasks]]
 id = "P3-T3"
 title = "完成跨 App 反馈闭环复测与文档收尾"
-status = "in_progress"
+status = "completed"
 plan = "plan-p3.md#p3-t3"
-commit = ""
-note = "正式verify-feedback完整click/drag/close/reopen PASS，5独立oracle匹配；旧oracle空场景拒绝通过；fixture SDK修正无警告；86tests/release/fixture build通过，跨App及收尾待验"
+commit = "643969f3e1d4d53a4a8d9f39bc375196a6d76565"
+note = "正式click/drag/close/reopen完整闭环与五oracle PASS；HappyPianist101实体90模型/pose-only不变、新PID已验；捕获中断/写失败后恢复，原pose0/键盘/十开关/Shutdown已恢复；87tests/release/fixture build PASS；native-probe.md"

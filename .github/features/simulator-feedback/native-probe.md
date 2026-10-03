@@ -126,6 +126,8 @@ P1 调查已形成逐渠道准入结论：普通 AX 观察可实现；数字几�
 - verifier 已拒绝空 oracle（`p3-empty-oracle-fixed.log`），四个真实阶段仍通过；`testIndependentVerifierRejectsEmptyOracleInsteadOfReportingFiveMatches` 使用现有 XCTest 直接运行 Python 工具，防止空集合假通过回归。`p3-verifier-regression.log` 12 项 snapshot 回归、`p3-full-87.log` 全量 87 项通过，`p3-release-final-87.log` release 与 `p3-fixture-final.log` fixture build 通过且无 SDK 警告；shell/Python 语法通过。
 - 先前原始捕获的离线再绘制只计解析/绘图验证，不与上述本轮真实 CLI 验收混同。`p3-feedback-refuse-stale` 在当前空场景与旧 oracle 不匹配时、发送任何动作前失败；正式 JSON 矩阵篡改也被 verifier 拒绝。
 - 独立根因修复 `da94b96` 将捕获结果、目标状态恢复和 scratch 清理汇聚为一次收尾，防止清理错误掩盖恢复错误；`p3-cleanup-common-success` 正常捕获和 `p3-cleanup-common-interrupt.log` 实际 attach 后 SIGINT 均验证，未发布失败清单、后续 observe 可用。`p3-output-write-failure.log` 在 attach 后将本次输出目录改只读，真实 simctl 写图失败，目标已 detach，未发布 scene.json；权限已恢复 0700。独立 `p3-overlay-before.log` / `after.log` 十开关与原值一致。
+- 最终 `p3-feedback-final.log` 全序列 exit 0，五阶段原生观察 available，关闭重开计数及相邻实体断言通过；`p3-target-final-state.log` 的 PID 37985 为 Ss、无 debugger。`p3-native-overlay-restored.log` 十项与原值一致；`p3-keyboard-current.plist` / `final.plist` 的当前输入模式相同。恢复 pose=0 并终止本轮 fixture 后，`p3-device-final.json` 确认为初始 Shutdown。`p3-no-device-refused.log` 实际拒绝且不建输出目录。P2-T2 的 fence/会话仲裁仍未解决，不据此给完整 feature Go。
+- P3 收尾审计重新通过全量 87 tests、release 和 fixture build（`p3-audit-*.log`），重新核对 final 四阶段独立 oracle、pose-only 几何/PNG 不变而实际画面改变、跨 App 101 实体/90 模型、宿主 focus 紧邻样本与键盘模式。`audit-p3.md` 对独立 P3 给 Go；P2-T2 仍保留阻塞，完整 feature 尚未通过。
 
 ## P2-T1 正式 CLI 复验（2026-10-02）
 
