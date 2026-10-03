@@ -1,0 +1,34 @@
+version = 1
+current_task_id = "P1-T1"
+
+[[tasks]]
+id = "P1-T1"
+title = "验证 Virtual Hand 到 ARKit joint 的真实链路并冻结平台契约"
+status = "in_progress"
+plan = "plan-p1.md#p1-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T1"
+title = "给 Simulator Fixture 增加真实 HandTracking joint oracle"
+status = "pending"
+plan = "plan-p2.md#p2-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T2"
+title = "实现最小 Virtual Hand 控制链并接入 CLI"
+status = "pending"
+plan = "plan-p2.md#p2-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P2-T3"
+title = "完成 Fixture 与 HappyPianist 跨 App 真实验收"
+status = "pending"
+plan = "plan-p2.md#p2-t3"
+commit = ""
+note = ""
