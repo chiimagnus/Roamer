@@ -5,7 +5,6 @@ import Foundation
 package struct ProcessResult: Sendable {
     package let stdout: String
     package let stderr: String
-    package let status: Int32
 }
 
 package enum ProcessRunner {
@@ -79,16 +78,16 @@ package enum ProcessRunner {
             }
         }
         process.waitUntilExit()
+        let status = process.terminationStatus
         let result = ProcessResult(
             stdout: String(decoding: output[0], as: UTF8.self),
-            stderr: String(decoding: output[1], as: UTF8.self),
-            status: process.terminationStatus
+            stderr: String(decoding: output[1], as: UTF8.self)
         )
-        guard result.status == 0 else {
+        guard status == 0 else {
             let command = ([executable] + arguments).joined(separator: " ")
             throw RoamerError.commandFailed(
                 command: command,
-                status: result.status,
+                status: status,
                 stderr: result.stderr
             )
         }
