@@ -1,5 +1,7 @@
 # Audit P1 - simulator-feedback
 
+> 当前结论以末尾「2026-10-03 本轮独立逐提交复审」及其最终 Gate 为准。此前内容仅保留历史，不作为本轮判断依据。
+
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p1.md`
 - feature 目录：`.github/features/simulator-feedback/`
@@ -103,7 +105,7 @@
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
 ## 2026-10-03 本轮独立逐提交复审
 
-本轮不读取、采用下方历史 audit 的判断。以当前 todo、idea、plan、逐提交 diff、当前真实调用链和独立运行结果为依据。真实操作仅获准 RoamerTestApp，不操作 HappyPianist 或整机 reboot。
+本轮不采用历史 audit 的判断。以当前 todo、idea、plan、逐提交 diff、当前真实调用链和独立运行结果为依据。真实验收使用 RoamerTestApp；用户后续授权了临时 pose 调整，实际未操作 HappyPianist 或整机 reboot。
 
 ### 本轮任务映射
 
@@ -111,4 +113,27 @@
 - P1-T2：730cd98 → 原生 LLDB/plist 探索；44957bf → 几何准入；36eb9bb → overlay 取证及门禁例外；后续正式 scene/overlay 接管原型。
 - P1-T3：730cd98 → 原生 AX bridge 探索；45ee1b2 → 正式 observe 并删除旧 bridge。cc50e63 已删除误入库字节码。
 
-本轮 Gate 待针对性验证；历史取证不是本轮端到端实测。旧硬编码宿主地址 AX 探针待清理。
+### 逐提交结论与清理
+
+- `f9f1371`：PASS。空间页面实际挂载到原 App；fixture 的五个命名实体、父级旋转、独立 oracle 与多 scene 配置均被本轮正式反馈流程使用。没有第二个测试 App。
+- `45d269e`：PASS。显式 dismiss 完成后同步 oracle；本轮 close/reopen 的原生空场景、AX 状态和新 session 对应一致。
+- `730cd98`：探索提交，不冒充生产完成。原 AX、scene 原型分别在 `45ee1b2`、`291c037` 被正式 CLI 接管并删除。
+- `cc50e63`：PASS。误入库的 Python 字节码已删除，忽略规则有效。
+- `44957bf`：几何准入记录；`36eb9bb`：覆盖层原型及阶段门禁调整。后者原型在 `1a495f1` 删除，没有保留双轨生产实现。
+- 本轮 F-101 在 `1139706` 解决：删除一次性 shared-cache 硬编码地址探针和配对 request-description helper。`runtime-methods.py` 仍是通用方法编码取证工具，不是旧产品后端，不为删代码而删必要证据。
+
+### 本轮验证日志
+
+证据根目录：`.build/simulator-feedback/review-20261003/`，均为忽略的本地产物。
+
+- `bash Tests/SimulatorFixture/build.sh`：PASS，`fixture-build.log`。
+- `bash Tests/SimulatorFixture/Tools/verify-feedback.sh .build/simulator-feedback/review-20261003/feedback-current`：真实完整运行 PASS。PID 78190；click 一次，drag 33 changed / 1 ended；相邻实体不动；关闭后重新打开，新 session、计数归零。坐标来自当轮截图，失败动作没有自动重放。
+- `python3 -I Tests/SimulatorFixture/Tools/verify-spatial.py .build/simulator-feedback/review-20261003/feedback-current`：PASS；2026-10-04 对原始产物独立重算的输出见 `final-artifact-checks.log`。
+- 原三页真实可用：Interaction 的 AX Press 使 `CLICK 0 → CLICK 1`（`interaction-click/`）；RawKeys 收到真实 b/d 的 down/up（`raw-keys-confirmed.json`）；KeyEvents 在实际点击 TextField 后收到 e 的 down/up（`keys-focused-input.json`、`key-focused-after/`）。只切页面未获得键盘焦点时没有事件，不以发送成功替代 App 接收成功。
+- `swift test`：98/98 PASS，`full-tests.log`。shell/Python fixture 工具语法检查 PASS。
+
+### 本轮最终 Gate（2026-10-04）
+
+- `Go`：三个任务的当前实现和实际使用均成立；本轮新增 F-101 已 Resolved，没有尚未解决的本轮阻塞 finding。
+- 本轮空间点击首轮未命中时保留了 `feedback/`；随后依据新截图并经授权校准 pose 后成功，未把失败隐藏为通过。过期节点试验也保留在 `feedback-calibrated/`。
+- 测试 App 已停止，HappyPianist 仍是验收前 PID 58102；宿主前台前后均为 `net.imput.helium`。已恢复 Roamer 原 pose 缓存对应的 pitch=-30°；缓存字节相等不等于原生传感器视角回读。

@@ -1,5 +1,7 @@
 # Audit P2 - simulator-feedback
 
+> 当前结论以末尾「2026-10-03 本轮独立逐提交复审」及其最终 Gate 为准。此前内容仅保留历史，不作为本轮判断依据。
+
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p2.md`
 - feature 目录：`.github/features/simulator-feedback/`
@@ -134,7 +136,7 @@
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
 ## 2026-10-03 本轮独立逐提交复审
 
-本轮不采用历史 audit 结论。真实操作仅获准 RoamerTestApp；跨 App 只核对已保存原始产物，不能冒称本轮重测。
+本轮不采用历史 audit 结论。真实验收使用 RoamerTestApp；跨 App 独立核对已保存原始产物，不冒称本轮实时重测。
 
 ### 本轮任务映射
 
@@ -143,5 +145,30 @@
 
 ## 发现项
 
-本轮发现由 feature_tool.py 追加。Gate 待修复与验证。
+本轮 F-101/F-102 已通过 feature_tool.py 记录、修复前复现、修复后验证并机械标记 Resolved；不引用历史 finding 的结论。
 
+### 逐提交结论与根因修复
+
+- `45ee1b2`：PASS。正式 observe 的 CLI → 唯一运行实例 → 真截图 / 原生 AX → manifest 链路真实执行；没有 fixture JSON fallback，也不将 nativeFrame 换算为 screenshot pixel。
+- `1a495f1`：覆盖层确实进入正式 observe；本轮发现其异步回包共享状态和失败启用的恢复责任存在根因缺陷，不因已有完成记录而放过。
+- `5cee43b`：PASS。helper 编译之后、任何设置修改之前重新核对 PID/debugger 状态；不把编译前绑定当成永久有效。
+- `884f465`、`775ae34`：只更新状态、证据或实施说明，不承担生产能力。早期 `be3d977`、`393ca42` 等探索记录也不代替当前执行证据。
+- `1394cd8`：解决本轮 F-101/F-102。每个异步请求拥有自己的 semaphore/error/result；旧 completion 不能完成下一请求。原值关闭的选项在发送 enable 前即登记恢复责任；enable 回包超时或报错仍恢复所有已尝试项。没有另加 generation、重试或替代后端。
+- `1139706`：删除 String 到 UTF-8 Data 不可能失败的额外围栏；JSON 格式、ABI、PID、调试所有权和真实恢复错误检查继续保留。
+
+### 本轮验证日志
+
+证据根目录：`.build/simulator-feedback/review-20261003/`。
+
+- 修复前：`reproduction.log` 保存迟到 completion 误完成恢复，以及 axis 已修改但 enable 超时后未恢复的可复现断言失败。
+- `swift test --filter SimulatorDebugOverlayTests`：3/3 PASS，`overlay-tests.log`。宿主 harness 编译实际生产 ObjC helper，覆盖迟到 completion、axis/bounds timeout、bounds error、正常恢复和原 axis=true 保留；不复制一份生产状态机。
+- `swift test --filter SimulatorObservationTests`：14/14 PASS，`observation-tests.log`；`swift test`：98/98 PASS；`swift build -c release`：PASS，`full-tests.log` / `release-build.log`。
+- 正式 `observe --debug`：同 PID 78190 的 `space-debug/` 真图可见 RGB XYZ / 绿色 bounds，`space-restored/` 后续真图无覆盖层；`feedback-current/before-debug-*` 另一次完整 CLI 流程通过，前后 oracle 字节不变。不是只信 manifest.restored。
+- 强制输出目录拒写：`forced-output.log` 保留原截图错误，没有成功 manifest；随后 `debug-after-failure/` 原生 getter 读到 originalAxis=false / originalBounds=false，证明实际恢复。
+- 两个并发 debug observe：`concurrent-0.log` 成功，`concurrent-1.log` 在修改前拒绝，失败者没有 manifest；保留仲裁是实际状态所有权，不是多余安全围栏。
+
+### 本轮最终 Gate（2026-10-04）
+
+- `Go`：正式 observe/debug 已接入实际 CLI；两个本轮 High finding 已根因修复并验证。
+- HappyPianist 的旧 AX 原始产物 available / 38 nodes 可独立检查，但不称为本轮新采集。旧 debug/restored 配对中的 PID 不同，不能单靠该配对证明同实例恢复；本轮恢复结论来自上面的真实 fixture 与原生 getter 验证。
+- GPU completion → 后续 display frame、原值恢复、ABI 检查继续保留；它们是当前正确性链，不能换成固定 sleep、像素猜测或「全部关闭」。私有 ABI 随 Xcode 变化的支持边界仍需明确，不承诺所有版本。
