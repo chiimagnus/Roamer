@@ -84,7 +84,7 @@ Roamer 依赖 Xcode 的私有 CoreSimulator / SimulatorKit / RealitySimulation �
 
 ## 开发者
 
-维护或扩展 Roamer 时先读 [开发指南](docs/development.md)。涉及 Xcode / Simulator 私有接口、Accessibility、调试覆盖层或 scene 捕获时，再读 [私有 API 边界](docs/private-apis.md)。
+开发者先读 [AGENTS.md](AGENTS.md)；它负责模块导航、开发规则和验证入口。各功能模块的详细开发文档位于 `docs/`。
 
 ## 验证
 
