@@ -4,19 +4,19 @@
 
 **Non-goals:** 不做桌面/窗口录屏、不做无限后台录制、不做直播/推流、不做录制编辑器、不修改 HappyPianist、不做 Issue #8 fingertip。
 
-**Approach:** 视频继续复用已经真实验证的 `xcrun simctl io <udid> recordVideo`，音频直接复用 P2 的 `SimulatorAudioCapture` 内部 session，不 shell-out 调自己的 CLI，也不复制 CoreAudio tap。`SimulatorRecording` 统一拥有 video process、audio session、时间轴和最终 mux；先让 video recorder ready，再启动 audio capture，以第一批真实 audio sample 的 host time 作为最终内容起点，裁掉 video pre-roll，并用 AVFoundation 生成最终 A/V。P3-T2 再用 Fixture 已知 tone + host 干扰 tone 验证最终 recording，最后用同一个正式 `record` 生成 HappyPianist Demo。
+**Approach:** P3-T1 先对 `xcrun simctl io <udid> recordVideo` 做一个不进入 production 的最小视频 Gate：真实确认它在当前环境不会改变宿主前台 App / 鼠标，并确认 `Recording started` 与 raw MOV 首帧时间轴足以作为 host-time 锚点。Gate 通过后，视频继续复用该原生 framebuffer 通道；若失败则 P3 No-Go，先调查同属 Simulator 自身通道的替代视频入口，禁止用宿主 UI 录屏或“录完再恢复焦点”绕过。正式实现中音频直接复用 P2 的 `SimulatorAudioCapture` 内部 session，不 shell-out 调自己的 CLI，也不复制 CoreAudio tap。`SimulatorRecording.swift` 统一拥有私有 video process owner、audio session、manifest 与时间轴；独立 `SimulatorRecordingMuxer.swift` 只负责 AVFoundation 合成。
 
 **Acceptance:**
 - `roamer record <duration-sec> <new-output-dir>` 是正式 public 能力。
 - 每次 recording 保留 raw framebuffer video、raw Simulator audio、final A/V、audio manifest 和 recording manifest。
 - final A/V 的内容时长以 audio first-sample 之后的共同区间为准；不使用人工 magic offset。
-- raw video 仍来自 `simctl recordVideo`，raw audio 仍来自 P2 正式 Simulator-only Process Tap。
+- raw video 只有在 P3 视频 Gate 通过后才正式固定为 `simctl recordVideo`；raw audio 仍来自 P2 正式 Simulator-only Process Tap。
 - final A/V 可解码且同时包含 video/audio tracks；Fixture 已知 tone 通过、host 干扰 tone 不显著。
 - recording 前后 route 不被 Roamer 修改，且无 recordVideo/tap/aggregate/IOProc 残留。
 - HappyPianist 未修改；最终 Demo 由正式 `roamer record` 生成并含真实琴声。
 
 **Rules:**
-- 不用 ScreenCaptureKit、`screencapture -v/-A` 或桌面录屏替代 `simctl recordVideo`。
+- 不用 ScreenCaptureKit、`screencapture -v/-A` 或桌面录屏作为宿主 fallback。若 `simctl recordVideo` 违反宿主安全边界，先停止 P3 并重新调查 Simulator-native 视频入口；不能移动鼠标、激活 Device Hub 或在事后强制恢复焦点。
 - 不让 `record` 启动第二套音频实现；只能复用 P2 `SimulatorAudioCapture` session。
 - 不把 `simctl recordVideo` 的 stdout/stderr 文本当视频内容成功证据；最终必须解码 raw/final media。
 - 不用 fixed sleep 等待 video/audio ready；video 用真实 `Recording started` marker，audio 用第一批真实 buffer。
@@ -30,59 +30,61 @@
 ## P3-T1 实现正式 Simulator 音画录制与 record CLI
 
 **Files:**
-- Create: `Sources/RoamerCore/Simulator/SimulatorVideoCapture.swift`
-- Create: `Sources/RoamerCore/Simulator/SimulatorRecording.swift`
+- Temporary Gate evidence only: `.build/feature-probes/simulator-audio-feedback/video-gate/**`
+- Create after Gate PASS: `Sources/RoamerCore/Simulator/SimulatorRecording.swift`
 - Create: `Sources/RoamerCore/Simulator/SimulatorRecordingMuxer.swift`
-- Create: `Sources/RoamerCore/Simulator/SimulatorRecordingManifest.swift`
-- Modify: `Sources/RoamerCore/Simulator/SimulatorAudioCapture.swift`
 - Modify: `Sources/RoamerCLI/CLI.swift`
-- Modify if AVFoundation/CoreMedia linker settings are actually required: `Package.swift`
-- Create: `Tests/RoamerCoreTests/SimulatorRecordingTimelineTests.swift`
-- Create: `Tests/RoamerCoreTests/SimulatorRecordingManifestTests.swift`
+- Modify `Package.swift` only if the real build proves AVFoundation/CoreMedia linker settings are required；不得提高 package-wide macOS 14.0 deployment target
+- Create: `Tests/RoamerCoreTests/SimulatorRecordingTests.swift`
 - Modify: `README.md`
 - Modify: `docs/audio-feedback.md`
 - Modify: `docs/real-simulator-acceptance.md`
 - Modify: `AGENTS.md`
 
-**Step 1: 固化 `record` 用户语义**
+**Step 1: 先做 `simctl recordVideo` 视频准入 Gate，不写 production**
+
+在 `.build/feature-probes/simulator-audio-feedback/video-gate/` 做一次最小真实录像：
+
+1. 记录宿主前台 App、鼠标、当前唯一 AVP UDID；
+2. 直接启动 `xcrun simctl io $UDID recordVideo --codec=h264 $NEW_RAW_VIDEO_PATH`；输出文件必须不存在，因此不使用 `--force`；
+3. 从 stderr 等待 Apple 文档定义的 `Recording started`，在读到 marker 的同一宿主 monotonic clock 记录时间；
+4. 只录极短片段并 SIGINT 正常封口；
+5. 用 AVFoundation 读取 raw MOV 的首个 video track、timeRange 与 duration；
+6. 再读宿主前台 App / 鼠标。
+
+Gate 条件：宿主前台与鼠标没有因这次录像改变，且 raw MOV 可解码。若失败，删除 probe、记录证据并停止 P3；不得通过激活/恢复宿主 App、warp mouse、Device Hub UI 或桌面录屏绕过。
+
+同时用 Fixture 的一个可观察画面变化做最小时间锚点实验，确认 `Recording started` host time 与 raw video timeline 的关系足够稳定。若仅凭 marker 无法解释实际媒体时间，则在继续 production 前调查 Simulator-native display/frame timing；不允许以后用人工常量修正。
+
+**Gate 决策必须在写 production 前完成**：PASS 时把实际 host-safety 与 timing 契约写回本 plan/idea 后删除整个 video-gate probe；FAIL 时同样记录失败层并删除 probe，P3-T1 停止且不创建 `record` public command。
+
+**Step 2: Gate PASS 后固化 `record` 用户语义并建立私有 video lifecycle owner**
 
 正式 CLI：
 
 `roamer record <duration-sec> <new-output-dir>`
 
-目录由 `NewOutputDirectory` 一次性创建，最终至少包含：
+duration 必须有限且 > 0，不新增未经真实需求证明的任意短上限。CLI 参数解析后先检查 macOS 14.2 availability；不支持时必须在创建目录和启动 `recordVideo` 之前失败。通过后才由 `NewOutputDirectory` 一次性创建 recording 目录，至少包含 raw `video.mov`、P1/P2 冻结的 raw audio、`audio.json`、final `recording.mov` 与 `recording.json`。
 
-- `video.mov`：原始 Simulator framebuffer；
-- P1/P2 冻结名称的 raw audio 文件；
-- `audio.json`：正式音频 capture manifest；
-- `recording.mov`：最终同步 A/V；
-- `recording.json`：录制总 manifest。
+在 `SimulatorRecording.swift` 内用一个私有 video process owner 承担已通过 Gate 的原生 video channel：
 
-duration 必须有限且 > 0，不新增未经真实需求证明的任意短上限。
+1. 接受明确 AVP UDID 和**不存在**的 raw video URL；
+2. 启动 `/usr/bin/xcrun simctl io $UDID recordVideo --codec=h264 $RAW_VIDEO_PATH`，不使用 `--force`；
+3. stdout 设为 null；stderr 使用单一 pipe 持续排空到进程退出，流式识别 `Recording started` marker，不能识别到 marker 后停止读取；只保留有界错误尾部用于失败报告，避免无界日志内存；
+4. marker 出现后才进入 ready，并在 Gate 冻结的同一 host clock 记录 `videoReadyHostTime`；
+5. 结束时只向本次拥有的 recordVideo PID 发送 SIGINT；
+6. 等待子进程退出、stderr reader 完成和 MOV 完成封口；
+7. 非正常退出、marker 未出现、输出文件已预存在或 MOV 不可读都明确失败。
 
-**Step 2: 建立 `SimulatorVideoCapture` 单一 lifecycle owner**
+不要为了一个长生命周期录像改写现有同步 `ProcessRunner`；它已经有明确的短命令/deadline语义。也不要预建通用 `LongRunningProcess` abstraction。
 
-`SimulatorVideoCapture` 只负责现有原生 video channel：
+**Step 3: 原样复用 P2 的 `SimulatorAudioCapture`，不再改它**
 
-1. 接受明确 AVP UDID 和 raw video URL；
-2. 直接启动 `/usr/bin/xcrun simctl io $UDID recordVideo --codec=h264 --force $RAW_VIDEO_PATH`；
-3. 读取 pipe，只有观察到真实 `Recording started` marker 后才进入 ready，并立即用 P1 已冻结的同一 host monotonic clock 记录 `videoReadyHostTime`；
-4. 结束时向本次拥有的 recordVideo process 发送 SIGINT；
-5. 等待进程退出和 MOV 文件完成封口；
-6. 非正常退出、marker 未出现、文件不可读都返回原生失败。
+P2-T3 必须已经冻结 recorder 所需的内部 session 能力：调用者传入已拥有的 destination/raw audio URL，`start()` 等到 first real buffer 并返回 `firstSampleHostTime`，session 可按 frame duration 完成或由 owner 提前停止，且 normal/error/cancel 都完整 teardown tap/aggregate/IOProc。
 
-不要为了长生命周期进程改写现有同步 `ProcessRunner`；该 owner 直接拥有 Foundation `Process`、Pipe 和 cleanup。
+P3 直接消费这个 API；如果到这里才发现必须改变 AudioCapture 的核心职责，说明 P2 计划/实现不完整，应回 P2-T3 修根因，而不是在 P3 做兼容重载或复制代码。
 
-**Step 3: 让 `SimulatorAudioCapture` 支持被 recorder 直接复用**
-
-P2-T3 已要求 audio capture 是可复用 session owner。P3 只补 record 真正需要、P2 尚未暴露的最小内部能力：
-
-- caller 提供已创建好的 output directory / raw audio URL，而不是再次创建目录；
-- `start()` 等到 first real buffer 并返回 `firstSampleHostTime`；
-- caller 可以等待指定 audio frame duration 完成；
-- normal/error/cancel 仍由同一个 audio owner 做完整 tap/aggregate/IOProc teardown。
-
-`audio capture` CLI 与 `record` 必须走同一套内部 audio implementation；禁止代码复制。
+`record` 自己沿用仓库 `SimulatorSceneRuntime` 已有的局部 SIGINT/SIGTERM 模式：本次调用临时接管信号，触发当前 audio/video owner cleanup 后恢复原 handler。不要建立进程级常驻 signal manager；嵌套 audio session 在 record 内不得注册第二套 signal handler。
 
 **Step 4: 建立单一 recording timeline**
 
@@ -90,12 +92,12 @@ P2-T3 已要求 audio capture 是可复用 session owner。P3 只补 record 真�
 
 1. 创建 recording output directory；
 2. 记录 route/source before snapshot；
-3. 启动 `SimulatorVideoCapture` 并等待 `videoReadyHostTime`；
+3. 启动 `SimulatorRecording.swift` 内的私有 video owner 并等待 `videoReadyHostTime`；
 4. 启动 `SimulatorAudioCapture` 并等待 `audioFirstSampleHostTime`；
 5. 令 `contentStartHostTime = audioFirstSampleHostTime`；因为 video 已先 ready，所以它只包含一段可裁掉的 pre-roll；
 6. audio 从 first sample 起采满用户请求 duration；
 7. audio 完成后立即停止 video，并等待 raw MOV 封口；
-8. `videoTrimStart = contentStartHostTime - videoReadyHostTime`，用 P1 冻结的 host-time 转换得到媒体时间；
+8. `videoTrimStart = contentStartHostTime - videoReadyHostTime`，只使用 P1 已证明的 audio host clock 与 P3 Step 1 Gate 已证明的 video marker/media-time 关系换算；
 9. final A/V 只取 raw video `[videoTrimStart, videoTrimStart + duration]` 和 raw audio `[0, duration]`；
 10. 若 raw video 实际可用区间不足 requested duration，明确失败，不靠缩短成片掩盖问题。
 
@@ -114,17 +116,16 @@ P2-T3 已要求 audio capture 是可复用 session owner。P3 只补 record 真�
 
 如果 P1 冻结的 raw audio 容器不能被 AVFoundation 直接读取，先回 P2-T3 从根因选择兼容的标准输出格式；不要在 muxer 里再造私有转码器。
 
-**Step 6: recording manifest 与状态机**
+**Step 6: recording manifest 与最小状态机**
 
-`recording.json` 使用 `schemaVersion=1`，至少记录：
+创建 recording 目录后立即原子写入 `recording.json state=preparing`，使外部协调无需猜测启动阶段。该 manifest 使用 `schemaVersion=1` 并始终原子替换，避免外部轮询读到半截 JSON；至少记录：
 
-- `state = preparing | recording | muxing | completed | failed`；
+- `state = preparing | recording | completed | failed`；
 - device UDID；
 - requested duration；
 - raw video/audio/final relative paths；
+- `audio.json` relative path；音频 source process 与 route before/after 继续只由 `audio.json` 拥有，不在 recording manifest 重复；
 - video process PID；
-- audio source process snapshot；
-- route before/after；
 - `videoReadyHostTime`、`audioFirstSampleHostTime`、计算后的 `videoTrimStart`；
 - raw/final media durations；
 - started/finished wall time；
@@ -142,7 +143,7 @@ P2-T3 已要求 audio capture 是可复用 session owner。P3 只补 record 真�
 - 不恢复 route，因为 Roamer 从未修改 route；
 - 不终止 Simulator App。
 
-如果 mux 失败，raw video/audio 必须保留，manifest 标记 failed；不要为了“看起来成功”删除证据或返回只有 video 的结果。
+如果 mux 失败，raw video/audio 必须保留，manifest 标记 failed；不要为了“看起来成功”删除证据或返回只有 video 的结果。SIGINT/SIGTERM 也走同一 ownership cleanup，保留已经产生的 partial evidence。
 
 **Step 8: 自动测试**
 
@@ -153,7 +154,9 @@ P2-T3 已要求 audio capture 是可复用 session owner。P3 只补 record 真�
 - recording manifest state/JSON；
 - path/relative file semantics。
 
-不要 mock `simctl recordVideo` + CoreAudio tap 后声称端到端通过；真实录制正确性由 P3-T2。
+不要 mock `simctl recordVideo` + CoreAudio tap 后声称端到端或中断 cleanup 已通过；真实录制与 SIGINT 资源归属由 P3-T2 验收。
+
+成功 CLI 最后打印 `recording.json` 路径，与 `observe`/`scene` 的证据目录风格一致。
 
 Run: `swift test && swift build -c release && .build/release/roamer --help && git diff --check`
 
@@ -169,7 +172,7 @@ Expected: 全绿，help 出现 `record <duration-sec> <new-output-dir>`。
 
 **Step 10: 原子提交**
 
-把 video owner + recording coordinator + muxer + CLI + tests + docs 作为一个原子提交。不要拆出“先有 silent record、以后再接 audio”的中间 public 状态。
+把 recording coordinator（含私有 video owner/manifest）+ muxer + CLI + tests + docs 作为一个原子提交。不要拆出“先有 silent record、以后再接 audio”的中间 public 状态。
 
 ---
 
@@ -206,15 +209,17 @@ Run: `.build/release/roamer record <duration> <new-output-dir>`
 - raw video pre-roll 被裁掉，而不是在 final 前面留下无音频启动段；
 - 用 Fixture 的可观察画面状态 + 已知 tone 做至少两次录制，确认 `Recording started` marker 到实际 video timeline 的对齐足够稳定；如果出现不可解释的系统性漂移，回 P3-T1 查更底层的 video timing 证据，禁止加入人工 magic offset。
 
-**Step 2: 核销 recording ownership**
+**Step 2: 核销正常 recording ownership，并做一次 SIGINT 验收**
 
-录制完成后确认：
+正常录制完成后确认：
 
 - route selection/effective UID 与 before 一致，或仅记录用户自己在期间发生的外部变化；
 - 没有 Roamer process tap/private aggregate/IOProc 残留；
 - 没有本轮 `simctl recordVideo` process 残留；
 - Fixture tone 与 host helper 已停止；
 - host frontmost/mouse 未因 Roamer record 改变。
+
+再单独启动一次较长的正式 `record`，等 `recording.json state=recording` 后只发送一次 SIGINT 给本轮 Roamer CLI。要求：audio session 与本轮 recordVideo 子进程都退出；partial raw video/audio/manifest 保留；没有 tap/aggregate/IOProc/recordVideo 残留；route 和宿主前台/鼠标不变。不要扩成更多 signal matrix。
 
 **Step 3: HappyPianist 纯音频回归**
 
