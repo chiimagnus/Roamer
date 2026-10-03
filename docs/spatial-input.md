@@ -1,16 +1,6 @@
 # 空间输入
 
-本模块负责 `home`、`pose`、`crown`、`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag`。它把 screenshot 像素与当前 head pose 转成 Simulator 私有输入消息，不操作 macOS 鼠标。
-
-## 源码 owner
-
-- `Sources/RoamerCore/Input/SimulatorHIDController.swift`：HID 发送、home、pose、键盘底层发送入口。
-- `Sources/RoamerCore/Input/HeadPose.swift`：6DoF pose、四元数和 gaze ray。
-- `Sources/RoamerCore/Input/ScreenProjection.swift`：screenshot 像素到 gaze 角度。
-- `Sources/RoamerCore/Input/HandTrajectory.swift`：单手/双手手势轨迹采样。
-- `Sources/RoamerCore/Input/IndigoMessages.swift`：私有输入消息构造。
-- `Sources/RoamerCore/Input/SimulatorCrownController.swift`：Digital Crown / immersion level。
-- `Sources/RoamerPrivateABI`：Swift 无法直接表达的私有 C/SIMD ABI 桥。
+本页记录 `home`、`pose`、`crown`、`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 的长期约束。它把 screenshot 像素与当前 head pose 转成 Simulator 私有输入消息，不操作 macOS 鼠标。代码归属见 [AGENTS](../AGENTS.md)。
 
 ## 控制流
 
@@ -29,19 +19,10 @@
 
 ## 修改时
 
-改变投影、head pose、轨迹采样或消息布局时，不要只看单元测试。真实硬件语义最终由 Simulator 解释，必须同时验证 App 是否真的收到预期 gesture。
+改变投影、head pose、轨迹采样或消息布局时，必须验证 App 是否真的收到预期 gesture，不能用函数成功返回代替真实行为。
 
 如果新增手势，优先复用现有 gaze / trajectory / HID 发送链；只有平台消息本身不同才扩展 ABI。
 
 ## 验证
 
-单元测试覆盖：
-
-- `HeadPoseTests`
-- `ScreenProjectionTests`
-- `HandTrajectoryTests`
-- `SimulatorHIDControllerTests`
-- `SimulatorCrownControllerTests`
-- `IndigoMessagesTests`
-
-行为验证使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，检查实际 click/drag/magnify/rotate 回调、pose 画面变化，以及 macOS 鼠标和焦点保持不变。
+基础验证按 [AGENTS](../AGENTS.md) 执行；真实行为使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，检查 click/drag/magnify/rotate 回调、pose 画面变化，以及 macOS 鼠标和焦点保持不变。
