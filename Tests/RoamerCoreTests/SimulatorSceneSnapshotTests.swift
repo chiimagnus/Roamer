@@ -122,6 +122,23 @@ final class SimulatorSceneSnapshotTests: XCTestCase {
         XCTAssertThrowsError(try SimulatorSceneRuntime.requireUntracedRunningProcess(process.processIdentifier))
         XCTAssertThrowsError(try SimulatorSceneRuntime.requireUntracedRunningProcess(process.processIdentifier))
     }
+
+    func testRuntimeRejectsExitedButUnreapedProcess() throws {
+        var child: pid_t = 0
+        var arguments = [strdup("/usr/bin/true"), nil]
+        var environment: [UnsafeMutablePointer<CChar>?] = [nil]
+        defer { free(arguments[0]) }
+        let result = posix_spawn(&child, arguments[0]!, nil, nil, &arguments, &environment)
+        XCTAssertEqual(result, 0)
+        guard result == 0 else { return }
+        defer {
+            var status: Int32 = 0
+            waitpid(child, &status, 0)
+        }
+        var information = siginfo_t()
+        XCTAssertEqual(waitid(P_PID, id_t(child), &information, WEXITED | WNOWAIT), 0)
+        XCTAssertThrowsError(try SimulatorSceneRuntime.requireUntracedRunningProcess(child))
+    }
 }
 
 enum SceneTestData {

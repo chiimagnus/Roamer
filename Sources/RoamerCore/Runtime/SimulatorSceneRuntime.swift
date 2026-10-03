@@ -34,7 +34,8 @@ enum SimulatorSceneRuntime {
         var information = kinfo_proc()
         var size = MemoryLayout<kinfo_proc>.size
         guard sysctl(&query, UInt32(query.count), &information, &size, nil, 0) == 0,
-              size == MemoryLayout<kinfo_proc>.size else {
+              size == MemoryLayout<kinfo_proc>.size,
+              information.kp_proc.p_stat != SZOMB else {
             throw RoamerError.message("目标 PID \(pid) 已退出或无法读取运行状态")
         }
         guard information.kp_proc.p_flag & P_TRACED == 0,
