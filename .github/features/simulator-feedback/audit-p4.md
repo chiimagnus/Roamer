@@ -33,6 +33,32 @@
 
 ## 发现项
 
+## 发现 F-202
+
+- 任务：`P4-T3`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Support/ProcessRunner.swift:8`
+- 摘要：`ProcessResult.status 只可能为 0：所有非零状态在 return 之前已经 throw，且字段没有外部使用`
+- 风险：`向调用者暴露永远成功的退出码，重复表达成功或异常的既有契约`
+- 预期修复：`退出码只在公共 runner 内用于错误判断，不作为结果成员返回`
+- 验证：`ProcessRunnerTests 全部成功/失败/deadline 边界；全量编译与测试`
+- 解决证据：`ProcessResult 不再暴露永远为0的 status；退出码在 ProcessRunner 内检查，非零仍包含原 stderr/status；ProcessRunnerTests6/6 PASS，所有原调用者编译通过，git diff --check PASS。证据 .build/simulator-feedback/cleanup-20261004/process-tests.log`
+
+
+## 发现 F-201
+
+- 任务：`P4-T1`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Runtime/SimulatorObservationRuntime.swift:125`
+- 摘要：`Press 在 translationIdentity 已验证 pid/objectID 后再次 KVC 读取与检查 objectID，属于重复围栏`
+- 风险：`重复原生访问与错误分支没有增加有效校验，增加维护负担`
+- 预期修复：`复用已经校验并标准化的 pid:objectID identity 与目标 identity 比较，不再次访问原生属性`
+- 验证：`SimulatorObservationTests；真实 Press 点击计数变化、缺失节点及 stale PID 拒绝`
+- 解决证据：`复用 translationIdentity 后，SimulatorObservationTests14/14 与 release PASS；真实 fixture 当前同 PID Press 使 oracle/AX CLICK 0→1；当前树 objectID0 与旧 PID1 拒绝。证据 .build/simulator-feedback/cleanup-20261004/ax-*、interaction-*、missing-node.log、stale-pid.log`
+
+
 ## 发现 F-102
 
 - 任务：`P4-T1`

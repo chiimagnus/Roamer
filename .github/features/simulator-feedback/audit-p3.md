@@ -30,6 +30,19 @@
 
 ## 发现项
 
+## 发现 F-201
+
+- 任务：`P3-T1`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Simulator/SimulatorSceneSnapshot.swift:4`
+- 摘要：`scene仅输出DTO未使用Decodable/SceneBounds整体Equatable；属性数组已有间接存储，enum额外indirect不必要；LLDB脚本UTF8转换采用多余optional强拆`
+- 风险：`合成不使用的解码/比较与额外堆存储，模糊唯一原生plist解码入口；UTF8桥接制造不存在的失败形态`
+- 预期修复：`输出模型仅Encodable，保留真实NativeScene类型Decodable；去掉未使用Equatable和多余indirect；用Data(script.utf8)构造脚本字节`
+- 验证：`SimulatorSceneSnapshotTests/SceneDebugRendererTests；真实scene raw plist与oracle/JSON/PNG/index一致，detach后可读AX；release和完整回归`
+- 解决证据：`仅输出模型保留Encodable，真实native parser保留Decodable；移除unused Equatable/indirect与UTF8 optional强拆。Scene12/12、renderer7/7与release PASS；实际PID12154 scene raw/published/5 oracle/完整index/四PNG verifier PASS，四图已查看；同PID detach后AX available。证据 cleanup-20261004/scene-current、after-detach、scene-/renderer-*.log`
+
+
 - 本轮沿 CLI → 原生副作用 → 解析 → 绘图 → 清单与真实反馈逐段审查，未发现需要新增修复的有证据正确性缺陷。
 - 不把 P2-T2 尚未成立的渲染 fence/会话仲裁重复记为 P3 finding；用户已明确授权独立推进 P3，但该项仍阻止完整 feature 通过。
 
