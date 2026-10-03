@@ -13,6 +13,7 @@
 ## 不变量
 
 - `key` 与 `type` 都使用 Simulator HID，不发送 macOS 键盘事件。
+- 按键由 Simulator 当前输入焦点接收；`wait` 的 AX ready 和目标 App 的本地 first responder 不等于键盘焦点，也不证明按键已经被目标 App 接收。
 - modifier 必须有明确 down/up 配对；错误路径不能把 modifier 留在按下状态。
 - `type` 当前只在已验证的 visionOS English (US) 输入模式下工作；Roamer 不自动切换用户输入法。
 - 不把字符粘贴、clipboard 注入或宿主 IME 当作隐藏 fallback。

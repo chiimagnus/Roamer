@@ -30,6 +30,8 @@ xcrun simctl install booted .build/simulator-fixture/RoamerTestApp.app
 
 每个页面都会生成新的 `session`。判断 UI 是否就绪时应等待新的 session 或预期业务状态，不能把 `launch` 成功或旧 JSON 当成完成信号。
 
+键盘验收前也要查看当前 screenshot，确认测试窗口在前面。AX 可读或 UIKit `firstResponder=true` 不证明该窗口正在接收 Simulator 键盘输入；关闭沉浸空间后尤其可能回到另一个 App。必要时用 `roamer launch com.chiimagnus.RoamerTestApp` 激活测试窗口，再发送一次新的按键，并等待 oracle 中对应的 down/up，不自动重放失败输入。
+
 ## 独立状态 Oracle
 
 ```bash
