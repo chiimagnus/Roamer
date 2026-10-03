@@ -21,6 +21,7 @@ private enum Page: String, CaseIterable {
     case keys = "Key events"
     case rawKeys = "Raw key codes"
     case spatial = "Spatial scene"
+    case audio = "Audio"
 }
 
 private struct ProbeView: View {
@@ -47,6 +48,7 @@ private struct ProbeView: View {
             case .keys: KeyEventsView()
             case .rawKeys: RawKeysView().frame(width: 1000, height: 740)
             case .spatial: SpatialSceneControls(state: spatial)
+            case .audio: AudioFeedbackView()
             }
         }
         .padding(24)

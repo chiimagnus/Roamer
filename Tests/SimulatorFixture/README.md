@@ -27,6 +27,7 @@ xcrun simctl install booted .build/simulator-fixture/RoamerTestApp.app
 - **Key events**：验证 SwiftUI 收到的按键、修饰键和 down/up。
 - **Raw key codes**：验证 UIKit first responder 收到的 USB HID usage 与 modifierFlags。
 - **Spatial scene**：验证 progressive 空间、Crown 沉浸度、父子变换、目标化手势、零厚度平面、无 Accessibility 描述实体，以及关闭后重新进入的新 session。
+- **Audio**：按需播放固定 997 Hz 连续音；`Documents/audio.json` 只记录 Fixture 实际请求的 playing/frequency/play count，正式 capture 内容必须再用 `Tools/verify-audio.py` 独立验证。
 
 每个页面都会生成新的 `session`。判断 UI 是否就绪时应等待新的 session 或预期业务状态，不能把 `launch` 成功或旧 JSON 当成完成信号。
 
@@ -40,9 +41,22 @@ cat "$data_dir/Documents/interaction.json"
 cat "$data_dir/Documents/keys.json"
 cat "$data_dir/Documents/raw-keys.json"
 cat "$data_dir/Documents/spatial.json"
+cat "$data_dir/Documents/audio.json"
 ```
 
 这些文件只证明测试 App 自己实际收到或持有的状态，不是 Roamer 的生产观测渠道。正式 `observe` / `scene` 必须与它们独立对照，不能从 oracle 反向生成生产结果。
+
+## 音频真值
+
+进入 **Audio** 页后，通过 Roamer Accessibility Press 操作 `Start tone` / `Stop tone`。开始或停止是否成立，以 `Documents/audio.json` 中同一 `session` 的 `playing` 与 `playCount` 为准，不用按钮文案或命令返回值代替。
+
+正式 capture 生成 PCM16 WAV 后独立验证：
+
+```bash
+python3 Tests/SimulatorFixture/Tools/verify-audio.py <audio.wav> 997 --duration-sec <秒数>
+```
+
+隔离验收同时播放宿主干扰 tone 时，再加 `--reject-hz <频率>`。verifier 仅使用 Python 标准库，检查 WAV 格式、frame/duration、RMS/peak、997 Hz 和可选 reject frequency。
 
 ## Accessibility 与调试覆盖层
 
