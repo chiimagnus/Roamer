@@ -36,10 +36,10 @@ note = "9 observation/68全量测试、release与fixture build PASS；正式clic
 [[tasks]]
 id = "P2-T2"
 title = "接入显式原生 XYZ 与边界调试画面"
-status = "blocked"
+status = "completed"
 plan = "plan-p2.md#p2-t2"
-commit = ""
-note = "fixture/未修改钢琴原生XYZ边界及十开关恢复已实证；用户允许明确独占但禁止人工；独立重审确认 DebugHelper 仅有可视化开关读写、无 rendered-frame fence，RSSRenderedContentService 虽有 surface callback 但 server 强制私有 com.apple.realitysimulation.rendered-content-service entitlement，普通 Roamer 不能合法使用；禁止用私有 entitlement、固定 sleep、像素猜测或人工确认绕过；P2-T2 保持 blocked。90 tests/release/fixture PASS；native-probe.md / audit-p2.md"
+commit = "1a495f1"
+note = "正式 observe --debug：RSSDebugService entity axis/bounds → 未来 post-camera GPU command-buffer completion → 后续 SimScreen frame → screenshot；恢复同样经过 GPU+display fence。fixture 多轮、axis=true 原值保留、强制截图失败恢复、并发互斥、oracle 字节不变、HappyPianist 跨 App 均 PASS；92 tests/release/fixture build PASS。"
 
 [[tasks]]
 id = "P3-T1"
