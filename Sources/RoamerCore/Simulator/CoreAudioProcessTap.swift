@@ -41,6 +41,7 @@ final class CoreAudioProcessTap {
     private struct CallbackSnapshot {
         let frameCount: UInt64
         let firstSampleHostTime: UInt64?
+        let firstSampleTimestampInvalid: Bool
         let writeError: OSStatus
     }
 
@@ -67,6 +68,7 @@ final class CoreAudioProcessTap {
     // Only the realtime callback queue mutates these fields while the device is running.
     private var callbackFrameCount: UInt64 = 0
     private var callbackFirstSampleHostTime: UInt64?
+    private var callbackFirstSampleTimestampInvalid = false
     private var callbackWriteError: OSStatus = noErr
     private var callbackTargetFrameCount: UInt64 = 0
     private var callbackCompletionSignaled = false
@@ -139,8 +141,9 @@ final class CoreAudioProcessTap {
 
             try createWriter(clientFormat: stream)
 
-            callbackTargetFrameCount = UInt64(
-                ceil(requestedDurationSeconds * stream.mSampleRate)
+            callbackTargetFrameCount = try Self.targetFrameCount(
+                durationSeconds: requestedDurationSeconds,
+                sampleRate: stream.mSampleRate
             )
             let callbackWriter = writer!
             let bytesPerFrame = stream.mBytesPerFrame
@@ -160,11 +163,15 @@ final class CoreAudioProcessTap {
                     let frames = UInt64(firstBuffer.mDataByteSize / bytesPerFrame)
                     guard frames > 0 else { return }
 
-                    if callbackFirstSampleHostTime == nil {
-                        if inputTime.pointee.mFlags.contains(.hostTimeValid) {
-                            callbackFirstSampleHostTime = inputTime.pointee.mHostTime
+                    if callbackFirstSampleHostTime == nil,
+                       !callbackFirstSampleTimestampInvalid {
+                        if let hostTime = Self.validatedHostTime(
+                            flags: inputTime.pointee.mFlags,
+                            hostTime: inputTime.pointee.mHostTime
+                        ) {
+                            callbackFirstSampleHostTime = hostTime
                         } else {
-                            callbackFirstSampleHostTime = AudioGetCurrentHostTime()
+                            callbackFirstSampleTimestampInvalid = true
                         }
                         readySemaphore.signal()
                     }
@@ -205,11 +212,13 @@ final class CoreAudioProcessTap {
                 CallbackSnapshot(
                     frameCount: callbackFrameCount,
                     firstSampleHostTime: callbackFirstSampleHostTime,
+                    firstSampleTimestampInvalid: callbackFirstSampleTimestampInvalid,
                     writeError: callbackWriteError
                 )
             }
-            guard let firstHostTime = snapshot.firstSampleHostTime else {
-                throw RoamerError.message("CoreAudio 已唤醒但缺少首个 sample host time")
+            guard !snapshot.firstSampleTimestampInvalid,
+                  let firstHostTime = snapshot.firstSampleHostTime else {
+                throw RoamerError.message("CoreAudio 首个真实 buffer 缺少有效 host time；不会伪造 A/V 时间锚点")
             }
             let currentHostTime = AudioGetCurrentHostTime()
             let elapsedNanos = currentHostTime >= firstHostTime
@@ -243,10 +252,7 @@ final class CoreAudioProcessTap {
 
         let (snapshot, cleanupError) = stopAndSnapshot()
         try validateFinalization(snapshot: snapshot, cleanupError: cleanupError)
-        return Completion(
-            frameCount: snapshot.frameCount,
-            durationSeconds: Double(snapshot.frameCount) / sampleRate
-        )
+        return try completion(from: snapshot)
     }
 
     func requestInterruption() {
@@ -263,10 +269,31 @@ final class CoreAudioProcessTap {
         requestInterruption()
         let (snapshot, cleanupError) = stopAndSnapshot()
         try validateFinalization(snapshot: snapshot, cleanupError: cleanupError)
-        return Completion(
-            frameCount: snapshot.frameCount,
-            durationSeconds: Double(snapshot.frameCount) / sampleRate
-        )
+        return try completion(from: snapshot)
+    }
+
+    static func targetFrameCount(
+        durationSeconds: Double,
+        sampleRate: Double
+    ) throws -> UInt64 {
+        guard durationSeconds.isFinite, durationSeconds > 0,
+              sampleRate.isFinite, sampleRate > 0 else {
+            throw RoamerError.message("音频采集时长或 sample rate 无效")
+        }
+        let rawFrames = ceil(durationSeconds * sampleRate)
+        guard rawFrames.isFinite,
+              rawFrames > 0,
+              rawFrames < Double(UInt64.max) else {
+            throw RoamerError.message("音频采集时长超出可表示的 frame 范围")
+        }
+        return UInt64(rawFrames)
+    }
+
+    static func validatedHostTime(
+        flags: AudioTimeStampFlags,
+        hostTime: UInt64
+    ) -> UInt64? {
+        flags.contains(.hostTimeValid) ? hostTime : nil
     }
 
     private var isInterruptionRequested: Bool {
@@ -349,10 +376,21 @@ final class CoreAudioProcessTap {
             CallbackSnapshot(
                 frameCount: callbackFrameCount,
                 firstSampleHostTime: callbackFirstSampleHostTime,
+                firstSampleTimestampInvalid: callbackFirstSampleTimestampInvalid,
                 writeError: callbackWriteError
             )
         }
         return (snapshot, cleanupError)
+    }
+
+    private func completion(from snapshot: CallbackSnapshot) throws -> Completion {
+        guard sampleRate.isFinite, sampleRate > 0 else {
+            throw RoamerError.message("CoreAudio capture 尚未建立有效 sample rate")
+        }
+        return Completion(
+            frameCount: snapshot.frameCount,
+            durationSeconds: Double(snapshot.frameCount) / sampleRate
+        )
     }
 
     private func validateFinalization(

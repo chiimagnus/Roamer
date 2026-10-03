@@ -115,7 +115,8 @@ final class SimulatorAudioCapture {
             try writeManifest(state: .recording)
             return ready
         } catch {
-            markFailed(error)
+            let partialCompletion = tap.flatMap { try? $0.stop() }
+            markFailed(error, completion: partialCompletion)
             throw error
         }
     }
@@ -138,7 +139,8 @@ final class SimulatorAudioCapture {
             finalized = true
             return manifest
         } catch {
-            markFailed(error)
+            let partialCompletion = try? tap.stop()
+            markFailed(error, completion: partialCompletion)
             throw error
         }
     }
@@ -191,13 +193,16 @@ final class SimulatorAudioCapture {
         return capture.manifestPath
     }
 
-    private func markFailed(_ error: Error) {
+    private func markFailed(
+        _ error: Error,
+        completion: CoreAudioProcessTap.Completion?
+    ) {
         guard !finalized else { return }
         finalized = true
         let routeAfter = try? Self.routeSnapshot(udid: device.udid)
         let manifest = makeManifest(
             state: .failed,
-            completion: nil,
+            completion: completion,
             routeAfter: routeAfter,
             failure: String(describing: error)
         )

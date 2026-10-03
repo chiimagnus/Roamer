@@ -102,6 +102,40 @@ final class SimulatorAudioCaptureTests: XCTestCase {
         XCTAssertEqual(format.bitsPerChannel, 32)
     }
 
+    @available(macOS 14.2, *)
+    func testTargetFrameCountRejectsUnrepresentableFiniteDuration() throws {
+        XCTAssertEqual(
+            try CoreAudioProcessTap.targetFrameCount(
+                durationSeconds: 3,
+                sampleRate: 48_000
+            ),
+            144_000
+        )
+        XCTAssertThrowsError(
+            try CoreAudioProcessTap.targetFrameCount(
+                durationSeconds: Double.greatestFiniteMagnitude,
+                sampleRate: 48_000
+            )
+        )
+    }
+
+    @available(macOS 14.2, *)
+    func testFirstSampleHostTimeRequiresHostTimeValidFlag() {
+        XCTAssertNil(
+            CoreAudioProcessTap.validatedHostTime(
+                flags: AudioTimeStampFlags(rawValue: 0),
+                hostTime: 123
+            )
+        )
+        XCTAssertEqual(
+            CoreAudioProcessTap.validatedHostTime(
+                flags: .hostTimeValid,
+                hostTime: 123
+            ),
+            123
+        )
+    }
+
     func testInvalidDurationFailsBeforeCreatingOutputDirectory() {
         let path = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
