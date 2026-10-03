@@ -84,17 +84,7 @@ Roamer 依赖 Xcode 的私有 CoreSimulator / SimulatorKit / RealitySimulation �
 
 ## 开发者
 
-开发者先读 [AGENTS.md](AGENTS.md)；它负责模块导航、开发规则和验证入口。各功能模块的详细开发文档位于 `docs/`。
-
-## 验证
-
-纯逻辑与数据回归：
-
-```bash
-swift test
-```
-
-真实 Simulator 的手势、Accessibility、调试覆盖层、实体快照与恢复验证统一使用仓库内的 [Simulator 测试 App](Tests/SimulatorFixture/README.md)。
+开发者先读 [AGENTS.md](AGENTS.md)；它负责模块导航、修改规则和基础验证。各功能的长期约束位于 `docs/`，真实 Simulator 验收统一使用 [Simulator 测试 App](Tests/SimulatorFixture/README.md)。
 
 ## License
 

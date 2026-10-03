@@ -1,12 +1,6 @@
 # 原生调试覆盖层
 
-本模块是 `observe --debug` 的专属实现：临时开启目标 bundle 的平台 XYZ 轴与 Bounds，确认它们已经进入真实渲染/显示链，再截图并恢复调用前状态。
-
-## 源码 owner
-
-- `Sources/RoamerCore/Runtime/SimulatorDebugOverlayRuntime.swift`：会话互斥、helper 生命周期、SimScreen frame fence、恢复与失败处理。
-- `Sources/RoamerCore/Runtime/SimulatorDebugOverlayHelperSource.swift`：运行于 Simulator 内的临时 helper source。
-- `Sources/RoamerCore/Simulator/SimulatorObservation.swift`：把 debug screenshot 与恢复状态写入 observation manifest。
+本页记录 `observe --debug` 的长期约束：临时开启目标 bundle 的平台 XYZ 轴与 Bounds，确认它们已经进入真实渲染/显示链，再截图并恢复调用前状态。代码归属见 [AGENTS](../AGENTS.md)。
 
 ## 正式同步链
 
@@ -38,13 +32,9 @@
 
 ## 验证
 
-除 `SimulatorObservationTests` 外，真实验收至少包括：
+基础验证按 [AGENTS](../AGENTS.md) 执行；真实验收使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，确认：
 
-- fixture screenshot 中 XYZ / Bounds 实际可见；
-- 紧接普通 observe 后覆盖层恢复；
-- 连续多轮执行无状态泄漏；
-- 预置 `axis=true / bounds=false` 后精确保留原值；
-- capture body 失败时仍恢复；
-- 两个 debug observe 并发时只允许一个进入；
-- 未修改的第二个 App 同样成立；
+- XYZ / Bounds 在实际 screenshot 中可见；
+- 正常、重复执行与 capture 失败后都只恢复本轮修改，预先开启的选项不被关闭；
+- 并发 debug 会话只有一个进入，第二个未经修改的 App 也成立；
 - macOS 前台焦点不变。
