@@ -7,9 +7,21 @@
 - [x] ① 普通 observation、AX Press/readiness、ProcessRunner：删除重复原生 objectID 读取（5ca678a）、移除恒为 0 的结果 status（96cb92a）。AX14/14、ProcessRunner6/6、release、真实 CLICK 0→1、缺失节点/stale PID 拒绝通过；证据 `.build/simulator-feedback/cleanup-20261004/`。
 - [x] ② debug helper、GPU/display fence、会话所有权与失败恢复：120422f 删除 restore 文本写入/requestedRestore，EOF 即恢复；移除无用 conformance、固定5秒配置与内部 timeout 饱和。helper3/3、Observation14/14、release，真实连续 debug/plain、拒写恢复、并发互斥和 oracle 不变通过；GPU/display/原值/ownership 边界保留。
 - [x] ③ scene capture、几何解析与 renderer：462b8f9 移除未消费的输出 Decodable/整体 Equatable、多余 enum indirect 与 UTF8 optional 强拆。Scene12/12、renderer7/7、release，真实五实体 raw/oracle/JSON/index/四PNG核对和同PID detach后AX可读通过；没有第二套捕获后端，几何、恢复、资产归属边界保留。
-- [ ] ④ 残留 prototype / 文档 / 测试：引用核对、全量验证、原子提交与结果汇总。
+- [x] ④ 残留 prototype / 文档 / 测试：2a94cfd 移除 AX 输出模型未用 Decodable；40322c0 删除 framework 加载前重复 stat，隔离子进程证明 dlopen 对缺失路径明确拒绝；0432049 删除最后探针及空目录文档；1bcada8 修正键盘验收的实际窗口焦点说明。98/98、release、工具语法、真实 AX/scene/HID、复杂场景四PNG/index与清理前逐字节相同均通过。
 
 逐项完成后回填实际证据；原计划任务已经完成，不为本轮复审重置 todo.toml 的历史状态。
+
+### 本轮收尾与实际边界
+
+- 范围：simulator-feedback 的现役 CLI/Core/fixture、它们实际依赖的 ProcessRunner/PrivateRuntime，以及残留探索工具。没有扩大为全仓重构，也不以行数替代取舍。
+- 新 finding 全部 Resolved：P1 F-201；P2 F-201/F-202/F-203；P3 F-201；P4 F-201/F-202。八个独立提交包含七项精简和一项有运行证据的验收文档修正；没有新增 provider、factory、fallback、coordinator 或测试框架。
+- 保留项均有实际职责：唯一设备/PID、stale node、原生 selector/ABI、单一 deadline、GPU/display fence、原值/ownership、非有限数/父链/版本、资产路径/新目录。这些不作为“多余围栏”机械删除。
+- 正式测试日志：`.build/simulator-feedback/cleanup-20261004/full-tests.log`（98/98）、`final-release.log`（PASS）、各逻辑块的 `*-tests.log` / `*-release.log`。fixture 工具 shell/Python 语法通过，现役路径无 probe 依赖。
+- 正常与失败实测：PID12154 的 Press 计数、缺失节点和旧PID拒绝；EOF连续 debug/plain、拒写后原生 originalAxis/Bounds=false/false、并发1/0、oracle不变；raw/oracle/JSON/index/四PNG以及 detach 后 AX；关闭后的真空场景；`crown 0` 实际加载 XROS 但不发送沉浸度修改。
+- 复杂场景仅离线复核：当前实际 decoder/renderer 处理历史 HappyPianist 原始捕获，101 实体/90 模型全部进入索引，四图1600×1080；四PNG和索引与精简前逐字节一致。没有重新 attach 或重启该 App，没有为密集标签添加猜测可见性/删实体的启发式。
+- 键盘首轮 b 未在 fixture 收到，不算成功；`raw-key-after.json` / `raw-key-unfocused.json` 保留失败。截图显示关闭沉浸空间后另一 App 位于前面，本地 `firstResponder=true` 不能证明 Simulator 输入焦点；不据此增加自动 focus 围栏。仅 launch fixture 后同PID窗口实际移到前面，新的 d 收到 usage7 down/up，`raw-key-focused-after.json`；没有重发 b，也不声称首次 b 的其他 App 业务结果已验证。
+- 环境收尾：fixture 恢复初始停止状态，HappyPianist 仍 PID58102，宿主前台前后均 `net.imput.helium`；本轮没有发送 pose、改变缓存或输入法，没有整机 reboot。PR #5 已被合并，本轮未推送或改写已合并历史；审计收尾按 skill 保留本地。
+- 本轮 Gate：`Go`。四项 Todo 均闭环，未发现还需保留为 Open 的有证据冗余/兼容后端；不宣称由有限复审证明所有未来风险都不存在。
 
 > 当前结论以末尾「2026-10-03 本轮独立逐提交复审」及其最终 Gate 为准。此前内容仅保留历史，不作为本轮判断依据。
 
