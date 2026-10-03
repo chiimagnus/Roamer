@@ -72,7 +72,7 @@ package struct SimulatorSceneSnapshot: Encodable {
         let device = try simulator.bootedAVP()
         let pid = try simulator.runningPID(bundleID, on: device)
         try SimulatorSceneRuntime.requireUntracedRunningProcess(pid)
-        let directory = try SimulatorObservation.createOutputDirectory(outputPath)
+        let directory = try NewOutputDirectory.create(path: outputPath)
         let start = Date()
         let captures = try SimulatorSceneRuntime.capture(device: device, bundleID: bundleID, pid: pid)
         let finish = Date()
