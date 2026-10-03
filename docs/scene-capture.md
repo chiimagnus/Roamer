@@ -1,12 +1,6 @@
 # Scene 捕获与几何调试图
 
-本模块负责 `scene`：短暂 attach 目标 App，读取 Apple 原生 spatial scene debug representation，解析实体层级/变换/模型自身边界，然后 detach，最后生成 JSON、原始 plist、实际 screenshot 与几何调试图。
-
-## 源码 owner
-
-- `Sources/RoamerCore/Runtime/SimulatorSceneRuntime.swift`：LLDB ownership、原生捕获、detach、中断与临时资产清理。
-- `Sources/RoamerCore/Simulator/SimulatorSceneSnapshot.swift`：原生 plist 解码、层级校验、父链矩阵、模型 bounds、`scene.json` 发布。
-- `Sources/RoamerCore/Simulator/SceneDebugRenderer.swift`：overview/top/front/side 和 `scene-index.txt`。
+本页记录 `scene` 的长期约束：短暂 attach 目标 App，读取 Apple 原生 spatial scene debug representation，解析实体层级、变换和模型自身边界，detach 后生成 JSON、原始 plist、实际 screenshot 与几何调试图。代码归属见 [AGENTS](../AGENTS.md)。
 
 ## 捕获顺序
 
@@ -40,16 +34,13 @@
 
 ## 修改时
 
-变更 native decode 时先更新 `SimulatorSceneSnapshotTests`；变更几何渲染时更新 `SceneDebugRendererTests`。修改 LLDB/cleanup 路径时必须做真实 attach/detach 验证，单元测试不足以证明目标进程被正确恢复。
+变更 native decode 或几何渲染时同步更新对应回归测试。修改 LLDB/cleanup 路径时必须做真实 attach/detach 验证，单元测试不足以证明目标进程被正确恢复。
 
 ## 验证
 
-真实 fixture 应同时验证：
+基础验证按 [AGENTS](../AGENTS.md) 执行；真实验收使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，确认：
 
-- 原生实体与独立 `spatial.json` oracle 一致；
-- parent transform、零厚度平面和模型自身 bounds 正确；
-- click/drag 后只有目标实体发生预期变化；
-- close/reopen 后新 session 重新捕获；
-- `scene-index.txt` 与 modelCount、名称、ID、原点一致；
-- 四张图固定尺寸且人工视觉方向正确；
+- 原生实体与独立 `spatial.json` oracle 一致，parent transform、零厚度平面和模型自身 bounds 正确；
+- click/drag 只改变目标实体，close/reopen 后以新 session 重新捕获；
+- `scene-index.txt`、modelCount、名称、ID、原点和四张布局图一致且可读；
 - 未修改 App 的复杂 scene 也能完成 capture/detach。
