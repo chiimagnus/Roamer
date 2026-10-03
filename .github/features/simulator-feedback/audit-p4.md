@@ -1,5 +1,7 @@
 # Audit P4 - simulator-feedback
 
+> 当前结论以末尾「2026-10-03 本轮独立逐提交复审」及其最终 Gate 为准。此前内容仅保留历史，不作为本轮判断依据。
+
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p4.md`
 - feature 目录：`.github/features/simulator-feedback/`
@@ -141,7 +143,7 @@
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
 ## 2026-10-03 本轮独立逐提交复审
 
-本轮不采用历史 audit 结论。真实操作仅获准 RoamerTestApp。
+本轮不采用历史 audit 结论。真实验收使用 RoamerTestApp；跨 App workflow 原始产物独立复核，不冒称本轮重新操作。
 
 ### 本轮任务映射
 
@@ -151,5 +153,32 @@
 
 ## 发现项
 
-本轮发现由 feature_tool.py 追加。Gate 待修复与验证。
+本轮 F-101/F-102 已通过 feature_tool.py 记录、修复、验证并机械标记 Resolved；不引用历史 finding 的结论。
 
+### 逐提交结论与根因修复
+
+- `d5ff0eb`：正式 Press 已注册到 CLI 并复用现有 native AX；不做 AX frame → screenshot 的猜测。当前树节点缺失与旧 PID 拒绝真实有效，但计划要求的 action reply 错误回归缺失，本轮按 F-102 补齐。
+- `df30a34`：PASS。四图固定 1600×1080，plot 不再被全部 legend 撑长；完整名字、ID、原点另存 scene-index.txt，各 scene 独立。
+- `d01a750`：PASS。正式 verifier 校验 sidecar 的全部编号/名字/ID/原点以及固定 PNG 尺寸，不只验证文件存在。
+- `cb6a462`：PASS。显式 wait 是唯一 readiness 重试入口；launch / observe 不偷偷 sleep 或重放。当前 PID、退出/变化、unavailable 与暂时 failed 的职责不同。
+- `056c90d`：将统一绝对 deadline 传递给 simctl 与 AX，但未覆盖进程退出后的输出管道等待；本轮 F-101 实际复现后修复，不因该提交标题而认定完整。
+- `1a1d730`：解决 F-101。在 ProcessRunner 公共汇聚点用单一 poll/read 循环同时等待子进程和两条 pipe，整个生命周期共享同一 deadline；删除两条后台读线程、共享输出 box 与无期限 semaphore wait。只终止自身未退出的进程，不抢杀无关进程。
+- `ef5d81a`：解决 F-102。最小 action reply 校验覆盖成功 / 非零 error / 缺 error 值或 selector；删除 Press 根本不使用的 resultData 围栏。deadline 采用标准 DispatchTime，删除当前 0.1～300 秒边界下无实际作用的饱和/溢出分支。
+
+### 本轮验证日志
+
+证据根目录：`.build/simulator-feedback/review-20261003/`。
+
+- 修复前 `sh -c 'sleep 1 &'`：100ms deadline 竟在约 1.21s 成功返回，`reproduction.log` 记录真实失败断言。
+- `swift test --filter ProcessRunnerTests`：6/6 PASS，`process-tests.log`；覆盖父进程退出但后代继承 pipe，以及进程关闭两条输出后仍未退出的两个相邻根因边界。
+- `swift test --filter SimulatorObservationTests`：14/14 PASS，`observation-tests.log`；action reply 成功不需要 resultData；错误、缺失值、缺 selector 均拒绝。
+- fixture 真实 launch → wait → observe → Press：Interaction `CLICK 0 → CLICK 1`，空间打开/关闭实际发生；objectID=0 在当前树拒绝，旧 PID 78190 的 node 在 PID 91230 下发送前拒绝；`missing-node.log` / `stale-pid.log`。
+- `.build/release/roamer wait com.chiimagnus.RoamerTestApp 0.1`：真实 timeout，而非超时后继续成功，`short-wait.log`。全量 `swift test` 98/98 PASS；release / fixture build PASS。
+- 独立检查历史 raw workflow：`/tmp/roamer-p4t3-ready/observation.json` 与 `roamer-p4t3-pressed/observation.json` 为同一 HappyPianist PID 82896；后者出现「诊断日志」而前者没有；`roamer-p4t3-choices/` 同 PID 出现钢琴类型选择。它们是可观察状态变化，不采信旧 audit 中的 PASS。历史 ready 日志另绑定 PID 94024；不同实例证据不拼成同一 workflow。
+- 当前生产 decoder/renderer 处理 HappyPianist 原始捕获：90 模型全部进入索引，四图均可解码 1600×1080，`archived-90-model-final/` / `final-artifact-checks.log`。fixture 当前各 phase 的完整索引、投影、比例与尺寸 verifier 均通过。
+
+### 本轮最终 Gate（2026-10-04）
+
+- `Go`：三个任务的当前实现接入正式项目；本轮发现的统一截止时间根因缺陷与必要回复回归均已解决，没有尚未解决的本轮阻塞 finding。
+- 本轮未整机 reboot，也未重新操作 HappyPianist；不把历史 ready 日志、旧截图或离线绘图称为当前 live 跨 App 验收。
+- 固定图忠实覆盖全部原生几何。90 模型场景的大范围边界会压缩局部细节，密集编号可能重叠，完整身份需结合 sidecar / scene.json；不承诺所有编号都能在一张 PNG 上逐个清楚辨认，也不为好看而静默删掉实体或猜测可见性。

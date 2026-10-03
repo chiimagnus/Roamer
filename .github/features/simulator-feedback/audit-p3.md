@@ -1,5 +1,7 @@
 # Audit P3 - simulator-feedback
 
+> 当前结论以末尾「2026-10-03 本轮独立逐提交复审」及其最终 Gate 为准。此前内容仅保留历史，不作为本轮判断依据。
+
 - 审计方式：`plan-task-auditor`
 - 审计范围：`plan-p3.md`
 - feature 目录：`.github/features/simulator-feedback/`
@@ -88,7 +90,7 @@
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
 ## 2026-10-03 本轮独立逐提交复审
 
-本轮不采用历史 audit 结论。真实操作仅获准 RoamerTestApp。
+本轮不采用历史 audit 结论。真实验收使用 RoamerTestApp；跨 App 原始捕获独立离线复核。
 
 ### 本轮任务映射
 
@@ -96,4 +98,29 @@
 - P3-T2：db5c394 → 同一次 captures → SpatialScene.entities → geometry/eight corners/parent matrices → renderer → layout PNG → scene.json。
 - P3-T3：643969f → verify-feedback.sh 实际串行调用正式 CLI；verify-scene.py 独立重算 raw plist，并与 App oracle、JSON、PNG/index 对照；build.sh 统一 SDK。
 
-当前静态路径无脱离 CLI 的生产模块，原捕获/AX/overlay 后端已迁移删除。父级、平面、空场景、无效数据与恢复验证待复跑。本轮 Gate 待验证。
+### 逐提交结论
+
+- `291c037`：PASS。scene 真正走目标绑定、owned LLDB、Apple getter、原始 NSData 读取、detach 和临时资源清理；JSON 与 renderer 仅消费这次捕获，没有 oracle/旧文件恢复后端。原捕获 prototype 已删除。
+- `da94b96`：PASS。捕获失败和恢复失败在公共收尾汇聚，不以已得到几何掩盖 debugger 未清理。
+- `ec54429`：PASS。已退出未回收的 zombie 不能被当成可捕获目标；对应真实状态边界保留，不属于无依据防护。
+- `db5c394`：PASS。renderer 被正式 scene 调用；完整父级矩阵、八角点、自身局部 model bounds、原点和方向来自同一 captures。无模型 group 不伪造盒子，合法零厚度平面保留。
+- `643969f`：PASS。verify-feedback 串行调用正式 CLI，verify-scene 从 raw plist 独立重算并与 App oracle / 发布 JSON / PNG 对照；缺失 oracle 不可假通过。build.sh 的编译链接 SDK 一致，原 verify-snapshot prototype 已删除。
+- 文档归属迁移提交 `f990d0c`、`933d74e`、`dd2a2df`、`8558907` 与当前 README / accessibility、scene-capture、debug-overlay 等模块文档核对；正式入口、坐标限制和图片来源一致，不保留第二套执行后端。
+
+### 本轮验证日志
+
+证据根目录：`.build/simulator-feedback/review-20261003/`。
+
+- `bash Tests/SimulatorFixture/Tools/verify-feedback.sh .build/simulator-feedback/review-20261003/feedback-current`：真实 observe → click/drag → scene → close/reopen PASS。四次 scene 的 raw plist、五命名实体的父链矩阵/边界、完整索引和四图逐一通过独立 verifier。
+- `python3 -I Tests/SimulatorFixture/Tools/verify-scene.py <phase-scene> <spatial-phase.json>`：before/click/drag/reopened 与新 PID 场景均 PASS；实际路径和输出完整记录在 `final-artifact-checks.log`。蓝实体 click 世界增量约 (+0.08660254, 0, -0.05)，与旋转父级一致。
+- 四张 fixture PNG 均现场查看；平面在 front/side 成线、top 成面，轴向与数值矩阵对应。`pose-only-scene/` 在 yaw=20° 时截图改变，场景矩阵与四 PNG 字节不变，不把相机移动误记为实体移动。
+- PID 78190 重启为 91230：`new-pid-scene/` 独立几何 verifier PASS，五命名实体 ID 与旧实例不复用；关闭空间后 `closed-empty-scene/` 真正为空，modelCount=0，不是捕获失败伪装空成功。
+- 已存在输出目录被明确拒绝，原 manifest 字节未变，见 `existing-output.log`；必要路径/数据完整性边界继续保留。
+- `swift test`：98/98 PASS，包括 scene 解析/父链/非有限数/平面/空场景、renderer 与 verifier 既有回归；release / fixture build PASS。
+- 第二个未经修改 App：独立解析 `.build/simulator-feedback/p3-piano-live-scene/native-scene-0.plist` 并核对 configuration.bundleID；当前实际生产 decoder/renderer 离线执行后得到 101 实体 / 90 模型、全量索引和四张 1600×1080 PNG，`archived-90-model-final/` 与 `final-artifact-checks.log`。这不是本轮 live LLDB 跨 App 重测。
+
+### 本轮最终 Gate（2026-10-04）
+
+- `Go`：三个任务的功能、真实 CLI 集成、几何不变量和反馈主路径成立；未发现需新增修复的本轮 scene/renderer 正确性 finding。
+- 原生 LLDB 所有权、detach/清理错误、单位/矩阵/捕获来源与非有限数校验是必要边界，保留；没有新增 provider、兼容格式或猜测相机转换。
+- 当前支持边界仍是已验证的 Apple RealityKit 原生场景格式；历史跨 App 原始产物复核与本轮 fixture 实测分开记录，不宣称任意引擎或玩家视角可直接读出。
