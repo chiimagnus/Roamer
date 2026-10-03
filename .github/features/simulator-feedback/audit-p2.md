@@ -92,7 +92,7 @@
 - `be3d977` → **PASS（证据）**：确认 SimDeviceScreen frame callback 存在，但没有请求 generation/target，不能作为因果 fence。
 - `393ca42` → **PASS（证据/约束）**：未经修改 HappyPianist 覆盖层和十开关恢复成立，同时明确禁止人工确认；没有把实验冒充完成。
 
-### Blocker 复核
+### 历史 Blocker 复核（已由后续实现解除）
 
 - xrOS 27 `DebugHelperXPCService` / `DebugHelperDTXService` 只暴露 visualization get/set/target/update，没有 rendered-surface completion。
 - `RSSRenderedContentService` 确有 `startCaptureWithSceneIdentifier...`、`onRenderedSurface:metadata:timestamp:`；但 `RSRenderedContentServer connectionDidConnect:` 会调用 `rs_hasAffirmativeEntitlementValueForKey:` 检查 `_RSRenderedContentServiceEntitlementKey`，对应 `com.apple.realitysimulation.rendered-content-service`，未授权连接立即 `invalidate`。
