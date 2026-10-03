@@ -58,6 +58,14 @@ final class SimulatorObservationTests: XCTestCase {
         XCTAssertThrowsError(try SimulatorObservationRuntime.translationIdentity(element, pid: 999))
     }
 
+    func testAccessibilityWaitTimeoutHasExplicitBounds() throws {
+        XCTAssertEqual(try SimulatorAccessibility.timeoutNanoseconds(15), 15_000_000_000)
+        XCTAssertEqual(try SimulatorAccessibility.timeoutNanoseconds(0.1), 100_000_000)
+        for value in [0, -1, 300.1, Double.infinity, Double.nan] {
+            XCTAssertThrowsError(try SimulatorAccessibility.timeoutNanoseconds(value))
+        }
+    }
+
     func testAccessibilityNodeIDRequiresCurrentPIDAndCanonicalUnsignedObjectID() throws {
         XCTAssertEqual(
             try SimulatorAccessibility.objectID(from: "85555:17001813286071910940", expectedPID: 85555),

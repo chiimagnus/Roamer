@@ -1,5 +1,5 @@
 version = 1
-current_task_id = ""
+current_task_id = "P4-T3"
 
 [[tasks]]
 id = "P1-T1"
@@ -84,7 +84,7 @@ note = "88 tests + release build；HappyPianist 90 模型全部进入 scene-inde
 [[tasks]]
 id = "P4-T3"
 title = "建立显式 AX readiness gate 并复测完整工作流"
-status = "pending"
+status = "in_progress"
 plan = "plan-p4.md#p4-t3"
 commit = ""
 note = ""
