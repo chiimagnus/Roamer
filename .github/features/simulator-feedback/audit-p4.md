@@ -87,6 +87,28 @@
 - 当前状态：`Resolved`
 - 剩余风险：P4 范围内无已知剩余正确性问题。Roamer 仍依赖当前 Xcode/Simulator 的私有原生 ABI；接口不匹配继续按既有 fail-fast 约束处理。较早 P2-T2 的原生实时 Axes/Bounds 覆盖层同步契约仍是独立 blocked 项，不由 P4 冒充完成。
 
+## 2026-10-03 独立重审（不引用既有审计结论）
+
+### 逐 commit 核对
+
+- `d5ff0eb` → **PASS（生产）**：`roamer press` 实际进入 `SimulatorAccessibility.press → SimulatorObservationRuntime.press`；旧 PID/node fail-fast，未把 AX frame 重新映射成 screenshot pixel。
+- `df30a34` → **PASS（生产）**：四张图固定 1600×1080，完整模型信息由 `scene-index.txt` 承担；renderer 是 `scene` 正式调用链的一部分。
+- `cb6a462` → **PASS，但原 timeout 实现后续发现根因缺陷**：建立显式 `wait`，不改变 `launch/observe` 语义；软 deadline 问题由 `056c90d` 完整修复。
+- `056c90d` → **PASS（根因修复）**：单一绝对 deadline 贯穿 `ProcessRunner → SimulatorService → AXPTranslator bridge`；不再请求结束后才检查 elapsed。
+- `d01a750` → **PASS（根因修复）**：正式 verifier 检查 scene-index 存在、modelCount、编号、名称、ID、原点和 1600×1080 PNG。
+
+### 当前真实回归
+
+- HappyPianist 新 PID `2440`：`wait` 约 10.15s 后 AX ready；`press` “诊断”后真实出现“导出诊断日志/清除诊断日志”；进入虚拟钢琴后 scene 90/90、四图固定尺寸 → **PASS**。
+- 宿主 frontmost 前后相同 → **PASS**。
+- 对 fixture 静态 Text 发送原生 Press 时底层可返回 success 但 App 无语义变化；按钮节点同样 `supportedActions=[]`，因此没有证据支持 role/action 白名单。这里保持低层语义：`press` 表示原生 action 请求成功，业务结果必须按 feature 不变量继续 `observe` 核对；不添加脆弱围栏。
+- `wait` 的 PID 前/后检查分别防止请求前实例已切换和 AX ready 期间实例切换；不是重复保护。
+- `swift test` → **90/90 PASS**；release build / fixture build / verifier 语法 → **PASS**。
+
+### 独立 Gate
+
+- `Go`：P4 三个 task 当前均真实接入且无未解决正确性 finding。完整 feature 仍因 P2-T2 为 `No-Go`。
+
 ## 审计约束
 
 - 本文件对应一个 phase，不对应单个 task
