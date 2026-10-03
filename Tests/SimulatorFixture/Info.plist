@@ -9,4 +9,7 @@
     <key>CFBundleShortVersionString</key><string>1.0</string>
     <key>MinimumOSVersion</key><string>27.0</string>
     <key>UIDeviceFamily</key><array><integer>7</integer></array>
+    <key>UIApplicationSceneManifest</key><dict>
+        <key>UIApplicationSupportsMultipleScenes</key><true/>
+    </dict>
 </dict></plist>
