@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P4-T1"
+current_task_id = ""
 
 [[tasks]]
 id = "P1-T1"
@@ -68,10 +68,10 @@ note = "正式click/drag/close/reopen完整闭环与五oracle PASS；HappyPianis
 [[tasks]]
 id = "P4-T1"
 title = "用原生 AX Press 精确命中 observe 节点"
-status = "in_progress"
+status = "completed"
 plan = "plan-p4.md#p4-t1"
-commit = ""
-note = ""
+commit = "d5ff0eb"
+note = "88 tests + release build；HappyPianist observe 节点直接 press 打开诊断，旧 PID 节点重启后 fail-fast。"
 
 [[tasks]]
 id = "P4-T2"
