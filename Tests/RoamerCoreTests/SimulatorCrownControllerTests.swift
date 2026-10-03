@@ -44,4 +44,6 @@ private final class CapturingHeadsetRemote: NSObject, VirtualHeadsetRemoteMessag
     func changeImmersionLevel(_ level: Float, isAbsolute: Bool) {
         calls.append((level, isAbsolute))
     }
+
+    func setCursorVisible(_ visible: Bool) {}
 }
