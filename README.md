@@ -52,7 +52,7 @@ roamer press <bundle-id> <node-id>
 
 它不会启动、激活、暂停或自动重试目标 App。输出目录必须是不存在的新目录；失败时保留已经产生的证据。
 
-`launch` 返回 PID 只说明进程已经启动，不说明 UI / Accessibility 已就绪。自动流程应先执行 `wait`；默认超时 15 秒，可指定 0.1～300 秒。
+`launch` 返回 PID 只说明进程已经启动，不说明 UI / Accessibility 已就绪。自动流程应先执行 `wait`；默认超时 30 秒，可指定 0.1～300 秒。
 
 `press` 使用 `observe` 返回的当前 `node-id` 执行原生 Press。App 重启后的旧 PID 节点会被拒绝。Accessibility 的 `nativeFrame` 是平台/窗口坐标，不是 screenshot 像素或空间 XYZ，不能拿来换算 `click` 坐标。
 
