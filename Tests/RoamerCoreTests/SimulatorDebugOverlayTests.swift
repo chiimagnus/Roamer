@@ -24,7 +24,7 @@ final class SimulatorDebugOverlayTests: XCTestCase {
         }
     }
 
-    func testNormalAndAlreadyEnabledOptionsKeepTheirOriginalValues() throws {
+    func testEOFRestoresNormalAndAlreadyEnabledOptionsToTheirOriginalValues() throws {
         for scenario in ["normal", "original-axis"] {
             try runHelperCheck("""
             const char *arguments[] = {"overlay-test", "\(scenario)"};

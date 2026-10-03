@@ -20,7 +20,7 @@
 6. 等待 1-frame post-camera GPU completion；
 7. 再等待之后的 `SimScreen.frame`；
 8. 截图；
-9. 只恢复本次修改；
+9. 关闭本轮 helper 的 stdin，触发只恢复本次修改；
 10. 再经过同类 GPU + display fence 确认恢复。
 
 ## 不变量
