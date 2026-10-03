@@ -24,8 +24,13 @@ swift run roamer status
 roamer launch <bundle-id>
 roamer wait <bundle-id>
 roamer observe <bundle-id> /tmp/roamer-observe
+roamer audio status
 roamer screenshot /tmp/avp.png
 ```
+
+## 音频状态
+
+`roamer audio status` 只读显示当前 Simulator 的 Input / Output selection、System default 实际对应的宿主设备，以及 HostRoute 当前可用的宿主音频设备；它不会修改音频路由。
 
 ## 输入控制
 

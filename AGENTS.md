@@ -10,6 +10,7 @@
   - [Accessibility](docs/accessibility.md)：普通 `observe`、`wait`、`press`。
   - [调试覆盖层](docs/debug-overlay.md)：`observe --debug`。
   - [Scene 捕获](docs/scene-capture.md)：`scene`、实体数据和几何调试图。
+  - [Simulator 音频反馈](docs/audio-feedback.md)：`audio`、路由状态与音频反馈。
 - 修改 `Sources/RoamerCore/Runtime`、`RoamerPrivateABI` 或其它私有接口边界前，再读 [私有 API 边界](docs/private-apis.md)。
 - 真实运行验收先读 [真实 Simulator 验收规范](docs/real-simulator-acceptance.md)，Fixture/oracle 的具体使用见 [Simulator Fixture](Tests/SimulatorFixture/README.md)。
 
