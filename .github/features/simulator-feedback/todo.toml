@@ -1,5 +1,5 @@
 version = 1
-current_task_id = ""
+current_task_id = "P4-T2"
 
 [[tasks]]
 id = "P1-T1"
@@ -76,7 +76,7 @@ note = "88 tests + release build；HappyPianist observe 节点直接 press 打�
 [[tasks]]
 id = "P4-T2"
 title = "固定场景 PNG 尺寸并拆出完整实体索引"
-status = "pending"
+status = "in_progress"
 plan = "plan-p4.md#p4-t2"
 commit = ""
 note = ""
