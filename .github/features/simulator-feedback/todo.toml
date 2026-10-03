@@ -1,0 +1,66 @@
+version = 1
+current_task_id = ""
+
+[[tasks]]
+id = "P1-T1"
+title = "建立单一测试 App 的空间观测基准"
+status = "completed"
+plan = "plan-p1.md#p1-t1"
+commit = "f9f1371b9c8218d3dbe998185fcedbcecc848727"
+note = "真实 AVP 点击/34 changed+1 ended/退出重入；父级矩阵与平面、AX差异 verifier PASS；原三页 PASS；fixture build/core 59/59；证据 .build/simulator-feedback/"
+
+[[tasks]]
+id = "P1-T2"
+title = "验证原生调试覆盖层与实体快照无头通道"
+status = "completed"
+plan = "plan-p1.md#p1-t2"
+commit = "730cd98"
+note = "数字几何：fixture 5 oracle 实体/新 PID/pose；HappyPianist 虚拟钢琴 101 实体90模型；cache 根因与typed reset已验证；覆盖层未成立，P2-T2保持未完；native-probe.md"
+
+[[tasks]]
+id = "P1-T3"
+title = "验证 Simulator 原生 AX 读取支持范围"
+status = "completed"
+plan = "plan-p1.md#p1-t3"
+commit = "730cd98"
+note = "原生 SimDevice AX：Button 0→1、TextField value a、实体AX差异、HappyPianist UI、新PID；native-probe.md；无HostGUI/VoiceOver"
+
+[[tasks]]
+id = "P2-T1"
+title = "接入来源明确的 observe 输出与已验证原生信息"
+status = "completed"
+plan = "plan-p2.md#p2-t1"
+commit = "45ee1b295025bfccc9008cefedb1c86d1a60eeba"
+note = "9 observation/68全量测试、release与fixture build PASS；正式click/text前后与oracle一致、重启新PID、HappyPianist38节点、拒绝/无设备/焦点验证见native-probe.md P2-T1；删除重复AX探针"
+
+[[tasks]]
+id = "P2-T2"
+title = "接入显式原生 XYZ 与边界调试画面"
+status = "blocked"
+plan = "plan-p2.md#p2-t2"
+commit = ""
+note = "fixture/未修改钢琴原生XYZ边界及十开关恢复已实证；用户允许明确独占但禁止人工；RSS实体完成/GPU capture scope仍未建立截图present契约；9/87tests、release/fixture通过；native-probe.md"
+
+[[tasks]]
+id = "P3-T1"
+title = "接入指定 App 的原生实体快照"
+status = "completed"
+plan = "plan-p3.md#p3-t1"
+commit = "291c037"
+note = "正式五实体/父链/边界、点击拖动、关闭空与重开、pose-only不变、新PID37985及HappyPianist101实体通过；da94b96收尾/ec54429僵尸根因修复；87tests/release通过；native-probe.md"
+
+[[tasks]]
+id = "P3-T2"
+title = "从同一次真实快照生成空间概览与三视图"
+status = "completed"
+plan = "plan-p3.md#p3-t2"
+commit = "db5c394"
+note = "正式fixture三模型/四图逐图核对、动作后投影、平面成线/共同比例；pose-only字节不变；HappyPianist90模型四图通过；7renderer/87全量/release通过；native-probe.md"
+
+[[tasks]]
+id = "P3-T3"
+title = "完成跨 App 反馈闭环复测与文档收尾"
+status = "completed"
+plan = "plan-p3.md#p3-t3"
+commit = "643969f3e1d4d53a4a8d9f39bc375196a6d76565"
+note = "正式click/drag/close/reopen完整闭环与五oracle PASS；HappyPianist101实体90模型/pose-only不变、新PID已验；捕获中断/写失败后恢复，原pose0/键盘/十开关/Shutdown已恢复；87tests/release/fixture build PASS；native-probe.md"

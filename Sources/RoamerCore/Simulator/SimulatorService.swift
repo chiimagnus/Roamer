@@ -119,6 +119,34 @@ package struct SimulatorService: Sendable {
         )
     }
 
+    func runningPID(_ bundleID: String, on device: SimulatorDevice) throws -> Int32 {
+        let output = try ProcessRunner.run(
+            xcrun,
+            ["simctl", "spawn", device.udid, "launchctl", "list"]
+        ).stdout
+        return try Self.runningPID(bundleID, in: output)
+    }
+
+    static func runningPID(_ bundleID: String, in jobs: String) throws -> Int32 {
+        guard !bundleID.isEmpty, bundleID.utf8.allSatisfy({ byte in
+            (65...90).contains(byte) || (97...122).contains(byte)
+                || (48...57).contains(byte) || byte == 45 || byte == 46
+        }) else {
+            throw RoamerError.message("无效 bundle ID：\(bundleID)")
+        }
+        let prefix = "UIKitApplication:\(bundleID)["
+        let matches = jobs.split(separator: "\n").compactMap { line -> Int32? in
+            let fields = line.split(whereSeparator: \.isWhitespace)
+            guard fields.count == 3, fields[2].hasPrefix(prefix),
+                  let pid = Int32(fields[0]), pid > 0 else { return nil }
+            return pid
+        }
+        guard matches.count == 1, let pid = matches.first else {
+            throw RoamerError.message("无法唯一绑定正在运行的 UIKit App：\(bundleID)（\(matches.count) 个进程）")
+        }
+        return pid
+    }
+
     package func reboot(_ device: SimulatorDevice) throws {
         _ = try ProcessRunner.run(xcrun, ["simctl", "shutdown", device.udid])
         _ = try ProcessRunner.run(xcrun, ["simctl", "boot", device.udid])
