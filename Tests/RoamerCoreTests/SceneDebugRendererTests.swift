@@ -109,6 +109,19 @@ final class SceneDebugRendererTests: XCTestCase {
         XCTAssertThrowsError(try SceneDebugRenderer.render(scenes: [scenes[0]], directory: failure))
     }
 
+    func testModelLabelSitsOutsideProjectedBoundsInsteadOfOnAxisOrigin() throws {
+        let scene = try SimulatorSceneSnapshot.decode(SceneTestData.capture([
+            SceneTestData.entity(id: 1, translation: [0, 0, -2], bounds: ([-0.2, -0.2, -0.2], [0.2, 0.2, 0.2]))
+        ]), bundleID: SceneTestData.bundle, index: 0)
+        let geometry = try XCTUnwrap(SceneDebugRenderer.geometry(scene).first)
+        let view = try XCTUnwrap(SceneDebugRenderer.views(for: [geometry]).first { $0.projection == .side })
+        let corners = geometry.corners.map(view.pixel)
+        let label = SceneDebugRenderer.modelLabelPosition(cornerPixels: corners, view: view)
+
+        XCTAssertGreaterThan(label.y, corners.map(\.y).max()!)
+        XCTAssertNotEqual(label, view.pixel(geometry.origin))
+    }
+
     func testZeroScaleDoesNotInventAxisDirectionAndCornerOverflowIsRefused() throws {
         let flat = try SimulatorSceneSnapshot.decode(SceneTestData.capture([
             SceneTestData.entity(id: 1, scale: [0, 1, 1], bounds: ([0, 0, 0], [1, 1, 1]))

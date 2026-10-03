@@ -11,7 +11,7 @@
   - [调试覆盖层](docs/debug-overlay.md)：`observe --debug`。
   - [Scene 捕获](docs/scene-capture.md)：`scene`、实体数据和几何调试图。
 - 修改 `Sources/RoamerCore/Runtime`、`RoamerPrivateABI` 或其它私有接口边界前，再读 [私有 API 边界](docs/private-apis.md)。
-- 真实 Simulator 验收统一使用 [Simulator Fixture](Tests/SimulatorFixture/README.md)。
+- 真实运行验收先读 [真实 Simulator 验收规范](docs/real-simulator-acceptance.md)，Fixture/oracle 的具体使用见 [Simulator Fixture](Tests/SimulatorFixture/README.md)。
 
 ## 代码结构
 
@@ -56,4 +56,4 @@ swift build -c release
 git diff --check
 ```
 
-涉及 HID、Accessibility、debug overlay、scene、Simulator 生命周期或宿主焦点的改动，还必须按对应模块文档和 [Simulator Fixture](Tests/SimulatorFixture/README.md) 做真实 Simulator 验收。不能用“函数返回成功”代替 App 或平台的可观察结果。
+涉及 HID、Accessibility、debug overlay、scene、Simulator 生命周期或宿主焦点的改动，还必须按 [真实 Simulator 验收规范](docs/real-simulator-acceptance.md)、对应模块文档和 [Simulator Fixture](Tests/SimulatorFixture/README.md) 做真实验收。不能用“函数返回成功”代替 App 或平台的可观察结果；验收发现必须在本轮闭环为修复、长期文档或 GitHub Issue。
