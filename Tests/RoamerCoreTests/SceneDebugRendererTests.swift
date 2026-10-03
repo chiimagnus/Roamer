@@ -48,6 +48,10 @@ final class SceneDebugRendererTests: XCTestCase {
         let layouts = try SceneDebugRenderer.render(scenes: [scene], directory: directory)
         XCTAssertEqual(layouts[0].sceneIndex, 0)
         XCTAssertEqual(layouts[0].modelCount, 1)
+        XCTAssertEqual(layouts[0].indexPath, "scene-index.txt")
+        let index = try String(contentsOf: directory.appendingPathComponent(layouts[0].indexPath), encoding: .utf8)
+        XCTAssertTrue(index.contains("[1] offset box"))
+        XCTAssertTrue(index.contains("ID 1"))
         let front = layouts[0].views[2]
         let pixels = try rgba(directory.appendingPathComponent(front.path))
         let geometry = try XCTUnwrap(SceneDebugRenderer.geometry(scene).first)
@@ -80,8 +84,12 @@ final class SceneDebugRendererTests: XCTestCase {
             XCTAssertEqual(layouts[0].sceneIndex, scenes.isEmpty ? nil : 0)
             XCTAssertEqual(layouts[0].views.count, 4)
             XCTAssertEqual(Set(layouts[0].views.dropFirst().map(\.pixelsPerMeter)).count, 1)
+            let index = try String(contentsOf: directory.appendingPathComponent(layouts[0].indexPath), encoding: .utf8)
+            XCTAssertTrue(index.contains("NO OWN-MODEL GEOMETRY"))
             for view in layouts[0].views {
-                _ = try SimulatorObservation.imageDimensions(directory.appendingPathComponent(view.path))
+                let size = try SimulatorObservation.imageDimensions(directory.appendingPathComponent(view.path))
+                XCTAssertEqual(size.width, 1600)
+                XCTAssertEqual(size.height, 1080)
             }
         }
     }
@@ -93,6 +101,8 @@ final class SceneDebugRendererTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: directory) }
         let layouts = try SceneDebugRenderer.render(scenes: scenes, directory: directory)
         XCTAssertEqual(layouts.map(\.sceneIndex), [0, 1])
+        XCTAssertEqual(layouts[0].indexPath, "scene-0/scene-index.txt")
+        XCTAssertEqual(layouts[1].indexPath, "scene-1/scene-index.txt")
         XCTAssertEqual(layouts[0].views[0].path, "scene-0/scene-overview.png")
         XCTAssertEqual(layouts[1].views[2].path, "scene-1/front.png")
         let failure = directory.appendingPathComponent("missing/parent")
@@ -110,12 +120,25 @@ final class SceneDebugRendererTests: XCTestCase {
         XCTAssertThrowsError(try SceneDebugRenderer.geometry(large))
     }
 
-    func testLabelLimitRejectsInsteadOfSilentlyOmittingNames() throws {
-        let scene = try SimulatorSceneSnapshot.decode(SceneTestData.capture([
-            SceneTestData.entity(id: 1, name: String(repeating: "long native name ", count: 10000),
-                                 bounds: ([0, 0, 0], [1, 1, 1]))
-        ]), bundleID: SceneTestData.bundle, index: 0)
-        XCTAssertThrowsError(try SceneDebugRenderer.views(for: SceneDebugRenderer.geometry(scene)))
+    func testManyModelsKeepFixedImagesAndCompleteIndex() throws {
+        let longName = String(repeating: "long native name ", count: 1000)
+        let entities = (1...90).map { index in
+            SceneTestData.entity(
+                id: UInt64(index), name: index == 90 ? longName : "entity \(index)",
+                translation: [Double(index) / 100, 0, 0], bounds: ([0, 0, 0], [0.01, 0.01, 0.01])
+            )
+        }
+        let scene = try SimulatorSceneSnapshot.decode(
+            SceneTestData.capture(entities), bundleID: SceneTestData.bundle, index: 0
+        )
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let layout = try XCTUnwrap(SceneDebugRenderer.render(scenes: [scene], directory: directory).first)
+        XCTAssertEqual(layout.modelCount, 90)
+        XCTAssertTrue(layout.views.allSatisfy { $0.width == 1600 && $0.height == 1080 })
+        let index = try String(contentsOf: directory.appendingPathComponent(layout.indexPath), encoding: .utf8)
+        XCTAssertTrue(index.contains("[90] \(longName)"))
+        XCTAssertEqual(index.components(separatedBy: "\nID ").count - 1, 90)
     }
 
     private func temporaryDirectory() throws -> URL {
