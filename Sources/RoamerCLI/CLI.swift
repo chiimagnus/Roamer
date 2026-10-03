@@ -40,8 +40,14 @@ struct CLI {
             print(path)
 
         case "observe":
-            try requireCount(rest, 2, usage: "roamer observe <bundle-id> <new-output-dir>")
-            print(try SimulatorObservation.capture(bundleID: rest[0], outputPath: rest[1]))
+            guard rest.count == 2 || (rest.count == 3 && rest[2] == "--debug") else {
+                throw RoamerError.message("用法: roamer observe <bundle-id> <new-output-dir> [--debug]")
+            }
+            print(try SimulatorObservation.capture(
+                bundleID: rest[0],
+                outputPath: rest[1],
+                debugVisualization: rest.count == 3
+            ))
 
         case "press":
             try requireCount(rest, 2, usage: "roamer press <bundle-id> <node-id>")
@@ -365,7 +371,7 @@ struct CLI {
       roamer --version
       roamer status
       roamer screenshot [path]
-      roamer observe <bundle-id> <new-output-dir>
+      roamer observe <bundle-id> <new-output-dir> [--debug]
       roamer press <bundle-id> <node-id>
       roamer scene <bundle-id> <new-output-dir>
       roamer launch <bundle-id>
@@ -391,7 +397,7 @@ struct CLI {
     crown delta 范围为 -20...20，总相对增量为 delta × 0.05，最终沉浸度由 Simulator 处理。
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
-    observe 保存实际截图与指定运行 App 的原生 AX；须使用新目录且父目录已存在，不自动启动 App。
+    observe 保存实际截图与指定运行 App 的原生 AX；--debug 会在原生 render fence 后抓取平台 XYZ/边界并恢复原值。须使用新目录且父目录已存在，不自动启动 App。
     press 使用 observe 返回的 node-id 对当前 PID 的 AX 节点执行原生 Press；旧 PID 节点会拒绝。
     wait 等待当前运行实例的原生 AX 真正可读，默认 15 秒、范围 0.1...300 秒；不启动 App。
     scene 显式短暂 attach/暂停目标后 detach，输出原生实体、实际截图及包围盒概览/三视图；不接管既有调试会话。

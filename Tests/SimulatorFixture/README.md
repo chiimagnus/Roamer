@@ -38,6 +38,8 @@ cat "$data_dir/Documents/spatial.json"
 
 原生观察使用正式 `.build/release/roamer observe com.chiimagnus.RoamerTestApp <新目录>`。在 UI 就绪后，分别保存操作前、click 后、文本输入/提交后的观察，核对 AX 的 `CLICK`、TextField value 和 `TEXT [...] SUBMIT` 与独立 `interaction.json` 一致。清单的 AX 必须为 `available`；冷启动期间的原生错误保留为 `failed`，不计入成功验收。重启 App 后应得到新 PID、新 session 和归零的 UI，而非旧观察缓存。每次坐标取自最新 screenshot，不使用 AX frame 直接点击。
 
+空间页打开后可额外执行 `.build/release/roamer observe com.chiimagnus.RoamerTestApp <新目录> --debug`。实际 `screenshot.png` 必须看到 Simulator 平台绘制的 RGB XYZ 轴与绿色边界，`observation.json.debugOverlay` 必须记录原值和 `post-camera GPU completion + next Simulator display frame` fence；紧接着普通 observe 必须不再有本次临时覆盖层。测试截图失败时也要独立读回恢复状态；若调用前某项已经开启，结束后必须保留原值，而不是全部关闭。同步依据是未来 post-camera GPU command buffer 完成后再观察到的原生显示帧，不使用固定 sleep 或像素变化判断“已经画完”。
+
 - **Interaction**：标准 Button 计数验证 gaze 高亮和 click；橙色区域验证至少 500ms 长按；绿色区域验证双击只增加 doubles、不增加 singles。蓝色区域记录 drag/magnify/rotate 的连续事件及 ended，`dx/dy`、`scale`、`rotation` 是 App 实际收到的值。验证左右手、横/纵拖动、放大/缩小、正/负旋转；松手后必须出现 ended，接着 click 应仍可工作。
 - **长按时序**：`longPressTrace` 记录最近一次手势的 `pressing`、`recognized`、`not-pressing` 与单调 `uptime`。正常识别时，`recognized - pressing` 约为 500ms；400ms 应没有 `recognized`，650ms 应使 longs 增加一次。记录的是 App 的手势状态回调，不是 HID 投递时间；先确认页面就绪，再区分未命中、按压状态提前结束和识别回调延迟，不能用 CLI 总耗时代替实际按压时序。
 - **Interaction 文本字段**：点击字段获取焦点。在已由用户切换至 English (US) 的输入模式下，`type "Hello 2026"`，再 `key left`、`key delete`、`key return`，应得到 `Hello 206`、submits=1。输入法切换是异步的；先用 `xcrun simctl spawn booted defaults export com.apple.keyboard.preferences -` 确认 `KeyboardsCurrentAndNext` 首项稳定为 `en_US@sw=QWERTY;hw=Automatic` 再输入，不读可能滞后的磁盘 plist。中文模式和不支持的文本应报错且不修改字段；不要为测试自动改变用户输入法。
