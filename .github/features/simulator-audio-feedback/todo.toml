@@ -43,8 +43,16 @@ note = ""
 
 [[tasks]]
 id = "P3-T1"
-title = "完成 HappyPianist 真音频验收并重录带声音 Demo"
+title = "实现正式 Simulator 音画录制与 record CLI"
 status = "pending"
 plan = "plan-p3.md#p3-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P3-T2"
+title = "完成 Fixture 与 HappyPianist 音画录制真实验收"
+status = "pending"
+plan = "plan-p3.md#p3-t2"
 commit = ""
 note = ""
