@@ -1,0 +1,35 @@
+version = 1
+current_task_id = ""
+
+[[tasks]]
+id = "P1-T1"
+title = "验证 Virtual Hand 到 ARKit joint 的真实链路并冻结平台契约"
+status = "completed"
+plan = "plan-p1.md#p1-t1"
+commit = ""
+no_commit_reason = "P1 为一次性平台能力 Gate；真实 Simulator 证明 HandTrackingProvider.isSupported=false，按计划停止 production 实现，无应提交的源码改动。"
+note = "Gate FAIL：com.apple.realitysimulation.vi 可调用，但 Xcode 27 / visionOS 27 Simulator 的普通 App 无 ARKit HandTrackingProvider；P2 禁止执行。"
+
+[[tasks]]
+id = "P2-T1"
+title = "给 Simulator Fixture 增加真实 HandTracking joint oracle"
+status = "blocked"
+plan = "plan-p2.md#p2-t1"
+commit = ""
+note = "Blocked by P1 audit F-01 / Gate No-Go：当前 Xcode 27 / visionOS 27 Simulator 中普通 App 的 HandTrackingProvider.isSupported=false。仅当未来目标 runtime 支持真实 HandAnchor/joint 后，先重跑 P1，再解除本任务。"
+
+[[tasks]]
+id = "P2-T2"
+title = "实现最小 Virtual Hand 控制链并接入 CLI"
+status = "blocked"
+plan = "plan-p2.md#p2-t2"
+commit = ""
+note = "Blocked by P1 audit F-01 / Gate No-Go：当前 Xcode 27 / visionOS 27 Simulator 中普通 App 的 HandTrackingProvider.isSupported=false。仅当未来目标 runtime 支持真实 HandAnchor/joint 后，先重跑 P1，再解除本任务。"
+
+[[tasks]]
+id = "P2-T3"
+title = "完成 Fixture 与 HappyPianist 跨 App 真实验收"
+status = "blocked"
+plan = "plan-p2.md#p2-t3"
+commit = ""
+note = "Blocked by P1 audit F-01 / Gate No-Go：当前 Xcode 27 / visionOS 27 Simulator 中普通 App 的 HandTrackingProvider.isSupported=false。仅当未来目标 runtime 支持真实 HandAnchor/joint 后，先重跑 P1，再解除本任务。"
