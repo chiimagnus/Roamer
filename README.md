@@ -29,13 +29,13 @@ roamer screenshot /tmp/avp.png
 
 ## 输入控制
 
-`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 使用 `roamer screenshot` 生成图片中的 Simulator 像素坐标，不是 macOS 屏幕坐标。最终命中仍由 visionOS 空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿”前景窗口的深度选择。
+`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 使用 `roamer screenshot` **原始图片文件**中的 Simulator 像素坐标，不是 macOS 屏幕坐标，也不是图片查看器缩放后的显示坐标。先读取 PNG 的真实像素尺寸，再按原图坐标取点。最终命中仍由 visionOS 空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿”前景窗口的深度选择。
 
 `click`、`long-press`、`double-click` 和 `drag` 默认使用右手，可切换左手；`magnify` 和 `rotate` 使用双手。
 
 `key` 支持 Return、Escape、Delete、Tab、Space、方向键、字母、数字，以及 Shift / Control / Option 组合。`type` 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格，不会自动切换输入法。Xcode 27 的 Apple Vision Pro Simulator 当前不支持 Command modifier。
 
-`pose` 使用绝对 6DoF，位置单位为米、旋转单位为度。`crown` 调整 Simulator 的系统沉浸度。
+`pose` 使用绝对 6DoF，位置单位为米、旋转单位为度。`crown` 按 Xcode Simulator 自己的步进语义调整系统沉浸度；只有支持可调沉浸度的 progressive immersive space 才有可观察变化。
 
 ## 观察与精确操作
 

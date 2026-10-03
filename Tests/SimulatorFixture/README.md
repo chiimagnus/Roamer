@@ -19,14 +19,14 @@ xcrun simctl install booted .build/simulator-fixture/RoamerTestApp.app
 .build/release/roamer pose 0 0 0 0 0 0
 ```
 
-所有坐标操作都必须来自最新 `roamer screenshot`，不能沿用旧窗口或旧 pose 下的像素位置。
+所有坐标操作都必须来自最新 `roamer screenshot` 的原始 PNG 像素，不能沿用图片查看器缩放后的显示坐标、旧窗口或旧 pose 下的位置。
 
 ## 测试面
 
 - **Interaction**：click、long-press、double-click、drag、magnify、rotate 和文本编辑；真实回调写入状态文件。
 - **Key events**：验证 SwiftUI 收到的按键、修饰键和 down/up。
 - **Raw key codes**：验证 UIKit first responder 收到的 USB HID usage 与 modifierFlags。
-- **Spatial scene**：验证 mixed 空间、父子变换、目标化手势、零厚度平面、无 Accessibility 描述实体，以及关闭后重新进入的新 session。
+- **Spatial scene**：验证 progressive 空间、Crown 沉浸度、父子变换、目标化手势、零厚度平面、无 Accessibility 描述实体，以及关闭后重新进入的新 session。
 
 每个页面都会生成新的 `session`。判断 UI 是否就绪时应等待新的 session 或预期业务状态，不能把 `launch` 成功或旧 JSON 当成完成信号。
 
@@ -88,6 +88,10 @@ bash Tests/SimulatorFixture/Tools/verify-feedback.sh .build/simulator-feedback/n
 4. 最后核对同一 PID/session、关闭重开、实体几何、索引和图片清单。
 
 10 秒内没有得到预期 App 结果就失败并保留证据；脚本不会猜坐标或自动重放动作。证据目录必须是新的，输入 EOF 会停止。
+
+## Crown
+
+Crown 只在支持可调沉浸度的 progressive immersive space 中验收。XROS 官方 Simulator UI 的 increase/decrease 本身就是 `changeImmersionLevel(±0.05, isAbsolute: false)`；`roamer crown ±1` 必须与同一起点下的官方调用产生相同结果。`getImmersionLevelWithReply:error:` 的返回值存在平台非线性映射，不能直接断言它数值上 ±0.05。验收结束用官方 absolute 调用恢复起点，并再次主动查询确认恢复。不要在 `.mixed` / `.full` 空间里用“命令返回 ok”代替真实沉浸度变化。
 
 ## 人工边界
 
