@@ -22,7 +22,7 @@ AX 原生失败保留为 `failed` / `unavailable`，不能降级为空树。输�
 ## Wait 与 Press
 
 - `wait` 只等待**当前运行实例**的 AX 真正可读，不负责 launch。
-- timeout 是单一绝对 deadline，要贯穿 `simctl` 查询与 AX reply。
+- timeout 是单一绝对 deadline，要贯穿 `simctl` 查询与 AX reply；默认 30 秒用于容纳真实冷启动时 AX 树较晚稳定，显式 timeout 仍由调用者决定。
 - 等待期间 PID 改变视为实例已切换，不能继续成功。
 - `press` 的 node ID 包含 PID；旧实例节点必须拒绝。
 - 原生 action 返回成功只证明平台接受了 Press 请求；业务结果仍应通过下一次 observation 或目标 App 状态验证。

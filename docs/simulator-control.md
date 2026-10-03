@@ -19,4 +19,4 @@
 
 ## 验证
 
-基础验证按 [AGENTS](../AGENTS.md) 执行。涉及真实设备发现、launch/terminate/reboot、截图或 display geometry 时，再用 [Simulator Fixture](../Tests/SimulatorFixture/README.md) 验证，并确认没有改变 macOS 前台焦点。
+基础验证按 [AGENTS](../AGENTS.md) 执行。涉及真实设备发现、launch/terminate/reboot、截图或 display geometry 时，再用 [Simulator Fixture](../Tests/SimulatorFixture/README.md) 验证，并确认没有改变 macOS 前台焦点。`reboot` 的真实验收会终止该 Simulator 内所有 App：只在允许中断时执行，并核对 UDID 不变、boot identifier 更新、旧 pose 状态失效，再恢复测试前需要继续运行的 App。

@@ -9,7 +9,10 @@ struct RoamerTestApp: App {
         WindowGroup { ProbeView(spatial: spatial) }
             .defaultSize(width: 1100, height: 950)
         ImmersiveSpace(id: "SpatialScene") { SpatialSceneView(state: spatial) }
-            .immersionStyle(selection: .constant(.mixed), in: .mixed)
+            .immersionStyle(
+                selection: .constant(.progressive(0.0...1.0, initialAmount: 0.5)),
+                in: .progressive
+            )
     }
 }
 

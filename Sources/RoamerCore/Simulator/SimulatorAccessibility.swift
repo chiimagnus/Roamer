@@ -3,7 +3,12 @@ import Dispatch
 import Foundation
 
 package enum SimulatorAccessibility {
-    package static func wait(bundleID: String, timeoutSeconds: Double = 15) throws -> Int32 {
+    package static let defaultWaitTimeoutSeconds = 30.0
+
+    package static func wait(
+        bundleID: String,
+        timeoutSeconds: Double = defaultWaitTimeoutSeconds
+    ) throws -> Int32 {
         let timeout = try timeoutNanoseconds(timeoutSeconds)
         let deadline = DispatchTime.now() + .nanoseconds(Int(timeout))
         let simulator = SimulatorService()

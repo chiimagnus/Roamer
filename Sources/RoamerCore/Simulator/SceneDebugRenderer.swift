@@ -165,6 +165,7 @@ enum SceneDebugRenderer {
                 }
             }
             let origin = view.pixel(model.origin)
+            let cornerPixels = model.corners.map(view.pixel)
             for axis in 0..<3 {
                 guard let end = model.axisEnds[axis] else { continue }
                 let endpoint = view.pixel(end)
@@ -175,7 +176,11 @@ enum SceneDebugRenderer {
             }
             context.setFillColor(ink)
             context.fillEllipse(in: CGRect(x: origin.x - 2, y: origin.y - 2, width: 4, height: 4))
-            text("[\(index + 1)]", x: origin.x + 5, top: origin.y + 18, context: context, width: 80)
+            let label = modelLabelPosition(cornerPixels: cornerPixels, view: view)
+            context.setFillColor(CGColor(gray: 1, alpha: 0.92))
+            context.fill(CGRect(x: label.x - 2, y: label.y - 18, width: 58, height: 20))
+            context.setFillColor(ink)
+            text("[\(index + 1)]", x: label.x, top: label.y, context: context, width: 54)
         }
         if geometry.isEmpty {
             text("NO OWN-MODEL GEOMETRY\n\(scene?.entities.count ?? 0) entities / no invented boxes\nCheck scene.json for capture and geometry status.",
@@ -209,6 +214,15 @@ enum SceneDebugRenderer {
         } catch {
             throw RoamerError.message("无法写入实体索引 \(path)：\(error)")
         }
+    }
+
+    static func modelLabelPosition(cornerPixels: [CGPoint], view: SceneDebugView) -> CGPoint {
+        let minX = cornerPixels.map(\.x).min() ?? 60
+        let maxY = cornerPixels.map(\.y).max() ?? 160
+        return CGPoint(
+            x: min(max(minX + 4, 64), Double(view.width) - 120),
+            y: min(max(maxY + 22, 182), Double(view.height) - 124)
+        )
     }
 
     private static func line(_ start: CGPoint, _ end: CGPoint, context: CGContext) {

@@ -4,7 +4,7 @@
 
 ## 控制流
 
-空间手势的输入坐标始终来自**当前** `roamer screenshot`。Roamer 读取当前 display geometry 和本次 boot 下保存的 head pose，计算 gaze ray，再构造手部轨迹发送给 Simulator。
+空间手势的输入坐标始终来自**当前** `roamer screenshot` 的原始 PNG 像素。图片查看器可能按窗口缩放预览，预览尺寸不能作为输入坐标；应使用文件本身的 pixel width / height。Roamer 读取当前 display geometry 和本次 boot 下保存的 head pose，计算 gaze ray，再构造手部轨迹发送给 Simulator。
 
 `pose` 成功发送后才保存新的 head pose。Simulator reboot 后旧 pose 不再复用。
 
@@ -25,4 +25,4 @@
 
 ## 验证
 
-基础验证按 [AGENTS](../AGENTS.md) 执行；真实行为使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，检查 click/drag/magnify/rotate 回调、pose 画面变化，以及 macOS 鼠标和焦点保持不变。
+基础验证按 [AGENTS](../AGENTS.md) 执行；真实行为使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，检查 click/drag/magnify/rotate 回调、pose 画面变化，以及 progressive immersive space 中 Crown 的原生 immersion level 变化与恢复；同时确认 macOS 鼠标和焦点保持不变。
