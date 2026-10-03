@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P4-T2"
+current_task_id = ""
 
 [[tasks]]
 id = "P1-T1"
@@ -76,10 +76,10 @@ note = "88 tests + release build；HappyPianist observe 节点直接 press 打�
 [[tasks]]
 id = "P4-T2"
 title = "固定场景 PNG 尺寸并拆出完整实体索引"
-status = "in_progress"
+status = "completed"
 plan = "plan-p4.md#p4-t2"
-commit = ""
-note = ""
+commit = "df30a34"
+note = "88 tests + release build；HappyPianist 90 模型全部进入 scene-index.txt，四张图均固定 1600x1080。"
 
 [[tasks]]
 id = "P4-T3"
