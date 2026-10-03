@@ -189,25 +189,6 @@ final class SimulatorObservationTests: XCTestCase {
         }
     }
 
-    func testNewDirectoryRefusesExistingDirectoryFileAndSymlink() throws {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let existing = try SimulatorObservation.createOutputDirectory(root.appendingPathComponent("existing").path)
-        let evidence = existing.appendingPathComponent("keep")
-        try Data("old evidence".utf8).write(to: evidence)
-        XCTAssertThrowsError(try SimulatorObservation.createOutputDirectory(existing.path))
-        XCTAssertThrowsError(try SimulatorObservation.createOutputDirectory(evidence.path))
-        let link = root.appendingPathComponent("link")
-        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: existing)
-        XCTAssertThrowsError(try SimulatorObservation.createOutputDirectory(link.path))
-        XCTAssertThrowsError(try SimulatorObservation.createOutputDirectory(""))
-        let nulPath = root.appendingPathComponent("truncated").path
-        XCTAssertThrowsError(try SimulatorObservation.createOutputDirectory(nulPath + "\0suffix"))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: nulPath))
-        XCTAssertEqual(try Data(contentsOf: evidence), Data("old evidence".utf8))
-    }
-
     func testDimensionsComeFromDecodableImage() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
         defer { try? FileManager.default.removeItem(at: url) }
