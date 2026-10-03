@@ -26,6 +26,19 @@
 
 ## 发现项
 
+## 发现 F-201
+
+- 任务：`P1-T3`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`.github/features/simulator-feedback/probes/runtime-methods.py:1`
+- 摘要：`最后一个方法枚举探索脚本没有生产/fixture或现行文档调用者，仅为未来取证便利保留，配套README/gitignore也仅服务该空洞目录`
+- 风险：`保留不属于当前产品/验证路径的探索代码及额外文档维护面`
+- 预期修复：`按本轮删除非当前必需代码要求删除整个剩余探针源文件/README/gitignore；原生取证文本明确历史脚本已退役，不重写历史结论`
+- 验证：`现行Sources/Tests/docs/README/Package无依赖；完整test/release、fixture/verifier仍通过`
+- 解决证据：`删除唯一未用runtime-methods.py及空洞probes README/gitignore；native-probe标注历史脚本已退役。现役Sources/Tests/docs/README/Package无探针依赖；全量98/98、release、fixture/verifier工具语法PASS；本轮真实AX/debug/scene路径已验证，不依赖探索脚本。证据cleanup-20261004/full-tests.log、final-release.log`
+
+
 ## 发现 F-101
 
 - 任务：`P1-T3`

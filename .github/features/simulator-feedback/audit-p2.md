@@ -1,5 +1,16 @@
 # Audit P2 - simulator-feedback
 
+## 2026-10-04 冗余与过度设计专项复审 Todo
+
+本轮按实际执行流重新取证，不采用历史 audit 的判断；删除有源码事实支持的冗余，不将必要输入校验、私有 ABI 与状态恢复边界当成多余围栏。
+
+- [x] ① 普通 observation、AX Press/readiness、ProcessRunner：删除重复原生 objectID 读取（5ca678a）、移除恒为 0 的结果 status（96cb92a）。AX14/14、ProcessRunner6/6、release、真实 CLICK 0→1、缺失节点/stale PID 拒绝通过；证据 `.build/simulator-feedback/cleanup-20261004/`。
+- [x] ② debug helper、GPU/display fence、会话所有权与失败恢复：120422f 删除 restore 文本写入/requestedRestore，EOF 即恢复；移除无用 conformance、固定5秒配置与内部 timeout 饱和。helper3/3、Observation14/14、release，真实连续 debug/plain、拒写恢复、并发互斥和 oracle 不变通过；GPU/display/原值/ownership 边界保留。
+- [x] ③ scene capture、几何解析与 renderer：462b8f9 移除未消费的输出 Decodable/整体 Equatable、多余 enum indirect 与 UTF8 optional 强拆。Scene12/12、renderer7/7、release，真实五实体 raw/oracle/JSON/index/四PNG核对和同PID detach后AX可读通过；没有第二套捕获后端，几何、恢复、资产归属边界保留。
+- [ ] ④ 残留 prototype / 文档 / 测试：引用核对、全量验证、原子提交与结果汇总。
+
+逐项完成后回填实际证据；原计划任务已经完成，不为本轮复审重置 todo.toml 的历史状态。
+
 > 当前结论以末尾「2026-10-03 本轮独立逐提交复审」及其最终 Gate 为准。此前内容仅保留历史，不作为本轮判断依据。
 
 - 审计方式：`plan-task-auditor`
@@ -26,6 +37,45 @@
   - `5cee43b`：helper 编译完成后、真正修改状态前重新绑定原 PID / traced 状态，关闭目标重启竞态。
 
 ## 发现项
+
+## 发现 F-203
+
+- 任务：`P2-T1`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Runtime/PrivateRuntime.swift:232`
+- 摘要：`loadFramework先fileExists再dlopen检查同一路径，前置stat没有保证可加载性且不能防止路径变化`
+- 风险：`重复文件访问和错误分支遮蔽原生加载器的具体失败信息，没有新增有效保护`
+- 预期修复：`直接调用dlopen并保留nil检查、原路径和dlerror报告，不预先stat；不存在及正常加载均验证`
+- 验证：`隔离宿主子进程中使用不存在DeveloperDir确认原生loader明确拒绝；正常fixture observe/Press/scene；全量test/release`
+- 解决证据：`删除重复fileExists，只由dlopen判定实际加载并保留nil/path/dlerror。隔离子进程DEVELOPER_DIR指向不存在目录，原生loader明确拒绝且报告完整路径/native error（loader-missing.log）；正常PID12154 observe AX available，Observation14/14与release PASS。未改宿主Xcode配置、用户目录或环境。`
+
+
+## 发现 F-202
+
+- 任务：`P2-T1`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Simulator/SimulatorObservation.swift:5`
+- 摘要：`AX Attribute/Frame/Node/Status只编码输出；Codable及query/decodeAttribute的Codable约束生成了无调用者的Decodable能力`
+- 风险：`模糊原生AX是唯一输入来源，生成不使用的解码实现与过强泛型约束`
+- 预期修复：`仅保留实际Encodable，Frame的实际Equatable比较保留；原生请求/selector/error/数值检查不变`
+- 验证：`Observation14/14；实际observe AX可读与输出JSON字段一致；完整回归和release`
+- 解决证据：`AX输出模型及泛型仅Encodable；Frame实际Equatable保留。Observation14/14与release PASS；同PID12154新observe AX available，nodes逐值与before完全相同、manifest key及坐标语义相同。证据cleanup-20261004/output-*`
+
+
+## 发现 F-201
+
+- 任务：`P2-T2`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Runtime/SimulatorDebugOverlayRuntime.swift:72`
+- 摘要：`helper 只读stdin一字节，EOF本就触发恢复；宿主额外restore命令与requestedRestore标志无实际协议作用，状态类型编码/比较及内部timeout饱和也没有调用需求`
+- 风险：`重复恢复触发编排和无用扩展增加维护面，错误地暗示helper存在命令解析协议`
+- 预期修复：`仅关闭stdin请求恢复，保留恢复回复和GPU/display fence；去掉未消费的Encodable/Equatable与固定5秒配置、20/30秒timeout的Int32饱和分支`
+- 验证：`实际生产helper harness；真实连续debug/plain、输出拒写恢复、并发互斥；release和全量测试`
+- 解决证据：`删除restore文本写入/requestedRestore，使用stdin EOF既有恢复入口；去掉未消费的状态conformance与固定内部timeout配置/饱和。实际helper3/3、Observation14/14、release PASS；PID12154真实两轮RGB axes/bounds→plain恢复，拒写截图后下一次native getter仍false/false，并发1/0、oracle字节不变。证据 cleanup-20261004/eof-*、overlay-*.log；真实截图已查看。`
+
 
 ## 发现 F-102
 
