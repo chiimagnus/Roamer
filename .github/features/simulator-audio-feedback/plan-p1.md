@@ -7,6 +7,7 @@
 **Approach:** 路由控制面已经通过只读调查锁定为 CoreSimulator HostRoute；P1 不再重复探索路由写入。唯一硬 Gate 是 macOS CoreAudio Process Tap 数据面：在忽略的 `.build/feature-probes/simulator-audio-feedback/` 创建临时 Simulator tone App、宿主干扰 tone 和 capture probe，使用当前唯一 AVP 的 guest process 集合建立 process tap，验证真实 PCM、隔离性、时间戳与 teardown。P1 通过后才把真实契约写回 P2；失败则停止，不增加 ScreenCaptureKit/global-mix fallback。
 
 **Acceptance:**
+- Apple SDK 已确认 `AudioHardwareCreateProcessTap` 的正式 availability 为 macOS 14.2+；P1 的正式契约必须允许 Roamer 继续保持 package-wide macOS 14.0 基线，仅让采集/录制命令在旧系统 fail-fast。
 - CoreAudio tap 输入只包含当前唯一 AVP Simulator 的 guest CoreAudio process object，不能使用 global tap。
 - 临时 Simulator tone 为频率 A，普通 macOS tone 为频率 B；捕获结果中 A 明显存在，B 不形成显著分量。
 - capture 在原有 route 下工作；HostRoute before/after selection 与 effective UID 不因 probe 改变。
@@ -74,6 +75,8 @@
 
 **Step 4: 建立最小 CoreAudio Process Tap**
 
+先确认当前执行系统满足 macOS 14.2+；若当前环境低于 14.2，P1 标为 blocked，不尝试动态私有符号绕过 availability。正式实现必须能在 package 仍声明 macOS 14.0 的前提下通过 `#available(macOS 14.2, *)` 编译和 fail-fast。
+
 仅使用 macOS 正式 CoreAudio API：
 
 1. `CATapDescription` 以 Step 3 的 process AudioObjectID 建立 stereo process mix；
@@ -127,7 +130,7 @@ P1 要实测 `kAudioAggregateDeviceTapAutoStartKey` 是否有必要；没有 loa
 
 **Step 8: Gate 决策并回写 P2**
 
-- **PASS**：把 process ancestry 方法、tap/aggregate keys、format、writer、host-time 时钟域/转换、cleanup、授权行为和最小 CLI 语义写入 `idea.md` 与 `plan-p2.md` 的 P1 冻结契约。
+- **PASS**：把 macOS availability、process ancestry 方法、tap/aggregate keys、format、writer、host-time 时钟域/转换、cleanup、授权行为和最小 CLI 语义写入 `idea.md` 与 `plan-p2.md` 的 P1 冻结契约。
 - **FAIL**：写明失败层（source discovery / tap / PCM / isolation / route dependency / cleanup），删除 probe，停止 feature。
 - **BLOCKED by permission**：记录系统授权要求，删除/停止当前 probe，等待用户授权后重跑 P1；不把权限拒绝误判成平台不支持。
 

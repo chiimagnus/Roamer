@@ -27,6 +27,7 @@
 
 ## P1 冻结契约（P1-T1 PASS 后必须全部填实）
 
+- macOS 14.2 availability / 14.0 package baseline 处理：`TBD`
 - Simulator process ancestry API：`TBD`
 - source process snapshot 规则：`TBD`
 - process tap description / required flags：`TBD`
@@ -48,7 +49,6 @@
 
 **Files:**
 - Modify: `Tests/SimulatorFixture/App.swift`
-- Create: `Tests/SimulatorFixture/AudioToneController.swift`
 - Create: `Tests/SimulatorFixture/AudioFeedbackView.swift`
 - Reuse: `Tests/SimulatorFixture/ProbeState.swift`
 - Create: `Tests/SimulatorFixture/Tools/verify-audio.py`
@@ -64,11 +64,11 @@
 
 不要新增第二个 WindowGroup、第二个 Fixture App 或网络控制入口。
 
-**Step 2: 独立 tone owner**
+**Step 2: 在 Audio 页面内保持一个最小 tone owner**
 
-`AudioToneController` 单独拥有 AVAudioEngine/AVAudioPlayerNode 或 P1 证明更简单稳定的 Apple audio API：
+`AudioFeedbackView.swift` 内部用一个私有 `@Observable` / owner 持有 AVAudioEngine/AVAudioPlayerNode 或 P1 证明更简单稳定的 Apple audio API；暂不为单一页面拆第二个 controller 文件：
 
-- 固定一个与 P1 verifier 兼容的 frequency/sample rate/amplitude；
+- 固定一个与 P1 verifier 兼容的 frequency；其它 format 参数由实际 audio API 决定，不变成 Fixture 公共契约；
 - Start 幂等地开始连续 tone；
 - Stop/页面消失时停止并释放本轮播放状态；
 - 不读 Roamer capture 参数，不根据 capture 文件伪造状态。
@@ -82,10 +82,8 @@
 - `session`
 - `playing`
 - `frequencyHz`
-- `sampleRateHz`
-- `amplitude`
 - `playCount`
-- `startedAt` / `stoppedAt`
+- `changedAt`
 
 该 oracle 只证明 Fixture 实际请求了什么信号；捕获是否正确必须由输出音频独立分析。
 
@@ -181,7 +179,7 @@ Expected: 自动层全绿，help 中出现 `audio status`。
 - Modify: `Sources/RoamerCore/Simulator/SimulatorObservation.swift`
 - Modify: `Sources/RoamerCore/Simulator/SimulatorSceneSnapshot.swift`
 - Modify: `Sources/RoamerCLI/CLI.swift`
-- Modify if linker settings are truly required by P1: `Package.swift`
+- Modify `Package.swift` only if the real build proves framework linkage is required; do **not** raise the package-wide macOS 14.0 deployment target
 - Create: `Tests/RoamerCoreTests/SimulatorAudioProcessDiscoveryTests.swift`
 - Create: `Tests/RoamerCoreTests/SimulatorAudioCaptureTests.swift`
 - Create: `Tests/RoamerCoreTests/NewOutputDirectoryTests.swift`
@@ -202,7 +200,7 @@ Expected: 自动层全绿，help 中出现 `audio status`。
 - 已存在 file/dir/symlink 都拒绝；
 - 空/NUL 等非法 path 失败。
 
-在**本 task**同时迁移 Observation、Scene、Audio 三个 caller，并把原 Observation 目录测试移动到 `NewOutputDirectoryTests`；删除旧 owner/test，不留 alias。
+在**本 task**同时迁移 Observation、Scene、Audio CLI 三个 caller，并把原 Observation 目录测试移动到 `NewOutputDirectoryTests`；删除旧 `SimulatorObservation.createOutputDirectory` owner/test，不留 alias。P3 的 `record` 后续直接复用同一 helper。
 
 不要扩成通用 filesystem framework。
 
@@ -220,7 +218,9 @@ Expected: 自动层全绿，help 中出现 `audio status`。
 
 找不到任何 Simulator CoreAudio process object 时明确失败，不退到 global tap。
 
-**Step 3: 实现 `CoreAudioProcessTap` 单一 lifecycle owner**
+**Step 3: 实现 `CoreAudioProcessTap` 单一 lifecycle owner，并守住 macOS availability**
+
+CoreAudio Process Tap 官方从 macOS 14.2 可用。保持 `Package.swift` / README 的 Roamer 基础要求仍为 macOS 14+；只有 `audio capture` / `record` 在进入采集前用 `#available(macOS 14.2, *)` 明确拒绝 14.0/14.1，不能让整个 CLI 因新功能丢掉原有支持范围。
 
 严格按 P1 冻结契约：
 
@@ -232,11 +232,11 @@ Expected: 自动层全绿，help 中出现 `audio status`。
 - 以音频 frame/sample timeline 达到用户请求 duration，而不是 sleep 一段时间猜完成；
 - normal/error 都由同一个 owner 反向 stop/destroy。
 
-不要创建 audio backend protocol、tap factory、daemon 或 fallback。只保留一个可被 `audio capture` 与 P3 `record` 共用的 capture session owner。
+不要创建 audio backend protocol、tap factory、daemon 或 fallback。只保留一个可被 `audio capture` 与 P3 `record` 共用的 capture session owner。实时 IO callback 不能做阻塞文件 IO 或其它未经 P1 验证的重工作；writer/queue 边界严格采用 P1 实测契约，不预埋 ring-buffer 架构。
 
 **Step 4: 实现 capture manifest**
 
-`SimulatorAudioCapture` 既是 CLI 的高层 owner，也是 P3 recorder 可直接复用的内部 session owner；不能让 `record` 再 shell-out 调 `roamer audio capture`。它创建新的 output directory，并维护一个原子 `audio.json`：
+`SimulatorAudioCapture` 从第一版开始就是 CLI 与 P3 recorder 共用的内部 session owner；不能让 `record` 再 shell-out 调 `roamer audio capture`。它**不创建顶层 output directory**，而是接受调用者已经创建并拥有的 destination directory / raw audio URL，在其中维护一个原子 `audio.json`：
 
 - 内部 `start()` 在第一批真实 buffer 到达后返回 ready 信息（包括 first-sample host time / format）；CLI 同时把 `audio.json` 写成 `state=recording`，让外部自动化也能无 sleep 等待 ready；
 - 内部 session 可由 caller 等待指定 frame duration 完成，也可被 owner 提前停止；
@@ -253,7 +253,7 @@ manifest 至少记录 `schemaVersion=1`，以及：
 - requested duration；
 - started/firstSample/finished 的 wall + P1 冻结 host-time 信息；
 - recording reuse 所需的 first-sample host time 必须来自同一个内部 session 结果，不允许 P3 重新推测；
-- route before / route after snapshot。
+- route before / route after 的最小 selection/effective UID snapshot；available device list 不重复塞进 capture manifest，完整设备列表由 `audio status` 负责。
 
 Roamer 从未修改 route，因此 before/after 不一致时只报告外部变化，绝不能“恢复”用户在 capture 期间的主动修改。
 
@@ -264,17 +264,20 @@ Roamer 从未修改 route，因此 before/after 不一致时只报告外部变�
 `roamer audio capture <duration-sec> <new-output-dir>`
 
 - duration 必须有限且 > 0；不添加没有证据的任意短上限。
-- 输出目录沿用 observe/scene 的“必须新建”语义。
+- 参数解析后先做 macOS 14.2 availability 检查；不支持时在创建目录、枚举 tap source 或改任何外部状态前失败。
+- availability 通过后，CLI 才用 `NewOutputDirectory.create(path:)` 创建并拥有这个新目录（父目录必须已存在），再把 URL 交给 `SimulatorAudioCapture`；capture core 不重复 mkdir。
 - command 在指定音频时长完成后退出并打印最终 audio manifest path。
 
 capture 启动前 source App 应已经 launch/wait；README 明确 source set 在 capture start 冻结。
+
+有限时长命令还必须处理用户中断：沿用 `SimulatorSceneRuntime` 已有的局部 SIGINT/SIGTERM 模式，在本次 `audio capture` 调用范围内注册并在退出时恢复原 signal handler；中断只停止当前 capture session、保留 partial evidence 并返回失败。不要为两个长时命令预先创建全局 cancellation framework。
 
 **Step 6: 最小自动测试**
 
 单测覆盖：
 
 - process ancestry/source snapshot 的纯选择逻辑；
-- duration/manifest model；
+- duration/manifest model 与 macOS 14.2 availability fail-fast；
 - output directory 迁移不回归；
 - writer/format 中可以脱离 hardware 的纯逻辑。
 
@@ -286,7 +289,7 @@ Expected: 全部通过。
 
 **Step 7: 文档与即时 cleanup**
 
-`docs/audio-feedback.md` 成为 audio status/capture 的 canonical owner；`docs/real-simulator-acceptance.md` 增加 audio 的独立成功证据。README 只保留用户行为摘要，AGENTS 只保留 owner/gate。
+`docs/audio-feedback.md` 成为 audio status/capture 的 canonical owner；`docs/real-simulator-acceptance.md` 增加 audio 的独立成功证据。README 只保留用户行为摘要，并明确 Roamer 基础仍为 macOS 14+、只有 `audio capture` / `record` 需要 14.2+；AGENTS 只保留 owner/gate。
 
 删掉 P1 probe 同类临时 helper、旧 `SimulatorObservation.createOutputDirectory` owner、重复 test helper；不把 `screencapture -A` 或 ScreenCaptureKit 方案写进 production。
 
@@ -330,9 +333,9 @@ Run: `.build/release/roamer audio capture <duration> <new-dir>`
 - duration/frame count/format PASS；
 - 文件非静音。
 
-**Step 4: 核销状态与 ownership**
+**Step 4: 核销正常结束与一次 SIGINT ownership**
 
-停止 Fixture tone 与 host helper。比较：
+先停止 Fixture tone 与 host helper并比较正常 capture 的：
 
 - route before/after；
 - Apple route plist；
@@ -340,6 +343,8 @@ Run: `.build/release/roamer audio capture <duration> <new-dir>`
 - host frontmost/mouse。
 
 要求无 Roamer 残留 tap/aggregate/IOProc，route 没被 Roamer 改动，宿主输入边界不变。
+
+然后单独启动一次较长的正式 `audio capture`，等 `audio.json state=recording` 后只发送一次 SIGINT 给本轮 Roamer CLI 进程。验收：命令明确以中断失败退出、partial audio/manifest 保留、tap/aggregate/IOProc 全部清理、route 和宿主前台/鼠标仍不变。不要自动重放或做更多 signal matrix。
 
 **Step 5: 最终回归**
 

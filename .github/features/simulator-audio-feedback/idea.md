@@ -47,14 +47,14 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 8. capture 不移动 macOS 鼠标、不发送宿主输入、不激活 Device Hub、不抢焦点。
 9. Fixture 要提供一个确定性音频信号和独立 oracle；成功不能只看“文件存在”，必须验证时长、采样数据非静音和已知频率。
 10. HappyPianist 保持未经修改。最终由 Roamer 触发真实琴声，并在 capture 文件中验证非静音音频。
-11. Roamer 提供正式 `record` 能力，把 `simctl io <udid> recordVideo` 的原生 framebuffer video 与同一套 Simulator-only audio capture 同步封装成最终 A/V 文件。
-12. `record` 必须保留 raw video、raw audio、final A/V 与 recording metadata；音画同步使用同一 host monotonic time 基准，不允许人工 magic offset。
+11. Roamer 提供正式 `record` 能力；首选复用 `simctl io <udid> recordVideo` 的原生 framebuffer video，但该视频入口必须先通过仓库既有的宿主安全边界验收：不得激活 Device Hub、改变 macOS 前台 App 或移动鼠标。若当前环境不满足，P3 必须先停在视频 Gate，不能通过“录完再恢复宿主焦点/鼠标”伪装合格。
+12. `record` 必须保留 raw video、raw audio、final A/V 与 recording metadata；音画同步使用 P1/P3 真实验证可比较的 host monotonic time 基准，不允许人工 magic offset。
 13. 最终使用正式 `roamer record` 重新生成一版本地 HappyPianist Demo，视频中包含真实 Simulator 琴声。
 14. 音频理解、ASR、音乐识别、音高语义分析不进入 Roamer Core；Roamer 负责可靠提供原始音频反馈与 A/V 录制。
 
 ## 默认值与兼容策略
 
-- 不改变任何已有 CLI 命令行为。
+- 不改变任何已有 CLI 命令行为，也不把整个 Roamer 的最低系统版本从现有 macOS 14.0 提高；`audio status` 继续按现有基线工作，`audio capture` / `record` 因 CoreAudio Process Tap 官方 availability 仅在 macOS 14.2+ 可用，14.0/14.1 必须在进入采集前明确 fail-fast。
 - 音频能力使用 `audio` 命令组；音画录制使用单一顶层 `record` 入口；都不提供旧语法 alias。
 - 路由状态是平台当前事实，不写入 `SimulatorStateStore`。
 - capture 不持久化 CoreAudio process/tap ID；这些 ID 只在单次 capture 生命周期内有效。
@@ -89,4 +89,5 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 11. `record` 用 video-ready host time 与 audio first-sample host time 计算真实 pre-roll/trim，不使用人工延迟常量；最终 A/V 时长与请求时长在媒体帧粒度内一致。
 12. Fixture 正式 recording 验收同时证明 video track 可解码、已知 Simulator tone 存在、宿主干扰 tone 不显著、route 不变、无 recordVideo/tap/aggregate 残留。
 13. 最终 HappyPianist Demo 必须通过正式 `roamer record` 生成，并同时包含可解码 Simulator 画面和真实非静音琴声音轨；raw video/audio 证据保留。
-14. `swift test`、`swift build -c release`、Fixture build、`git diff --check` 全部通过。
+14. `audio capture` / `record` 被 SIGINT/SIGTERM 中断时也必须释放本轮拥有的 tap、aggregate、IOProc 与 recordVideo 子进程，并保留已产生的 raw evidence；不新增全局 cancellation framework。
+15. `swift test`、`swift build -c release`、Fixture build、`git diff --check` 全部通过。
