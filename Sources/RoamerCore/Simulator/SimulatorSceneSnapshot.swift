@@ -1,7 +1,7 @@
 import Foundation
 import simd
 
-struct SceneBounds: Codable, Equatable {
+struct SceneBounds: Encodable {
     let min: [Double]
     let max: [Double]
 
@@ -14,7 +14,7 @@ struct SceneBounds: Codable, Equatable {
     }
 }
 
-struct SceneEntity: Codable {
+struct SceneEntity: Encodable {
     let id: String
     let name: String
     let parentID: String?
@@ -250,7 +250,7 @@ private struct NativeSceneProperty: Decodable {
     }
 }
 
-private indirect enum NativeSceneValue: Decodable {
+private enum NativeSceneValue: Decodable {
     case vector(String, [Double])
     case nested([NativeSceneProperty])
     case unused
