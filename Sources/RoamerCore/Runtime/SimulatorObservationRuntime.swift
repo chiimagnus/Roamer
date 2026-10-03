@@ -26,8 +26,9 @@ private final class AccessibilityBridge: NSObject {
     let device: AccessibilityDeviceMessaging
     let token = UUID().uuidString
     private let queue = DispatchQueue(label: "roamer.native-ax")
+    private let deadlineUptimeNanoseconds: UInt64?
 
-    init(device: AnyObject) throws {
+    init(device: AnyObject, deadline: DispatchTime?) throws {
         guard let nativeClass = object_getClass(device),
               let method = class_getInstanceMethod(nativeClass, NSSelectorFromString(
                 "sendAccessibilityRequestAsync:completionQueue:completionHandler:"
@@ -36,16 +37,25 @@ private final class AccessibilityBridge: NSObject {
             throw NativeAccessibilityError.unavailable("SimDevice 缺少已验证的请求入口/ABI")
         }
         self.device = unsafeBitCast(device, to: AccessibilityDeviceMessaging.self)
+        deadlineUptimeNanoseconds = deadline?.uptimeNanoseconds
     }
 
     func reply(_ request: AnyObject) -> NSObject? {
+        let now = DispatchTime.now().uptimeNanoseconds
+        let localDeadline = now.addingReportingOverflow(5_000_000_000)
+        let fiveSecondDeadline = localDeadline.overflow ? UInt64.max : localDeadline.partialValue
+        let effectiveDeadline = min(deadlineUptimeNanoseconds ?? UInt64.max, fiveSecondDeadline)
+        guard effectiveDeadline > now else { return nil }
+
         let ready = DispatchSemaphore(value: 0)
         let box = AccessibilityReply()
         device.request(request, queue: queue) { response in
             box.value = response
             ready.signal()
         }
-        guard ready.wait(timeout: .now() + 5) == .success else { return nil }
+        guard ready.wait(timeout: DispatchTime(uptimeNanoseconds: effectiveDeadline)) == .success else {
+            return nil
+        }
         return box.value as? NSObject
     }
 
@@ -62,8 +72,12 @@ private final class AccessibilityBridge: NSObject {
 }
 
 enum SimulatorObservationRuntime {
-    static func readAccessibility(udid: String, pid: Int32) throws -> [AccessibilityNode] {
-        try withTranslationRoot(udid: udid, pid: pid) { bridge, root, requestClass in
+    static func readAccessibility(
+        udid: String,
+        pid: Int32,
+        deadline: DispatchTime? = nil
+    ) throws -> [AccessibilityNode] {
+        try withTranslationRoot(udid: udid, pid: pid, deadline: deadline) { bridge, root, requestClass in
             var pending = [root]
             var visited = Set<String>()
             var nodes: [AccessibilityNode] = []
@@ -104,7 +118,7 @@ enum SimulatorObservationRuntime {
     }
 
     static func press(udid: String, pid: Int32, objectID: UInt64) throws {
-        try withTranslationRoot(udid: udid, pid: pid) { bridge, root, requestClass in
+        try withTranslationRoot(udid: udid, pid: pid, deadline: nil) { bridge, root, requestClass in
             var pending = [root]
             var visited = Set<String>()
             while let element = pending.popLast() {
@@ -151,10 +165,12 @@ enum SimulatorObservationRuntime {
     private static func withTranslationRoot<T>(
         udid: String,
         pid: Int32,
+        deadline: DispatchTime?,
         _ body: (AccessibilityBridge, NSObject, AnyObject) throws -> T
     ) throws -> T {
+        try requireBeforeDeadline(deadline)
         let runtime = try PrivateRuntime()
-        let bridge = try AccessibilityBridge(device: runtime.resolveDevice(udid: udid))
+        let bridge = try AccessibilityBridge(device: runtime.resolveDevice(udid: udid), deadline: deadline)
         guard let translatorClass = NSClassFromString("AXPTranslator"),
               class_getClassMethod(translatorClass, NSSelectorFromString("sharedInstance")) != nil,
               let translator = (translatorClass as AnyObject)
@@ -178,7 +194,15 @@ enum SimulatorObservationRuntime {
         guard let root = application(translator, NSSelectorFromString("translationApplicationObjectForPid:"), pid) as? NSObject else {
             throw NativeAccessibilityError.failed("PID \(pid) 无 application object，或原生请求超时")
         }
+        try requireBeforeDeadline(deadline)
         return try body(bridge, root, requestClass as AnyObject)
+    }
+
+    private static func requireBeforeDeadline(_ deadline: DispatchTime?) throws {
+        guard let deadline else { return }
+        guard DispatchTime.now().uptimeNanoseconds < deadline.uptimeNanoseconds else {
+            throw NativeAccessibilityError.failed("AX readiness deadline 已到")
+        }
     }
 
     private static func makeRequest(for element: NSObject, requestClass: AnyObject) throws -> NSObject {
