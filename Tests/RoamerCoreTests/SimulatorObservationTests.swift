@@ -77,6 +77,19 @@ final class SimulatorObservationTests: XCTestCase {
         XCTAssertThrowsError(try SimulatorAccessibility.objectID(from: "85555", expectedPID: 85555))
     }
 
+    func testPressRequiresSuccessfulNativeErrorCodeNotUnusedResultData() throws {
+        let reply = ObservationTestPressReply()
+        reply.error = 0
+        try SimulatorObservationRuntime.validatePressReply(reply, identity: "85555:1")
+        reply.error = 3
+        XCTAssertThrowsError(try SimulatorObservationRuntime.validatePressReply(reply, identity: "85555:1")) { error in
+            XCTAssertTrue(String(describing: error).contains("press error=3"))
+        }
+        reply.error = nil
+        XCTAssertThrowsError(try SimulatorObservationRuntime.validatePressReply(reply, identity: "85555:1"))
+        XCTAssertThrowsError(try SimulatorObservationRuntime.validatePressReply(NSObject(), identity: "85555:1"))
+    }
+
     func testManifestSeparatesScreenshotScopeAndChannelTimes() throws {
         let manifest = ObservationManifest(
             deviceUDID: "test-device", bundleID: "com.example.Test", pid: 85555,
@@ -217,4 +230,8 @@ private final class ObservationTestTranslation: NSObject {
     @objc let pid: Int32 = 85555
     @objc let objectID: UInt64 = 17001813286071910940
     @objc var bridgeDelegateToken: String?
+}
+
+private final class ObservationTestPressReply: NSObject {
+    @objc var error: NSNumber?
 }
