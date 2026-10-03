@@ -89,6 +89,8 @@
 
 **Files:**
 - Add: `Tests/SimulatorFixture/Tools/verify-feedback.sh`，串行调用正式 CLI 并检查观察产物；不是新 App 或另一份原生 backend。
+- Move/extend: P1 的独立原生 plist 核对到 `Tests/SimulatorFixture/Tools/verify-scene.py`，同时核对正式 JSON 与四图；复用 `verify-spatial.py` 的动作/关闭重开断言，不复制 oracle 导出逻辑。
+- Modify: `Tests/SimulatorFixture/build.sh`，对编译/链接统一选择 xrsimulator SDK。
 - Modify: `Tests/SimulatorFixture/README.md`、`README.md`；工具不足以自动断言的真实画面检查明确保留为现场验收步骤。
 - 本地证据记录：`.build/simulator-feedback/`；对应任务 note/实际审计引用真实提交和产物。
 

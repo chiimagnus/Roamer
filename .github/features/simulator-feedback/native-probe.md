@@ -102,12 +102,30 @@ P1 调查已形成逐渠道准入结论：普通 AX 观察可实现；数字几�
 - `p3-timeout-runtime2/result.json` / `p3-timeout-test2.log`：复用生产内嵌 LLDB 脚本，对本轮 fixture 执行 20 秒 sleep 表达式；10 秒 expression timeout 触发 unwind，14.98 秒整个 LLDB 请求退出，reply 有错误、detached=true、cleanupError=null。PID 64923 回 Ss，`p3-after-timeout2.png` 可截图。这是表达式超时恢复证据，不声称测试了 SIGKILL 后的恢复。
 - `p3-restarted-empty` 是冷启动尚未准备完时的原生 CFString 符号错误，已 detach，未发布成功清单；确认 UI 后新请求 `p3-restarted-empty-ready` 成功空 scenes，PID 64923 与之前 47918 不同。HappyPianist 唱片窗口 `p3-piano-empty` 也是真空 group，不算跨 App 3D 验收。
 - 旧目录及不存在目标均 exit 1；`p3-parser-boundaries.log` 10 项解析/运行状态回归、`p3-t1-full-final.log` 78 项全量测试通过，release/fixture build 通过。fixture 构建出现 xcrun 默认 macOS link SDK 警告，显式 `--sdk xrsimulator` 的独立编译无警告，后续构建收尾修正。
-- 跨 App 非空实体及 pose-only 正式验收仍待本轮显式 pose 基线决定；P3-T1 保持进行中，不因提交或文件存在标成完成。被正式路径取代的七份 LLDB 捕获/扫描原型已删除，独立 `verify-snapshot.py` 保留。
+- 跨 App 非空实体及 pose-only 正式验收仍待本轮显式 pose 基线决定；P3-T1 保持进行中，不因提交或文件存在标成完成。被正式路径取代的七份 LLDB 捕获/扫描原型已删除，独立核对后来迁为 `Tests/SimulatorFixture/Tools/verify-scene.py`，不维持第二套生产后端。
 
 候选元数据/符号保存于 runtime-methods、headset-service-methods、reality-tools-exports 等日志。SimVirtualHeadsetRemoteService 当前方法没有 Axes/Bounds 开关；RealityKitInspection 的已定位 exporter 是 ARView 路径。它们不证明全平台无能力，只证明本次尚未建立控制通道。
 原生 SDK 调试可视化、数字快照与后续包围盒布局图是不同产物；不能拿 renderer 冒充 native overlay。
 
 官方依据：[Xcode 原生 Axes/Bounds](https://developer.apple.com/documentation/xcode/diagnosing-issues-in-the-appearance-of-your-running-app)、[RealityKit Debugger 演示](https://developer.apple.com/videos/play/wwdc2024/10172/)、[RealityKit AX 由 App 提供](https://developer.apple.com/documentation/visionos/improving-accessibility-support-in-your-app)、[dismiss 当前空间](https://developer.apple.com/documentation/swiftui/dismissimmersivespaceaction/callasfunction())。
+
+### P3 进程状态检查发现（2026-10-03）
+
+- `p3-zombie-before.log`：`posix_spawn` 启动 `/usr/bin/true`，`waitid(WEXITED | WNOWAIT)` 确认退出但不回收；`testRuntimeRejectsExitedButUnreapedProcess` 的拒绝断言实际失败。共享 `requireUntracedRunningProcess` 只检查 sysctl 回复长度、P_TRACED 与 SSTOP，遗漏 SZOMB，因此会把退出 PID 当成运行中，并影响捕获前检查与恢复判断。应在该公共检查拒绝 SZOMB，不在调用方追加特判。
+- `p3-zombie-fixed.log`：修复后 11 项 snapshot 回归全部通过；`p3-full-86.log` 全量 86 项通过，release 构建通过；独立提交 `ec54429`。
+- `p3-empty-oracle-before.log`：把真实 fixture oracle 的 entities 改为空数组，原独立核对工具错误打印“五实体匹配 PASS”。空集合比较不能证明捕获正确；P3-T3 的 verifier 入口必须检查五实体完整性、唯一 ID、单位与空间打开状态，再做原生数据比较。
+
+### P3 正式反馈与跨 App 续验（2026-10-03）
+
+- 用户本轮明确允许建立 pose=0 测试基线，进行视角变化后恢复 pose=0，并恢复本轮初始 Shutdown；不声称恢复了无法回读的旧 pose。设备仍为 `28DABA38-C30B-44B1-9C2B-65D50F7FCC55`，Xcode 27 / visionOS 27，所有输入均为原生 Simulator HID，不操作宿主 GUI。
+- `p3-live-feedback`：正式脚本完整 observe → click → observe/scene → drag → observe/scene → Close → Open → observe/scene PASS。每次原始 plist 与正式 JSON 的五实体均匹配独立 oracle，7 原生实体 / 3 自身模型，四 PNG 由当次 CLI 实际生成。PID 26732；蓝色 click 坐标 960/1360、drag 1080/1370→1150/1300、700ms，Close/Open 为各自最新图中的 1920/1370（图片 3840×2160）。点击增量 `[0.0866025, 0, -0.05]` 米，拖动 31 changed / 1 ended，最终目标 `[-0.7960453, 1.3676669, -1.8494522]`，父级、橙色实体和平面不动。`p3-live-closed-scene` 实际为空，重开 session 改变、计数归零。
+- 逐图查看 `p3-live-feedback/before-scene` 与 `drag-scene`：俯视 −Z 向上、正视 X/Y、侧视 Z/Y，三图同为约 307.14286 px/m；平面正/侧视为线，父级自身不画盒子，蓝色轴向体现父级旋转。布局是八角点包围盒示意，不是相机图或 mesh；scene 的独立 screenshot 显示真实立体对象。移动后投影与 oracle 对应；视图自动居中不代表相邻实体移动。
+- `p3-pose-20-{observe,scene}`：只发 yaw=20°，实体和 layouts 的 JSON 与重开基线相同，独立 oracle 字节不变，四 PNG 字节完全相同；实际 screenshot 明显改变。紧邻 scene 的 `p3-focus-scene-before.log` / `after.log` 字节相同；长间隔前台应用会因用户活动改变，不据此宣称整个验收期间焦点恒定。随后恢复 pose=0。
+- 未修改 HappyPianist PID 31044：按最新画面点击选择钢琴 1182/739、虚拟卡片 2297/1250，仅进入运行期默认放置；未播放、练习、导入或完成设置。`p3-piano-live-scene` 是正式 release 捕获，原始配置绑定 HappyPianist，101 实体 / 90 自身模型，无几何错误，四 PNG 1600×5650，三图 190 px/m，全部图已查看。原生未命名模型显式标 `(unnamed)`，密集键盘投影可能重叠，90 项图例未省略；原生隐藏模型仍保留，不将 active/enabled 当作可见性。`p3-piano-looking-down` 在 pitch=−30° 后显示真实键盘，AX available / 13 节点；`p3-piano-live-looking-down-scene` 的实体/四 PNG 与前捕获相同。恢复 pose=0 后已终止本轮启动的 HappyPianist。
+- fixture 再启动 PID 37985，`p3-feedback-final/before-scene` 与原 PID 26732 不同，全部原生实体 ID 不复用；同样五实体匹配，不读取旧捕获缓存。最终脚本使用修正后的 verifier 重新执行全序列，日志 `p3-feedback-final.log`。
+- verifier 已拒绝空 oracle（`p3-empty-oracle-fixed.log`），四个真实阶段仍通过；`testIndependentVerifierRejectsEmptyOracleInsteadOfReportingFiveMatches` 使用现有 XCTest 直接运行 Python 工具，防止空集合假通过回归。`p3-verifier-regression.log` 12 项 snapshot 回归、`p3-full-87.log` 全量 87 项通过，`p3-release-final-87.log` release 与 `p3-fixture-final.log` fixture build 通过且无 SDK 警告；shell/Python 语法通过。
+- 先前原始捕获的离线再绘制只计解析/绘图验证，不与上述本轮真实 CLI 验收混同。`p3-feedback-refuse-stale` 在当前空场景与旧 oracle 不匹配时、发送任何动作前失败；正式 JSON 矩阵篡改也被 verifier 拒绝。
+- 独立根因修复 `da94b96` 将捕获结果、目标状态恢复和 scratch 清理汇聚为一次收尾，防止清理错误掩盖恢复错误；`p3-cleanup-common-success` 正常捕获和 `p3-cleanup-common-interrupt.log` 实际 attach 后 SIGINT 均验证，未发布失败清单、后续 observe 可用。`p3-output-write-failure.log` 在 attach 后将本次输出目录改只读，真实 simctl 写图失败，目标已 detach，未发布 scene.json；权限已恢复 0700。独立 `p3-overlay-before.log` / `after.log` 十开关与原值一致。
 
 ## P2-T1 正式 CLI 复验（2026-10-02）
 

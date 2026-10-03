@@ -139,6 +139,29 @@ final class SimulatorSceneSnapshotTests: XCTestCase {
         XCTAssertEqual(waitid(P_PID, id_t(child), &information, WEXITED | WNOWAIT), 0)
         XCTAssertThrowsError(try SimulatorSceneRuntime.requireUntracedRunningProcess(child))
     }
+
+    func testIndependentVerifierRejectsEmptyOracleInsteadOfReportingFiveMatches() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("roamer-verifier-test-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manifest: [String: Any] = [
+            "bundleID": "com.chiimagnus.RoamerTestApp", "pid": getpid(), "debuggerDetached": true,
+            "source": "Apple libViewDebuggerSupport", "capturesAreAtomic": false,
+            "scenes": [], "layouts": [], "screenshot": ["path": "screenshot.png"]
+        ]
+        try JSONSerialization.data(withJSONObject: manifest).write(to: directory.appendingPathComponent("scene.json"))
+        try Data().write(to: directory.appendingPathComponent("screenshot.png"))
+        let oracle: [String: Any] = [
+            "open": true, "session": "test", "units": "meters", "matrixLayout": "column-major", "entities": []
+        ]
+        let oracleURL = directory.appendingPathComponent("oracle.json")
+        try JSONSerialization.data(withJSONObject: oracle).write(to: oracleURL)
+        let tool = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("SimulatorFixture/Tools/verify-scene.py")
+        XCTAssertThrowsError(try ProcessRunner.run("/usr/bin/env", ["python3", "-I", tool.path, directory.path, oracleURL.path])) { error in
+            XCTAssertTrue(String(describing: error).contains("fixture must contain exactly five entities"), "\(error)")
+        }
+    }
 }
 
 enum SceneTestData {

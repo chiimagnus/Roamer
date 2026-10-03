@@ -51,6 +51,20 @@ cat "$data_dir/Documents/spatial.json"
 
 同一目录的四张布局 PNG 由本次捕获生成，不是 screenshot 的变形或猜测深度。逐图核对俯视的 −Z 向上、正视 X/Y、侧视 Z/Y，三图 `pixelsPerMeter` 相同，绿色零厚度平面在正/侧视投影为线，group 没有额外聚合盒子。XYZ 轴的起点是实体原点，父级旋转应改变蓝色模型轴向。`scene-overview.png` 是固定轴测概览；另行采集的 `screenshot.png` 才是实际 Simulator 画面。
 
+### 串行反馈验收
+
+先自行启动 fixture 的 Spatial scene 并点击 Open space，确认真实几何与 UI 已就绪。确保拥有本次 Simulator、没有其他调试器，再运行：
+
+```bash
+bash Tests/SimulatorFixture/Tools/verify-feedback.sh .build/simulator-feedback/new-feedback
+```
+
+脚本不 boot、不启动/重启 App、不设 pose。它先保存正式 observe/scene 与独立 oracle，随后每步打印最新 screenshot 路径，等待你根据该图输入 click、drag、Close space、Open space 的 Simulator 像素坐标。每次动作只发送一次；等待实际 App 计数/ended 或开关变化后才继续，10 秒未得到预期结果即失败，保留证据，不猜坐标、不自动重放。新证据目录的父目录须已存在，旧目录不覆盖；输入 EOF 会停止。
+
+`verify-scene.py <scene目录> <spatial-oracle.json>` 先拒绝空/不完整、重复 ID、未打开或单位错误的 oracle，再独立解析原始 plist 的 quaternion/父链，核对正式 JSON 的五个 oracle 实体 ID、局部/参考空间矩阵与自身边界，并检查 PNG 头/尺寸和三图比例。原始数据和正式 JSON 都要匹配，不能以 getter 返回 ok 或文件存在代替。整条序列再复用 `verify-spatial.py` 校验点击增量、拖动结束、相邻物体不动及关闭重开，新 PID 的重新捕获需另行实测。`swift test --filter SimulatorSceneSnapshotTests` 包含空 oracle 不得假通过的可运行回归。
+
+脚本的数字核对不能替代逐图查看三视图、实际画面变化、宿主焦点监测、pose-only 几何不变和第二个未经修改 App 的真实验收。只在获得明确 pose 授权后设定可恢复的验收基线；Roamer 缓存不是传感器回读。完成后恢复原 Simulator 启停状态与本轮拥有的调试/覆盖层值，不改变输入法或操作宿主 GUI。
+
 Home、重启和头部 pose 用 Simulator 画面/进程变化验收；Crown 调的是系统沉浸度，不是 App 的 `digitalCrownRotation` 值，应检查 SurfBoard immersion 日志。真实纵向 ScrollView 和横向唱片列表仍需在 Settings / HappyPianist 中验收，不能拿计数替代滚动效果。
 
 不要并行发送多个 HID 测试序列。测试期间监测宿主焦点与鼠标，但不激活 Simulator、不发送 macOS 输入。结束后恢复原输入模式和 Simulator 启停状态。

@@ -1,5 +1,5 @@
 version = 1
-current_task_id = "P3-T2"
+current_task_id = "P3-T3"
 
 [[tasks]]
 id = "P1-T1"
@@ -44,23 +44,23 @@ note = "DTX读写/真实XYZ边界/正常与失败恢复已实证；setter回包�
 [[tasks]]
 id = "P3-T1"
 title = "接入指定 App 的原生实体快照"
-status = "in_progress"
+status = "completed"
 plan = "plan-p3.md#p3-t1"
-commit = ""
-note = "实现与78项测试/构建、5 oracle点击拖动、新PID空场景、既有调试拒绝、中断及表达式超时恢复已验证；跨App实体与pose验收等待基线授权，尚不标完成"
+commit = "291c037"
+note = "正式五实体/父链/边界、点击拖动、关闭空与重开、pose-only不变、新PID37985及HappyPianist101实体通过；da94b96收尾/ec54429僵尸根因修复；87tests/release通过；native-probe.md"
 
 [[tasks]]
 id = "P3-T2"
 title = "从同一次真实快照生成空间概览与三视图"
-status = "in_progress"
+status = "completed"
 plan = "plan-p3.md#p3-t2"
-commit = ""
-note = "P3-T1实现已验证提交但跨App/pose仍待验收；先推进不依赖pose的同快照纯投影和PNG回归"
+commit = "db5c394"
+note = "正式fixture三模型/四图逐图核对、动作后投影、平面成线/共同比例；pose-only字节不变；HappyPianist90模型四图通过；7renderer/87全量/release通过；native-probe.md"
 
 [[tasks]]
 id = "P3-T3"
 title = "完成跨 App 反馈闭环复测与文档收尾"
-status = "pending"
+status = "in_progress"
 plan = "plan-p3.md#p3-t3"
 commit = ""
-note = ""
+note = "正式verify-feedback完整click/drag/close/reopen PASS，5独立oracle匹配；旧oracle空场景拒绝通过；fixture SDK修正无警告；86tests/release/fixture build通过，跨App及收尾待验"

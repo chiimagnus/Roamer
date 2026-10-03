@@ -106,13 +106,15 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 - Xcode 27
 - visionOS 27 Simulator
 
+`observe` 的原生 AX 和 `scene` 的实体/四图已在仓库测试 App 与未经修改的 HappyPianist 虚拟钢琴沉浸空间实测。普通唱片窗口的空 scene 不代表通道失败；此范围不保证其他引擎、不可调试目标或其他 Xcode 版本可读。
+
 `pose` 使用绝对 6DoF：位置单位为米，旋转单位为度。`crown` 的 `delta` 是 -20～20 的整数步数；总相对增量 `delta × 0.05` 一次交给 Simulator 处理，正负号表示两个旋转方向。最终沉浸度由系统曲线与范围钳制决定，不承诺线性变化。
 
 `long-press`、`drag`、`magnify`、`rotate` 的 `duration-ms` 必须大于 0 且不超过 60000；超出范围会在发送手势前报错。
 
 ## 验证
 
-纯逻辑与错误释放回归运行 `swift test`。真实 Simulator 测试使用仓库内的单一 [测试 App](Tests/SimulatorFixture/README.md)，包含手势、文本编辑及键盘事件探针；构建产物不入库。
+纯逻辑、几何/PNG 和错误释放回归运行 `swift test`。真实 Simulator 测试使用仓库内的单一 [测试 App](Tests/SimulatorFixture/README.md)，包含手势、文本编辑、键盘事件与空间 oracle；构建产物不入库。其 `Tools/verify-feedback.sh` 串行执行正式 observe → 根据最新画面输入坐标 → click/drag → scene → 关闭重开，核对原生 raw/JSON、真实手势结果和图片清单，不自动猜测或重放动作。此脚本不覆盖 pose、第二个 App 或原生覆盖层的完整现场验收。
 
 ## License
 
