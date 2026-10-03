@@ -8,6 +8,9 @@ import ObjectiveC.runtime
 
     @objc(changeImmersionLevel:isAbsolute:)
     func changeImmersionLevel(_ level: Float, isAbsolute: Bool)
+
+    @objc(setCursorVisible:)
+    func setCursorVisible(_ visible: Bool)
 }
 
 @objc protocol SimulatorHIDClientMessaging {
@@ -113,6 +116,12 @@ final class PrivateRuntime {
             serviceClass,
             "changeImmersionLevel:isAbsolute:"
         )
+        let cursorSelector = try Self.requireInstanceMethod(serviceClass, "setCursorVisible:")
+        guard let cursorMethod = class_getInstanceMethod(serviceClass, cursorSelector),
+              let cursorEncoding = method_getTypeEncoding(cursorMethod),
+              String(cString: cursorEncoding) == "v20@0:8B16" else {
+            throw RoamerError.message("Xcode private API setCursorVisible: ABI 不匹配")
+        }
 
         guard
             let allocated = (serviceClass as AnyObject)

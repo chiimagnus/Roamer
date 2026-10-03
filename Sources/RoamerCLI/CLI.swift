@@ -127,6 +127,19 @@ struct CLI {
             try crown.rotate(delta: delta)
             print("simulator crown: ok")
 
+        case "indicator":
+            try requireCount(rest, 1, usage: "roamer indicator <on|off>")
+            let visible: Bool
+            switch rest[0] {
+            case "on": visible = true
+            case "off": visible = false
+            default: throw RoamerError.message("indicator 必须是 on 或 off：\(rest[0])")
+            }
+            let device = try simulator.bootedAVP()
+            let indicator = try SimulatorControlIndicator(udid: device.udid)
+            indicator.setVisible(visible)
+            print("simulator control indicator: \(visible ? "on" : "off")")
+
         case "key":
             try requireCount(rest, 1, usage: "roamer key <key|modifier+key>")
             let chord = try KeyboardChord(rest[0])
@@ -383,6 +396,7 @@ struct CLI {
       roamer home
       roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
       roamer crown <delta>
+      roamer indicator <on|off>
       roamer key <key|modifier+key>
       roamer type <text>
       roamer gaze <x-px> <y-px>
@@ -397,6 +411,7 @@ struct CLI {
     type 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格；不会自动切换输入法。
     Xcode 27 Apple Vision Pro Simulator 当前不支持 Command modifier。
     crown delta 范围为 -20...20，总相对增量为 delta × 0.05，最终沉浸度由 Simulator 处理。
+    indicator 直接控制 XROS 原生 Show Gaze Target；AI/自动化连续控制时可用它显示系统灰色 gaze 标志，不自绘覆盖层。
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     observe 保存实际截图与指定运行 App 的原生 AX；--debug 会在原生 render fence 后抓取平台 XYZ/边界并恢复原值。须使用新目录且父目录已存在，不自动启动 App。
