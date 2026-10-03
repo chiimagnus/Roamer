@@ -5,17 +5,38 @@ import Foundation
 package enum SimulatorAccessibility {
     package static func wait(bundleID: String, timeoutSeconds: Double = 15) throws -> Int32 {
         let timeout = try timeoutNanoseconds(timeoutSeconds)
-        let simulator = SimulatorService()
-        let device = try simulator.bootedAVP()
-        let pid = try simulator.runningPID(bundleID, on: device)
         let started = DispatchTime.now().uptimeNanoseconds
+        let addition = started.addingReportingOverflow(timeout)
+        guard !addition.overflow else {
+            throw RoamerError.message("wait timeout 溢出：\(timeoutSeconds)")
+        }
+        let deadline = DispatchTime(uptimeNanoseconds: addition.partialValue)
+        let simulator = SimulatorService()
         var lastFailure: NativeAccessibilityError?
 
+        let device: SimulatorDevice
+        let pid: Int32
+        do {
+            device = try simulator.bootedAVP(deadline: deadline)
+            pid = try simulator.runningPID(bundleID, on: device, deadline: deadline)
+        } catch {
+            if deadlineReached(deadline) {
+                throw timeoutError(seconds: timeoutSeconds, lastFailure: lastFailure)
+            }
+            throw error
+        }
+
         while true {
+            guard !deadlineReached(deadline) else {
+                throw timeoutError(seconds: timeoutSeconds, lastFailure: lastFailure)
+            }
             let currentPID: Int32
             do {
-                currentPID = try simulator.runningPID(bundleID, on: device)
+                currentPID = try simulator.runningPID(bundleID, on: device, deadline: deadline)
             } catch {
+                if deadlineReached(deadline) {
+                    throw timeoutError(seconds: timeoutSeconds, lastFailure: lastFailure)
+                }
                 throw RoamerError.message("等待 AX ready 期间目标进程退出：\(error)")
             }
             guard currentPID == pid else {
@@ -23,8 +44,12 @@ package enum SimulatorAccessibility {
             }
 
             do {
-                _ = try SimulatorObservationRuntime.readAccessibility(udid: device.udid, pid: pid)
-                guard try simulator.runningPID(bundleID, on: device) == pid else {
+                _ = try SimulatorObservationRuntime.readAccessibility(
+                    udid: device.udid,
+                    pid: pid,
+                    deadline: deadline
+                )
+                guard try simulator.runningPID(bundleID, on: device, deadline: deadline) == pid else {
                     throw RoamerError.message("AX ready 后目标运行实例已改变")
                 }
                 return pid
@@ -35,14 +60,18 @@ package enum SimulatorAccessibility {
                 case .failed:
                     lastFailure = error
                 }
+            } catch {
+                if deadlineReached(deadline) {
+                    throw timeoutError(seconds: timeoutSeconds, lastFailure: lastFailure)
+                }
+                throw error
             }
 
-            let elapsed = DispatchTime.now().uptimeNanoseconds - started
-            guard elapsed < timeout else {
-                let detail = lastFailure.map { "；最后错误：\($0)" } ?? ""
-                throw RoamerError.message("等待 AX ready 超时（\(timeoutSeconds) 秒）\(detail)")
+            let now = DispatchTime.now().uptimeNanoseconds
+            guard now < deadline.uptimeNanoseconds else {
+                throw timeoutError(seconds: timeoutSeconds, lastFailure: lastFailure)
             }
-            let remainingMicroseconds = max(1, (timeout - elapsed) / 1_000)
+            let remainingMicroseconds = max(1, (deadline.uptimeNanoseconds - now) / 1_000)
             usleep(useconds_t(min(250_000, remainingMicroseconds)))
         }
     }
@@ -56,6 +85,18 @@ package enum SimulatorAccessibility {
         guard try simulator.runningPID(bundleID, on: device) == pid else {
             throw RoamerError.message("AX press 期间目标运行实例改变")
         }
+    }
+
+    private static func deadlineReached(_ deadline: DispatchTime) -> Bool {
+        DispatchTime.now().uptimeNanoseconds >= deadline.uptimeNanoseconds
+    }
+
+    private static func timeoutError(
+        seconds: Double,
+        lastFailure: NativeAccessibilityError?
+    ) -> RoamerError {
+        let detail = lastFailure.map { "；最后错误：\($0)" } ?? ""
+        return .message("等待 AX ready 超时（\(seconds) 秒）\(detail)")
     }
 
     static func timeoutNanoseconds(_ seconds: Double) throws -> UInt64 {
