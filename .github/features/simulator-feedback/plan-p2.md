@@ -64,13 +64,16 @@
 
 **再次执行时的用户决定与证据更新（2026-10-03）：** 用户允许明确要求覆盖层独占，但明确不允许人工确认。产品可以把目标覆盖层独占作为调用前提，不能声称已自动仲裁所有 Xcode/DTX 客户端；仍须拒绝已有 debugger、避免 Roamer 自有会话冲突并可靠恢复自有改动。未经修改 HappyPianist 的键盘已实测原生 XYZ/边界，十项开关独立读回恢复原值，第二 App 的实验门禁已补齐。必须保持全自动截图；`RSDebugServer` 的实体选项完成、`RSRenderer` 的 GPU capture scope 完成均尚未与 `simctl` 实际消费的呈现帧关联，不据此解除渲染同步门禁。无需为等候该契约新增未接入后端、人工输入步骤或固定等待。
 
-**执行完成后的独立重审（2026-10-03）：** 再次逐字检查 xrOS 27 `DebugHelperXPCService` / `DebugHelperDTXService`，其已暴露接口仍只有实体/全局 visualization 的 get/set/target/update，没有 rendered-surface 或 present fence。另一路 `RSSRenderedContentService` 确有 `startCaptureWithSceneIdentifier:...` 与 `onRenderedSurface:metadata:timestamp:`，但 `RSRenderedContentServer connectionDidConnect:` 首先通过 `rs_hasAffirmativeEntitlementValueForKey:` 检查 `_RSRenderedContentServiceEntitlementKey`，对应私有 entitlement `com.apple.realitysimulation.rendered-content-service`，失败立即 invalidate。普通 Roamer/Simctl helper 不具备该权限；不得靠自签私有 entitlement、固定 sleep、像素变化或人工确认绕过。P2-T2 因此继续 blocked，F-01 Deferred；这比“尚未搜到接口”更窄：缺的是**合法、可与 DebugHelper 更新建立因果关系的 rendered-frame completion**。
+**执行完成后的独立重审（2026-10-03）：** 再次逐字检查 xrOS 27 `DebugHelperXPCService` / `DebugHelperDTXService`，其已暴露接口仍只有实体/全局 visualization 的 get/set/target/update，没有 rendered-surface 或 present fence。另一路 `RSSRenderedContentService` 确有 `startCaptureWithSceneIdentifier:...` 与 `onRenderedSurface:metadata:timestamp:`，但 `RSRenderedContentServer connectionDidConnect:` 首先通过 `rs_hasAffirmativeEntitlementValueForKey:` 检查 `_RSRenderedContentServiceEntitlementKey`，对应私有 entitlement `com.apple.realitysimulation.rendered-content-service`，失败立即 invalidate。普通 Roamer/Simctl helper 不具备该权限；不得靠自签私有 entitlement、固定 sleep、像素变化或人工确认绕过。
+
+**Blocker 解开（2026-10-03）：** 不使用上述受 entitlement 保护的 rendered-content service。继续沿同一个合法 `RSSDebugService` 发现 `collectGPUPerformanceStatisticsWithFrameCount:completion:`：服务端 `RSDebugServer` 会创建 `RSGPUStatisticsNode` 并加入 `postCameraRenderGraphProvider`；node 在 `performWithContext:` 取得 Metal command buffer 并注册 `addCompletedHandler:`，只有 GPU 完成、统计窗口达到请求的 1 帧后才调用 `gpuStatisticsNode:didCollectStatsForWindowSize:`，最终触发客户端 completion。正式实现先完成覆盖层 setter，再等待这一未来 post-camera GPU completion；随后才注册并等待一个原生 `SimScreen` future frame callback，再截图。恢复后同样经过 GPU completion + display frame。这样把“设置已生效 → 实际渲染工作已完成 → Simulator 显示已继续推进 → 截图”串成因果链，不使用固定 sleep、像素猜测、人工确认或私有 entitlement。fixture 连续 5 轮组合 fence、强制 capture body 失败后的恢复、已有 axis=true 原值保留、Roamer 并发互斥，以及未经修改 HappyPianist 虚拟钢琴均通过；P2-T2 可以进入正式验收。
 
 **Files:**
 - Modify: `CLI.run` / `help` 的 observe 选项；`SimulatorObservation` 的显式调试汇聚路径。
-- Modify: `SimulatorObservationRuntime` 中 P1-T2 已验证的覆盖层控制及清理；必要的 ABI 调用放在已有 native boundary，不扩成通用反射框架。
-- Modify: `SimulatorObservationTests.swift`；增加本路径所需的最小错误清理测试，不建立单实现的 provider/fake 体系。
-- Modify: `README.md`、`Tests/SimulatorFixture/README.md`。
+- Add: `SimulatorDebugOverlayRuntime.swift`，负责互斥、临时 xrsimulator helper 生命周期、原生显示帧 fence 与恢复错误合并。
+- Add: `SimulatorDebugOverlayHelperSource.swift`，只包含当前 SDK 已验证 ABI 的最小 `RSSDebugService` helper；运行时临时编译/执行，不安装进目标 App，结束后删除。
+- Modify: `SimulatorObservationTests.swift`；覆盖 manifest / helper 协议，不为单一实现建立 provider/fake 体系。
+- Modify: `README.md`、`Tests/SimulatorFixture/README.md`、`verify-feedback.sh`；删除迁入生产后重复的 overlay prototype。
 
 **不变量：** 调试画面必须包含平台真实绘制的 XYZ/边界，不能由估计像素贴标签代替；调用仅恢复自己更改的覆盖层/暂停/连接，不侵占其他调试会话。
 
