@@ -71,6 +71,7 @@ roamer type "Hello 2026"
 roamer launch com.chiimagnus.RoamerTestApp
 roamer wait com.chiimagnus.RoamerTestApp
 roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-before
+roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-debug --debug
 # 视觉空间手势：使用 screenshot.png 的像素坐标
 roamer click 1519 893
 # 精确 AX 控件：使用 observation.json 中该节点的 id
@@ -80,7 +81,9 @@ roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-after
 
 清单记录设备、bundle ID、PID、实际图片尺寸，以及截图/AX 各自的采集区间。截图是整个 Simulator 显示，不是目标 App 的独占截图；各渠道不是原子同帧快照。AX 保留对象 ID、标签、值、role/traits 的原生代码、支持动作和逐属性 error code。`available` 包含真实结果（可能没有子元素），`unavailable` 表示缺少已验证原生接口，`failed` 表示读取失败；后两种有原因、没有假空树。命令生成有效清单不代表 AX 或业务操作必定成功，应检查渠道 status。
 
-AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ；空间窗口尤其不能靠比例/偏移猜测换算。需要按截图中的视觉位置做空间手势时继续使用 `click/drag`；需要精确命中 `observe` 返回的 AX 控件时使用 `roamer press <bundle-id> <node-id>`。`press` 只接受当前运行 PID 的原生节点 ID，App 重启后的旧 ID 会拒绝。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不改变输入法。原生实时 Axes/Bounds 尚无可靠的自动截图同步契约，未提供 `--debug`。
+AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ；空间窗口尤其不能靠比例/偏移猜测换算。需要按截图中的视觉位置做空间手势时继续使用 `click/drag`；需要精确命中 `observe` 返回的 AX 控件时使用 `roamer press <bundle-id> <node-id>`。`press` 只接受当前运行 PID 的原生节点 ID，App 重启后的旧 ID 会拒绝。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不改变输入法。
+
+`observe ... --debug` 临时开启目标 bundle 的平台原生 `entity_axis` / `entity_bounds`。Roamer 先读取原值，只修改原先关闭的项；setter 完成后通过 `RSSDebugService` 向 post-camera render graph 加入 1 个未来帧 GPU statistics node。该 node 在对应 Metal command buffer 的 completed handler 中收集 GPU 时间，完成后 Roamer 再等待一个原生 `SimScreen` 后续显示帧，随后才执行 `simctl io screenshot`。截图完成或失败后都只恢复本次实际改动，并重复 GPU + display fence；`observation.json.debugOverlay` 记录来源、原值与 fence。这里没有固定 sleep、像素变化猜测、人工确认或后期绘制。已有 debugger/暂停目标会在修改前拒绝，同一台 Mac 上 Roamer 自己的 debug 会话互斥；调用期间不要让 Xcode 或其他 DTX 客户端同时修改同一组覆盖层选项。
 
 App 刚启动但 UI 尚未就绪时，原生 AX 可能返回错误；`observe` 会如实记录为 `failed`，不会自动重启 App、重放动作、重试或伪装成空树。需要自动等待时使用 `roamer wait`，不要猜固定 sleep 时间。
 
@@ -114,7 +117,7 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 - Xcode 27
 - visionOS 27 Simulator
 
-`observe` 的原生 AX 和 `scene` 的实体/四图已在仓库测试 App 与未经修改的 HappyPianist 虚拟钢琴沉浸空间实测。普通唱片窗口的空 scene 不代表通道失败；此范围不保证其他引擎、不可调试目标或其他 Xcode 版本可读。
+`observe` 的原生 AX、`observe --debug` 的平台 XYZ/边界画面，以及 `scene` 的实体/四图已在仓库测试 App 与未经修改的 HappyPianist 虚拟钢琴沉浸空间实测。普通唱片窗口的空 scene 不代表通道失败；此范围不保证其他引擎、不可调试目标或其他 Xcode 版本可读。`--debug` 会针对当前 xrsimulator SDK 临时编译一个最小 helper，只调用已验证 ABI 的 `RSSDebugService`；helper 与源码都在本次请求结束后删除，不安装到目标 App 或 Simulator。
 
 `pose` 使用绝对 6DoF：位置单位为米，旋转单位为度。`crown` 的 `delta` 是 -20～20 的整数步数；总相对增量 `delta × 0.05` 一次交给 Simulator 处理，正负号表示两个旋转方向。最终沉浸度由系统曲线与范围钳制决定，不承诺线性变化。
 
@@ -122,7 +125,7 @@ Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新
 
 ## 验证
 
-纯逻辑、几何/PNG 和错误释放回归运行 `swift test`。真实 Simulator 测试使用仓库内的单一 [测试 App](Tests/SimulatorFixture/README.md)，包含手势、文本编辑、键盘事件与空间 oracle；构建产物不入库。其 `Tools/verify-feedback.sh` 串行执行正式 observe → 根据最新画面输入坐标 → click/drag → scene → 关闭重开，核对原生 raw/JSON、真实手势结果和图片清单，不自动猜测或重放动作。此脚本不覆盖 pose、第二个 App 或原生覆盖层的完整现场验收。
+纯逻辑、几何/PNG 和错误释放回归运行 `swift test`。真实 Simulator 测试使用仓库内的单一 [测试 App](Tests/SimulatorFixture/README.md)，包含手势、文本编辑、键盘事件与空间 oracle；构建产物不入库。其 `Tools/verify-feedback.sh` 串行执行正式 observe → 根据最新画面输入坐标 → click/drag → scene → 关闭重开，核对原生 raw/JSON、真实手势结果和图片清单，不自动猜测或重放动作。`observe --debug` 另需实际查看 debug screenshot 中的平台 XYZ/Bounds，并用紧接着的普通 observe 与原生选项读回确认恢复；不以图像猜测作为同步 fence。
 
 ## License
 

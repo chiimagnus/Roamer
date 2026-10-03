@@ -103,6 +103,48 @@ final class SimulatorObservationTests: XCTestCase {
                           try XCTUnwrap(accessibility["startedAt"] as? Double))
     }
 
+    func testDebugManifestRecordsPlatformOverlayFenceAndOriginalState() throws {
+        let manifest = ObservationManifest(
+            deviceUDID: "test-device", bundleID: "com.example.Test", pid: 85555,
+            screenshot: .init(
+                startedAt: Date(timeIntervalSince1970: 1),
+                finishedAt: Date(timeIntervalSince1970: 2),
+                width: 1600, height: 900, debugVisualization: true
+            ),
+            accessibility: .init(
+                startedAt: Date(timeIntervalSince1970: 3), finishedAt: Date(timeIntervalSince1970: 4),
+                status: .available, error: nil, nodes: []
+            ),
+            debugOverlay: .init(
+                renderFence: "native future frame", originalAxis: false, originalBounds: true
+            )
+        )
+        let encoded = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(manifest)
+        ) as? [String: Any])
+        let screenshot = try XCTUnwrap(encoded["screenshot"] as? [String: Any])
+        let overlay = try XCTUnwrap(encoded["debugOverlay"] as? [String: Any])
+        XCTAssertTrue((screenshot["scope"] as? String)?.contains("platform-rendered") == true)
+        XCTAssertEqual(overlay["source"] as? String, "RealitySimulationServices.RSSDebugService")
+        XCTAssertEqual(overlay["options"] as? [String], ["entity_axis", "entity_bounds"])
+        XCTAssertEqual(overlay["originalAxis"] as? Bool, false)
+        XCTAssertEqual(overlay["originalBounds"] as? Bool, true)
+        XCTAssertEqual(overlay["restored"] as? Bool, true)
+        XCTAssertEqual(overlay["renderFence"] as? String, "native future frame")
+    }
+
+    func testDebugOverlayHelperReplyProtocolRejectsUnknownData() throws {
+        let ready = try SimulatorDebugOverlayRuntime.decodeHelperMessage(
+            #"{"state":"ready","originalAxis":false,"originalBounds":true}"#
+        )
+        XCTAssertEqual(ready.state, "ready")
+        XCTAssertEqual(ready.originalAxis, false)
+        XCTAssertEqual(ready.originalBounds, true)
+        let restored = try SimulatorDebugOverlayRuntime.decodeHelperMessage(#"{"state":"restored"}"#)
+        XCTAssertEqual(restored.state, "restored")
+        XCTAssertThrowsError(try SimulatorDebugOverlayRuntime.decodeHelperMessage("READY"))
+    }
+
     func testLiveFixtureFrameKeepsNativeCoordinatesWithoutPixelConversion() throws {
         let frame = try SimulatorObservationRuntime.nativeFrame(
             NSValue(rect: CGRect(x: 54, y: 739.5, width: 992, height: 44))
