@@ -1,6 +1,6 @@
 # Simulator Audio Feedback
 
-> Issue #9：把 Apple Vision Pro Simulator 的音频路由状态与真实输出音频纳入 Roamer 的反馈链，并最终重新录制带真实琴声的 HappyPianist Demo。
+> Issue #9：把 Apple Vision Pro Simulator 的音频路由状态、真实输出音频和原生 framebuffer 录像统一纳入 Roamer 的输出反馈链，并提供正式音画录制能力。
 
 ## 背景 / 触发
 
@@ -33,7 +33,7 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 
 当前 CoreAudio process object 实测也证明 guest App 是独立宿主 audio client：HappyPianist PID 的 process object bundle ID 是 `com.chiimagnus.HappyPianistAVP` 且 `isRunningOutput=true`；Simulator 的 `backboardd`、`systemsoundserver-simd` 也分别是独立 CoreAudio process object，而 `SimAudioProcessorService` 本身不是输出音源。
 
-因此本 feature 的正式方向是：**HostRoute 只读状态 + CoreAudio process tap 捕获当前唯一 AVP Simulator 的 guest audio process 集合**，不再研究 ScreenCaptureKit/window audio，也不把 HostRoute 当 PCM API。
+因此本 feature 的正式方向是：**HostRoute 只读状态 + CoreAudio process tap 捕获当前唯一 AVP Simulator 的 guest audio process 集合 + `simctl recordVideo` 原生 framebuffer + AVFoundation 最终 mux**。不再研究 ScreenCaptureKit/window audio，也不把 HostRoute 当 PCM API。
 
 ## 核心需求
 
@@ -47,18 +47,21 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 8. capture 不移动 macOS 鼠标、不发送宿主输入、不激活 Device Hub、不抢焦点。
 9. Fixture 要提供一个确定性音频信号和独立 oracle；成功不能只看“文件存在”，必须验证时长、采样数据非静音和已知频率。
 10. HappyPianist 保持未经修改。最终由 Roamer 触发真实琴声，并在 capture 文件中验证非静音音频。
-11. 最终重新生成一版本地 HappyPianist Demo，把 Simulator framebuffer 视频与新 capture 的真实琴声合成到同一视频文件。
-12. 音频理解、ASR、音乐识别、音高语义分析不进入 Roamer Core；Roamer 负责可靠提供原始音频反馈。
+11. Roamer 提供正式 `record` 能力，把 `simctl io <udid> recordVideo` 的原生 framebuffer video 与同一套 Simulator-only audio capture 同步封装成最终 A/V 文件。
+12. `record` 必须保留 raw video、raw audio、final A/V 与 recording metadata；音画同步使用同一 host monotonic time 基准，不允许人工 magic offset。
+13. 最终使用正式 `roamer record` 重新生成一版本地 HappyPianist Demo，视频中包含真实 Simulator 琴声。
+14. 音频理解、ASR、音乐识别、音高语义分析不进入 Roamer Core；Roamer 负责可靠提供原始音频反馈与 A/V 录制。
 
 ## 默认值与兼容策略
 
 - 不改变任何已有 CLI 命令行为。
-- 新能力使用 `audio` 命令组，不提供旧语法 alias。
+- 音频能力使用 `audio` 命令组；音画录制使用单一顶层 `record` 入口；都不提供旧语法 alias。
 - 路由状态是平台当前事实，不写入 `SimulatorStateStore`。
 - capture 不持久化 CoreAudio process/tap ID；这些 ID 只在单次 capture 生命周期内有效。
 - 不提供“CoreAudio tap 失败时改录系统混音”“改用 ScreenCaptureKit”“自动切 Output”的 fallback。
 - capture source set 是启动时 snapshot；metadata 必须记录实际绑定的 PID / bundle ID / AudioObjectID，不能把后续新进程假装成已捕获。
 - 初版只采集 Simulator **output**。Input route 会显示在 status 中，但不录麦克风输入。
+- `record` 是有限时长录制：先让 framebuffer recorder ready，再让 audio first-sample ready，以两者共同可用的时间点作为内容起点，最终成片时长按用户请求裁剪。
 
 ## 非目标
 
@@ -69,7 +72,7 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 - 动态追踪采集中途新出现的任意 Simulator audio process。
 - 实时语音识别、音符识别、音频分类。
 - Issue #8 articulated fingertip。
-- 新增 public “统一 A/V recorder” 命令。本 feature 的最终带声音 Demo 是验收产物；若以后要正式产品化完整录屏，再单独规划。
+- 桌面/窗口录屏、无限时长后台录屏、直播/推流、录制编辑器。正式 `record` 只录当前唯一 AVP Simulator 的 framebuffer + output audio。
 
 ## 验收标准
 
@@ -82,5 +85,8 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 7. 在同一 Fixture 验收中并行播放一个普通 macOS 干扰 tone，正式 capture 仍只包含 Simulator tone。
 8. capture 前后没有 Roamer 遗留 process tap / aggregate device / IOProc；没有 user route mutation；如用户在 capture 期间自行改变 route，只记录 before/after 差异，不擅自恢复用户变化。
 9. HappyPianist 未修改；Roamer 触发琴声后，正式 capture 产物为真实非静音音频。
-10. 最终本地 Demo 同时包含可解码 Simulator 视频和真实非静音音轨，音画时间关系可接受；原始 video/audio 证据保留。
-11. `swift test`、`swift build -c release`、Fixture build、`git diff --check` 全部通过。
+10. 正式 `roamer record <duration-sec> <new-output-dir>` 使用原生 `simctl recordVideo` + 正式 audio capture，输出 raw video、raw audio、final A/V 与 metadata。
+11. `record` 用 video-ready host time 与 audio first-sample host time 计算真实 pre-roll/trim，不使用人工延迟常量；最终 A/V 时长与请求时长在媒体帧粒度内一致。
+12. Fixture 正式 recording 验收同时证明 video track 可解码、已知 Simulator tone 存在、宿主干扰 tone 不显著、route 不变、无 recordVideo/tap/aggregate 残留。
+13. 最终 HappyPianist Demo 必须通过正式 `roamer record` 生成，并同时包含可解码 Simulator 画面和真实非静音琴声音轨；raw video/audio 证据保留。
+14. `swift test`、`swift build -c release`、Fixture build、`git diff --check` 全部通过。

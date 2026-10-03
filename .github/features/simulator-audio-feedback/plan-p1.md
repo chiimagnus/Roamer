@@ -92,7 +92,7 @@ P1 要实测 `kAudioAggregateDeviceTapAutoStartKey` 是否有必要；没有 loa
 
 - callback 中哪一个 AudioBufferList 是 tap output；
 - sample format / sample rate / channel count；
-- `AudioTimeStamp.mHostTime` 是否稳定可用于 capture start/first sample 时间轴；
+- `AudioTimeStamp.mHostTime` 是否稳定可用于 capture start/first sample 时间轴，以及它与宿主 `mach_absolute_time` / `mach_continuous_time` 的真实关系；P3 只能使用 P1 证明可比较的同一时钟域做音画对齐；
 - 哪种 Apple 原生写法能稳定生成通用 PCM 文件。
 
 优先验证 WAV PCM，方便 Fixture 用标准工具独立分析；若真实 tap format / writer 证明 WAV 需要不必要的复杂转换，再选择更直接的容器，并在 P2 前更新计划。不能为了文件扩展名牺牲正确性。
@@ -127,7 +127,7 @@ P1 要实测 `kAudioAggregateDeviceTapAutoStartKey` 是否有必要；没有 loa
 
 **Step 8: Gate 决策并回写 P2**
 
-- **PASS**：把 process ancestry 方法、tap/aggregate keys、format、writer、timestamp、cleanup、授权行为和最小 CLI 语义写入 `idea.md` 与 `plan-p2.md` 的 P1 冻结契约。
+- **PASS**：把 process ancestry 方法、tap/aggregate keys、format、writer、host-time 时钟域/转换、cleanup、授权行为和最小 CLI 语义写入 `idea.md` 与 `plan-p2.md` 的 P1 冻结契约。
 - **FAIL**：写明失败层（source discovery / tap / PCM / isolation / route dependency / cleanup），删除 probe，停止 feature。
 - **BLOCKED by permission**：记录系统授权要求，删除/停止当前 probe，等待用户授权后重跑 P1；不把权限拒绝误判成平台不支持。
 

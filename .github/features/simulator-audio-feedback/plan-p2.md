@@ -2,7 +2,7 @@
 
 **Goal:** 在 P1 已验证的 CoreAudio Process Tap 契约上，正式提供只读 Simulator audio route status 与 Simulator-only audio capture，并用确定性 Fixture 证明隔离、内容、cleanup 和宿主边界。
 
-**Non-goals:** 不修改 Input/Output route；不做全局系统录音；不做动态 capture source 增量监听；不实现统一 A/V recorder；不做 ASR/音乐识别。
+**Non-goals:** 不修改 Input/Output route；不做全局系统录音；不做动态 capture source 增量监听；P2 不实现 A/V recorder（由 P3 正式实现）；不做 ASR/音乐识别。
 
 **Approach:** 先给现有单一 Simulator Fixture 增加持续 deterministic tone 与独立 `audio.json` oracle，确保 production capture 有可靠真值；再实现 HostRoute 只读 status；最后实现 CoreAudio guest-process discovery + process tap capture。Capture 输出 evidence directory 和 manifest，source set 在开始时冻结。真实验收用一个宿主干扰 tone 证明隔离，而不是只验证“文件非静音”。
 
@@ -35,7 +35,7 @@
 - output container / PCM format / filename：`TBD`
 - writer API 与 real-time callback 约束：`TBD`
 - first-buffer readiness / timeout 语义：`TBD`
-- `AudioTimeStamp.mHostTime` 到单调时间的转换：`TBD`
+- `AudioTimeStamp.mHostTime` 与宿主 monotonic/mach clock 的可比较契约：`TBD`
 - cleanup 顺序与 residual-object 验证：`TBD`
 - 系统音频捕获权限行为：`TBD`
 - P1 isolation 结果：`TBD`
@@ -232,13 +232,14 @@ Expected: 自动层全绿，help 中出现 `audio status`。
 - 以音频 frame/sample timeline 达到用户请求 duration，而不是 sleep 一段时间猜完成；
 - normal/error 都由同一个 owner 反向 stop/destroy。
 
-不要创建 audio backend protocol、tap factory、daemon 或 fallback。
+不要创建 audio backend protocol、tap factory、daemon 或 fallback。只保留一个可被 `audio capture` 与 P3 `record` 共用的 capture session owner。
 
 **Step 4: 实现 capture manifest**
 
-`SimulatorAudioCapture` 创建新的 output directory，并维护一个原子 `audio.json`：
+`SimulatorAudioCapture` 既是 CLI 的高层 owner，也是 P3 recorder 可直接复用的内部 session owner；不能让 `record` 再 shell-out 调 `roamer audio capture`。它创建新的 output directory，并维护一个原子 `audio.json`：
 
-- setup 完成、第一批 buffer 到达后写 `state=recording`，让自动化可以无 sleep 等待 ready；
+- 内部 `start()` 在第一批真实 buffer 到达后返回 ready 信息（包括 first-sample host time / format）；CLI 同时把 `audio.json` 写成 `state=recording`，让外部自动化也能无 sleep 等待 ready；
+- 内部 session 可由 caller 等待指定 frame duration 完成，也可被 owner 提前停止；
 - 结束写 `state=completed`；
 - setup 后失败则尽量写 `state=failed` + 原生错误，但不得掩盖原错误。
 
@@ -251,6 +252,7 @@ manifest 至少记录 `schemaVersion=1`，以及：
 - format/sample rate/channels/frame count；
 - requested duration；
 - started/firstSample/finished 的 wall + P1 冻结 host-time 信息；
+- recording reuse 所需的 first-sample host time 必须来自同一个内部 session 结果，不允许 P3 重新推测；
 - route before / route after snapshot。
 
 Roamer 从未修改 route，因此 before/after 不一致时只报告外部变化，绝不能“恢复”用户在 capture 期间的主动修改。
