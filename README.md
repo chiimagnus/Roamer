@@ -82,6 +82,10 @@ Roamer 依赖 Xcode 的私有 CoreSimulator / SimulatorKit / RealitySimulation �
 
 当前已验证环境是 Apple Silicon、Xcode 27、visionOS 27 Simulator。其它 Xcode / Simulator 版本、其它引擎或不可调试目标不在当前保证范围内。
 
+## 开发者
+
+维护或扩展 Roamer 时先读 [开发指南](docs/development.md)。涉及 Xcode / Simulator 私有接口、Accessibility、调试覆盖层或 scene 捕获时，再读 [私有 API 边界](docs/private-apis.md)。
+
 ## 验证
 
 纯逻辑与数据回归：
