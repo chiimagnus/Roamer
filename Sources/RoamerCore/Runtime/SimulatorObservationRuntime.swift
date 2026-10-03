@@ -213,7 +213,7 @@ enum SimulatorObservationRuntime {
         return request
     }
 
-    private static func query<Value: Codable>(
+    private static func query<Value: Encodable>(
         _ request: NSObject,
         bridge: AccessibilityBridge,
         identity: String,
@@ -253,7 +253,7 @@ enum SimulatorObservationRuntime {
         return "\(pid):\(objectID.uint64Value)"
     }
 
-    static func decodeAttribute<Value: Codable>(
+    static func decodeAttribute<Value: Encodable>(
         error: Int, result: Any?, decode: (Any) throws -> Value
     ) throws -> AccessibilityAttribute<Value> {
         .init(errorCode: error, value: error == 0 ? try result.map(decode) : nil)
