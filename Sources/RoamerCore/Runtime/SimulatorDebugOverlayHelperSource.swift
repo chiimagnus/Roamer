@@ -11,18 +11,15 @@ enum SimulatorDebugOverlayHelperSource {
 
 static const uint64_t RoamerEntityBounds = 0x1;
 static const uint64_t RoamerEntityAxis = 0x4;
-static dispatch_semaphore_t RoamerSemaphore;
-static BOOL RoamerBooleanValue;
-static NSError *RoamerErrorValue;
 static volatile sig_atomic_t RoamerInterrupted = 0;
 
 static void RoamerSignalHandler(int signalNumber) {
     RoamerInterrupted = signalNumber;
 }
 
-static BOOL RoamerWait(NSError **error) {
+static BOOL RoamerWait(dispatch_semaphore_t semaphore, NSError * __strong *requestError, NSError **error) {
     if (dispatch_semaphore_wait(
-        RoamerSemaphore,
+        semaphore,
         dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)
     ) != 0) {
         if (error) {
@@ -32,21 +29,21 @@ static BOOL RoamerWait(NSError **error) {
         }
         return NO;
     }
-    if (RoamerErrorValue) {
-        if (error) *error = RoamerErrorValue;
+    if (*requestError) {
+        if (error) *error = *requestError;
         return NO;
     }
     return YES;
 }
 
 static BOOL RoamerGetOption(id service, NSString *bundleID, uint64_t option, BOOL *value, NSError **error) {
-    RoamerSemaphore = dispatch_semaphore_create(0);
-    RoamerBooleanValue = NO;
-    RoamerErrorValue = nil;
-    void (^completion)(BOOL, NSError *) = ^(BOOL result, NSError *requestError) {
-        RoamerBooleanValue = result;
-        RoamerErrorValue = requestError;
-        dispatch_semaphore_signal(RoamerSemaphore);
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    __block BOOL booleanValue = NO;
+    __block NSError *requestError = nil;
+    void (^completion)(BOOL, NSError *) = ^(BOOL result, NSError *replyError) {
+        booleanValue = result;
+        requestError = replyError;
+        dispatch_semaphore_signal(semaphore);
     };
     ((void (*)(id, SEL, uint64_t, id, id, id))objc_msgSend)(
         service,
@@ -56,17 +53,17 @@ static BOOL RoamerGetOption(id service, NSString *bundleID, uint64_t option, BOO
         nil,
         completion
     );
-    if (!RoamerWait(error)) return NO;
-    *value = RoamerBooleanValue;
+    if (!RoamerWait(semaphore, &requestError, error)) return NO;
+    *value = booleanValue;
     return YES;
 }
 
 static BOOL RoamerSetOption(id service, NSString *bundleID, uint64_t option, BOOL enabled, NSError **error) {
-    RoamerSemaphore = dispatch_semaphore_create(0);
-    RoamerErrorValue = nil;
-    void (^completion)(NSError *) = ^(NSError *requestError) {
-        RoamerErrorValue = requestError;
-        dispatch_semaphore_signal(RoamerSemaphore);
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    __block NSError *requestError = nil;
+    void (^completion)(NSError *) = ^(NSError *replyError) {
+        requestError = replyError;
+        dispatch_semaphore_signal(semaphore);
     };
     ((void (*)(id, SEL, uint64_t, BOOL, id, id, id))objc_msgSend)(
         service,
@@ -77,17 +74,17 @@ static BOOL RoamerSetOption(id service, NSString *bundleID, uint64_t option, BOO
         nil,
         completion
     );
-    return RoamerWait(error);
+    return RoamerWait(semaphore, &requestError, error);
 }
 
 static BOOL RoamerRenderFence(id service, NSError **error) {
-    RoamerSemaphore = dispatch_semaphore_create(0);
-    RoamerErrorValue = nil;
-    void (^completion)(id, id, NSError *) = ^(id execution, id scheduling, NSError *requestError) {
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    __block NSError *requestError = nil;
+    void (^completion)(id, id, NSError *) = ^(id execution, id scheduling, NSError *replyError) {
         (void)execution;
         (void)scheduling;
-        RoamerErrorValue = requestError;
-        dispatch_semaphore_signal(RoamerSemaphore);
+        requestError = replyError;
+        dispatch_semaphore_signal(semaphore);
     };
     ((void (*)(id, SEL, uint64_t, id))objc_msgSend)(
         service,
@@ -95,7 +92,7 @@ static BOOL RoamerRenderFence(id service, NSError **error) {
         1,
         completion
     );
-    return RoamerWait(error);
+    return RoamerWait(semaphore, &requestError, error);
 }
 
 static BOOL RoamerRequireMethod(Class cls, NSString *name, const char *encoding) {
@@ -176,22 +173,26 @@ int main(int argc, const char *argv[]) {
         }
 
         if (!originalAxis) {
-            if (!RoamerSetOption(service, bundleID, RoamerEntityAxis, YES, &error)) {
-                fprintf(stderr, "failed to enable entity axis: %s\n", error.description.UTF8String);
-                return 5;
-            }
             changedAxis = YES;
-        }
-        if (!originalBounds) {
-            if (!RoamerSetOption(service, bundleID, RoamerEntityBounds, YES, &error)) {
+            if (!RoamerSetOption(service, bundleID, RoamerEntityAxis, YES, &error)) {
                 NSError *cleanup = nil;
                 RoamerRestore(service, bundleID, changedAxis, NO, &cleanup);
+                fprintf(stderr, "failed to enable entity axis: %s; cleanup: %s\n",
+                    error.description.UTF8String,
+                    cleanup ? cleanup.description.UTF8String : "ok");
+                return 5;
+            }
+        }
+        if (!originalBounds) {
+            changedBounds = YES;
+            if (!RoamerSetOption(service, bundleID, RoamerEntityBounds, YES, &error)) {
+                NSError *cleanup = nil;
+                RoamerRestore(service, bundleID, changedAxis, changedBounds, &cleanup);
                 fprintf(stderr, "failed to enable entity bounds: %s; cleanup: %s\n",
                     error.description.UTF8String,
                     cleanup ? cleanup.description.UTF8String : "ok");
                 return 5;
             }
-            changedBounds = YES;
         }
 
         if (!RoamerRenderFence(service, &error)) {
