@@ -1,13 +1,13 @@
 # 原生观测实验记录
 
-## 当前结论（未完成产品交付）
+## 当前结论
 
 | 渠道 | 实际证据 | 当前准入 |
 | --- | --- | --- |
 | Simulator 实际画面 | 既有 `simctl io screenshot`，3840×2160 | 已有能力 |
 | 指定 App AX | fixture Button/TextField 变化、蓝色实体、HappyPianist UI 读取成功 | 已接入普通 observe；本轮正式 CLI 验证见 P2-T1 |
 | RealityKit 数字实体 | 官方库返回 fixture 7 实体/5 oracle 匹配；HappyPianist 虚拟钢琴 101 实体、90 自身模型 | fixture + 未修改 App 沉浸场景成立；不能宣传任意引擎/窗口 |
-| 原生 Axes/Bounds 实时覆盖层 | fixture 与未修改 HappyPianist 键盘实际显示 XYZ/边界；原值恢复独立读回成立 | 显式独占前提已获用户允许；全自动截图渲染同步及产品中断收尾仍未完成，见 P2-T2 再次执行 |
+| 原生 Axes/Bounds 实时覆盖层 | fixture 与未修改 HappyPianist 实际显示 XYZ/边界；原值恢复、失败恢复、并发互斥均成立 | 正式 `observe --debug` 使用 RSSDebugService post-camera GPU completion + 后续 SimScreen frame 作为全自动 fence；不使用 sleep、像素猜测、人工确认或私有 entitlement |
 | 相机/玩家测量 pose | 本次场景配置只有 contentOrigin，未证明相机矩阵 | 不输出测量值；Roamer 历史 pose 不是真值 |
 
 环境：2026-10-02，Apple Silicon，Xcode 27 beta `27A5209h`，xrOS 27 `24M5306g`。
@@ -218,6 +218,23 @@ xcrun swiftc -package-name Roamer \
 - `captureGPUFrameWithCompletion:` 转到 `RSRenderer.captureGPUFrameWithOutputPath:numFrames:completion:`；`_beginFrameCapture` 启动 Metal capture，`_endFrameCapture` 递减帧数、结束 capture scope 后调用 completion。调用点位于 `startRenderingFrame` 的 `endingEncodingWork` 附近；其中 dispatch group 的对应回调是 `RERenderFrameWorkloadAddEncodedHandler`，不能把这个 group 直接称为屏幕呈现完成。SDK `Metal/MTLCaptureScope.h` 明确 scope 包含 begin 后创建、end 前提交的 command buffers，没有赋予它 `simctl` 画面同步语义。本轮没有发起共享 GPU capture，也未创建或接管其他人的 capture。
 - `RSSRenderedContentService` 另有 `onRenderedSurface:metadata:timestamp:` 和按 scene 开始 capture 的入口，但服务端会创建专门 content source，不能仅凭 timestamp 就声称它是当前 Simulator 玩家画面的完成信号。本轮只核对静态入口，不把尚未验证的取景、共享 capture 状态或释放行为当作已成立的替代通路。
 
+执行完成后的独立重审进一步把这条候选路收窄：`RSSRenderedContentService.init()` 直接连接 `com.apple.realitysimulation.renderedcontentservice`；`RSRenderedContentServer connectionDidConnect:` 在接受连接前调用 `rs_hasAffirmativeEntitlementValueForKey:`，检查 `_RSRenderedContentServiceEntitlementKey`。runtime 字符串给出的 key 为 `com.apple.realitysimulation.rendered-content-service`，未授权连接随后直接 `invalidate`。同时重新检查 `DebugHelperXPCService` / `DebugHelperDTXService`，只有 `get/setEntityDebugOption`、`setEntityDebugOptionsTarget`、`visualizationsUpdated` 等 visualization 控制，没有 surface/fence/capture。当时结论：普通 Roamer 没有合法的 rendered-surface completion 可以接到 DebugHelper 设置链上；不通过伪造私有 entitlement、自定义固定等待、像素差异或人工确认规避。该路径因此继续 blocked，随后由下文 GPU completion + SimScreen future frame 方案解除。
+
 新增静态证据为 `p2-rss-render-{symbols,strings,metadata}.log`、`p2-rss-set-debug-disassembly.log`、`p2-reality-simulation-debug-symbols.log`、`p2-rs-{set-debug-disassembly,apply-entity-debug,capture-disassembly,renderer-capture-disassembly,frame-capture-lifecycle,render-submit,rendered-content-start}.log`，均留在忽略的 `.build/simulator-feedback/`。本机 `xcdocs` 检索只找到 capture scope 概览，没有取得覆盖层呈现契约；不把索引缺失解释成平台能力不存在。
 
-本轮重新运行 observation 定向 9 tests、全量 87 tests、release、fixture build 均 PASS，日志 `p2-resume-{observation-tests,full-tests,release-build,fixture-build}.log`。没有新增未接入生产代码或兼容 fallback。第二 App 实验已成立，独占产品前提已获允许，但自动截图的原生完成契约仍未建立，P2-T2 继续 blocked，整个 feature 不能标 complete；下一步需要能把设置后的渲染帧与实际截图关联起来的已验证原生通路，不采用人工确认、固定 sleep 或无关联帧计数。
+本轮重新运行 observation 定向 9 tests、全量 87 tests、release、fixture build 均 PASS，日志 `p2-resume-{observation-tests,full-tests,release-build,fixture-build}.log`。没有新增未接入生产代码或兼容 fallback。第二 App 实验已成立，独占产品前提已获允许，但当时自动截图的原生完成契约仍未建立；下一步继续寻找能把设置后的渲染帧与实际截图关联起来的已验证原生通路，不采用人工确认、固定 sleep 或无关联帧计数。
+
+### P2-T2 最终解除：post-camera GPU completion + SimScreen future frame（2026-10-03）
+
+- 继续沿合法 `RSSDebugService` 检查 `collectGPUPerformanceStatisticsWithFrameCount:completion:`。`RSDebugServer` 反汇编显示：它创建 `RSGPUStatisticsNode`，取得 `renderGraphNode` 后明确调用 `postCameraRenderGraphProvider` → `addNode:`；统计完成回调 `gpuStatisticsNode:didCollectStatsForWindowSize:` 读取 execution/scheduling stats、调用 pending request 的 completion，然后从同一 post-camera provider 删除 node。
+- `RSGPUStatisticsNode` 实现 `RSRenderGraphNode`，因此请求 1 frame 的 completion 是 future post-camera render-graph 工作完成后的原生回调，不是 setter ACK，也不是 wall-clock 等待。
+- 宿主侧再通过 SimulatorKit/SimDevice IO 找到唯一响应 `registerScreenCallbacksWithUUID:callbackQueue:frameCallback:surfacesChangedCallback:propertiesChangedCallback:` 的 `SimScreen` remote descriptor。直接探针确认 3840×2160 live surface 与持续 `frame` 回调；IOSurface seed 连续 8 帧不变，因此 seed 被明确排除，不作为 generation。
+- 正式链路为：读取原值 → 仅打开原先关闭的 `entity_axis/entity_bounds` → 等 1-frame post-camera GPU completion → helper 报 ready → 注册并等待**之后**的一个 `SimScreen.frame` → `simctl io screenshot` → 只恢复本次修改 → 再等 GPU completion + 后续 display frame。这样建立 `debug setter → RealitySimulation render → Simulator display advance → screenshot` 的因果顺序，不接触受 entitlement 保护的 `RSSRenderedContentService`。
+- fixture 首轮真实 screenshot 明确出现 RGB XYZ 轴和绿色 Bounds，紧接着普通 observe 中全部消失；同 PID、AX available。随后连续 5 轮 `observe --debug → restore → plain observe` 均成功，原始状态每轮为 false/false。
+- 未修改 HappyPianist 虚拟钢琴同样真实显示大量平台 XYZ/Bounds；恢复后的截图无覆盖层、PID 不变、宿主 frontmost 不变。
+- 原值保护实测：预置 `axis=true / bounds=false` 后执行正式 debug observe，manifest 记录 `(true,false)`，结束后 RSSDebugService 独立读回仍为 `(true,false)`；测试完成后手动清回 `(false,false)`。
+- 故障恢复实测：临时 live test 在覆盖层开启后强制 capture body 抛错；`withOverlay` 仍完成恢复，下一次进入时读取原值为 false/false。临时测试文件执行后删除，不进入常规 test suite。
+- 并发互斥实测：两个 `observe --debug` 同时发起时一个成功、另一个在修改状态前以“已有 Roamer 调试覆盖层会话”拒绝。
+- 当前定向 `SimulatorObservationTests` 13/13、全量 92/92、release build、fixture build 和脚本语法均 PASS。旧 `native-overlay/Probe.swift` 已被正式路径取代，应删除，不维护第二套 DTX 控制后端。
+
+结论：P2-T2 原 blocker 已解除。新的同步依据来自同一合法 RealitySimulation debug 服务的 post-camera render graph completion，并用随后 Simulator display frame 收口到实际屏幕推进；不需要私有 rendered-content entitlement，也没有降低原验收标准。

@@ -29,10 +29,11 @@ package struct SimulatorService: Sendable {
     }
 
 
-    package func bootedAVP() throws -> SimulatorDevice {
+    package func bootedAVP(deadline: DispatchTime? = nil) throws -> SimulatorDevice {
         let result = try ProcessRunner.run(
             xcrun,
-            ["simctl", "list", "devices", "booted", "-j"]
+            ["simctl", "list", "devices", "booted", "-j"],
+            deadline: deadline
         )
 
         let inventory: SimctlList
@@ -119,10 +120,15 @@ package struct SimulatorService: Sendable {
         )
     }
 
-    func runningPID(_ bundleID: String, on device: SimulatorDevice) throws -> Int32 {
+    func runningPID(
+        _ bundleID: String,
+        on device: SimulatorDevice,
+        deadline: DispatchTime? = nil
+    ) throws -> Int32 {
         let output = try ProcessRunner.run(
             xcrun,
-            ["simctl", "spawn", device.udid, "launchctl", "list"]
+            ["simctl", "spawn", device.udid, "launchctl", "list"],
+            deadline: deadline
         ).stdout
         return try Self.runningPID(bundleID, in: output)
     }

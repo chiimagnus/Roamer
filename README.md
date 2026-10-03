@@ -1,8 +1,6 @@
 # Roamer
 
-Roamer 是一个直接控制 Apple Vision Pro Simulator 的 macOS CLI。
-
-它通过 Simulator 自身的输入通道操作 visionOS，不依赖 Device Hub 前台交互，也不会移动 macOS 鼠标或抢占当前焦点。
+Roamer 是一个直接控制 Apple Vision Pro Simulator 的 macOS CLI。它支持 App 启停、头部与沉浸度控制、键盘和空间手势、Accessibility 观察，以及空间实体捕获；整个过程不操作 Device Hub，不移动 macOS 鼠标，也不抢占当前焦点。
 
 ## 构建
 
@@ -20,101 +18,83 @@ swift build -c release
 swift run roamer status
 ```
 
-## 命令
+`roamer --help` 是完整命令语法的唯一入口。下面示例假设 `roamer` 已在 `PATH`；否则直接使用 `.build/release/roamer`。常见流程如下：
 
 ```bash
-roamer --version
-roamer status
-roamer screenshot [path]
-roamer observe <bundle-id> <new-output-dir>
-roamer scene <bundle-id> <new-output-dir>
-
 roamer launch <bundle-id>
-roamer terminate <bundle-id>
-roamer reboot
-
-roamer home
-roamer pose <x-m> <y-m> <z-m> <yaw-deg> <pitch-deg> <roll-deg>
-roamer crown <delta>
-roamer key <key|modifier+key>
-roamer type <text>
-roamer gaze <x-px> <y-px>
-roamer click <x-px> <y-px> [--hand left|right]
-roamer long-press <x-px> <y-px> [duration-ms] [--hand left|right]
-roamer double-click <x-px> <y-px> [--hand left|right]
-roamer magnify <x-px> <y-px> <scale> [duration-ms]
-roamer rotate <x-px> <y-px> <degrees> [duration-ms]
-roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms] [--hand left|right]
-```
-
-`key` 支持 Return、Escape、Delete、Tab、Space、方向键、字母、数字，以及 Shift / Control / Option 组合键。`type` 当前仅支持已验证的 visionOS English (US) 输入模式（`en_US@sw=QWERTY;hw=Automatic`）下的英文字母、数字和空格；它会在发送任何按键前检查当前输入模式和整段文本，中文等无法可靠表示的字符会整体失败，且不会自动切换用户输入法。Xcode 27 的 Apple Vision Pro Simulator 当前不会把 Command HID usage 识别为 Command modifier，因此 `command+...` 会明确报错。`click`、`long-press`、`double-click` 和 `drag` 默认使用右手，可用 `--hand left` 切换左手。`magnify` 和 `rotate` 使用双手；v0.1 接受的 `scale` 范围为 0.4～2.5，`degrees` 范围为 -180～180。`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 使用 `roamer screenshot` 生成图片中的像素坐标，不是 macOS 屏幕坐标。坐标最终仍由 visionOS 的空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿前景窗口”的深度选择。
-
-例如：
-
-```bash
+roamer wait <bundle-id>
+roamer observe <bundle-id> /tmp/roamer-observe
 roamer screenshot /tmp/avp.png
-roamer click 2690 780
-roamer key return
-roamer key shift+tab
-roamer type "Hello 2026"
 ```
 
-## 观察反馈
+## 输入控制
 
-`observe` 不启动/激活目标，不暂停 App，也不连接调试器；按当前 Simulator 的 UIKitApplication job 绑定 bundle ID 与 PID，输出本次实际 `screenshot.png` 和 `observation.json`。目录必须全新、父目录已存在，旧目录（含符号链接）会拒绝；失败时保留本次未完成产物，不删除用户目录。
+`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 使用 `roamer screenshot` 生成图片中的 Simulator 像素坐标，不是 macOS 屏幕坐标。最终命中仍由 visionOS 空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿”前景窗口的深度选择。
+
+`click`、`long-press`、`double-click` 和 `drag` 默认使用右手，可切换左手；`magnify` 和 `rotate` 使用双手。
+
+`key` 支持 Return、Escape、Delete、Tab、Space、方向键、字母、数字，以及 Shift / Control / Option 组合。`type` 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格，不会自动切换输入法。Xcode 27 的 Apple Vision Pro Simulator 当前不支持 Command modifier。
+
+`pose` 使用绝对 6DoF，位置单位为米、旋转单位为度。`crown` 调整 Simulator 的系统沉浸度。
+
+## 观察与精确操作
 
 ```bash
-roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-before
-# 查看 screenshot.png 与 AX 标签/值，再用这张图的像素坐标操作
-roamer click 1519 893
-roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-after
+roamer observe <bundle-id> <new-output-dir>
+roamer observe <bundle-id> <new-output-dir> --debug
+roamer press <bundle-id> <node-id>
 ```
 
-清单记录设备、bundle ID、PID、实际图片尺寸，以及截图/AX 各自的采集区间。截图是整个 Simulator 显示，不是目标 App 的独占截图；各渠道不是原子同帧快照。AX 保留对象 ID、标签、值、role/traits 的原生代码、支持动作和逐属性 error code。`available` 包含真实结果（可能没有子元素），`unavailable` 表示缺少已验证原生接口，`failed` 表示读取失败；后两种有原因、没有假空树。命令生成有效清单不代表 AX 或业务操作必定成功，应检查渠道 status。
+`observe` 对当前正在运行的目标 App 做一次真实采集，输出：
 
-AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不发送 AX actions、不改变输入法。原生实时 Axes/Bounds 尚无可靠的自动截图同步契约，未提供 `--debug`。
+- `screenshot.png`：整个 Simulator 显示；
+- `observation.json`：目标 App 的原生 Accessibility 结果与采集元数据。
 
-App 刚启动但 UI 尚未就绪时，原生 AX 可能返回错误；这会记录为 `failed`，不会自动重启 App、重放动作或伪装成空树。确认 UI 就绪后，可向另一个新目录发起新的观察。
+它不会启动、激活、暂停或自动重试目标 App。输出目录必须是不存在的新目录；失败时保留已经产生的证据。
+
+`launch` 返回 PID 只说明进程已经启动，不说明 UI / Accessibility 已就绪。自动流程应先执行 `wait`；默认超时 15 秒，可指定 0.1～300 秒。
+
+`press` 使用 `observe` 返回的当前 `node-id` 执行原生 Press。App 重启后的旧 PID 节点会被拒绝。Accessibility 的 `nativeFrame` 是平台/窗口坐标，不是 screenshot 像素或空间 XYZ，不能拿来换算 `click` 坐标。
+
+`observe ... --debug` 会临时开启目标 bundle 的平台原生 XYZ 轴与边界，等待已验证的原生渲染/显示完成信号后截图，再恢复调用前的状态。截图失败也会尝试恢复。已有 debugger、暂停目标或并发的 Roamer debug 会话会被拒绝；不要在调用期间让其它调试客户端同时修改同一组覆盖层选项。
 
 ## 实体快照
 
-`scene` 是显式调试请求：通过本次拥有的 LLDB 会话短暂暂停指定 App，加载 Apple 官方 `libViewDebuggerSupport.dylib`，清除原生调试捕获缓存并读取新实体数据，随后 detach。目标必须正在运行且允许调试；已有调试器或暂停的进程会被拒绝，不接管其他会话。不修改目标安装包、不要求植入 SDK、不自动启动 App 或改变 pose。
-
 ```bash
-roamer scene com.chiimagnus.RoamerTestApp /tmp/roamer-scene
+roamer scene <bundle-id> <new-output-dir>
 ```
 
-新目录中的 `scene.json` 记录设备、PID、来源和捕获区间，每个原生 scene 单独保留实体 ID/名字、父子关系、列主序局部及父链复合矩阵、米制模型自身局部边界和已提供的状态。没有自身模型的 group 不制造盒子；缺失/无效边界保留错误，零厚度平面合法。`active/enabled` 不等于屏幕可见。参考空间是本 App 的原生场景，不是玩家相机，不与其他 scene/App 擅自合并，也不能据此生成截图点击坐标。ID 不承诺跨重启稳定。
+`scene` 会短暂 attach 指定 App，读取本次原生实体快照后立即 detach。目标必须已经运行且允许调试；已有 debugger 或暂停目标会被拒绝。
 
-`native-scene-<index>.plist` 保留原始 binary plist v2.0，内含本次捕获的几何和配置；其 `.reality` 链接所指资产在 detach 后清理，因此它不是自包含 mesh/纹理导出。`screenshot.png` 是 detach 后另行取得的整个 Simulator 画面，不是几何捕获的同一帧。成功的空 scene 与原生通道失败严格区分；未验证版本、缺失必要变换或目标实例改变会失败，不回退到旧文件或 fixture JSON。
+成功输出包括：
 
-捕获有 60 秒会话期限和 10 秒表达式期限，回复上限 64 MiB。SIGINT/SIGTERM 会请求中断并 detach；错误和清理失败均可见，失败目录仅保留部分证据，不发布成功清单。只删除本次原生回复明确指向的全新临时资产；无法证明归属的残留保留并报错。极端 debugger 不响应时会终止本次 debugger 子进程并报错，不能保证此时目标已恢复，须检查目标状态；不杀目标 App。
+- `scene.json`：实体 ID、名称、父子关系、局部/复合变换和模型自身边界；
+- `native-scene-<index>.plist`：本次原生回复；
+- `screenshot.png`：detach 后另外采集的实际 Simulator 画面；
+- `scene-overview.png`、`top.png`、`front.png`、`side.png`；
+- `scene-index.txt`：完整模型名称、ID 与原点索引。
 
-### 空间图片
-
-同一次 `scene` 请求从这份捕获实际生成 `scene-overview.png`（固定轴测线框）、`top.png`、`front.png`、`side.png`。三视图共享米/像素比例：正视 right=+X/up=+Y，俯视 right=+X/up=−Z，侧视 right=+Z/up=+Y。概览独立适配范围，**不是玩家相机视角**。多个原生 scene 分别输出到 `scene-<index>/`，不融合参考空间；真空 group 也有明确标为空的四张图。
-
-图片表达模型自身边界八角点经过完整父链变换后的布局，不是精确网格、碰撞或遮挡判定。XYZ 轴从真实实体原点出发，按矩阵方向画统一 0.12 米参考长度，不把盒子中心当原点；退化为零的方向不编造轴。名字、ID、原点米制坐标与来源在图中列出，只有可用自身模型才画盒子，其他实体/错误仍在 JSON。`layouts` 清单引用真实图片及各自比例和投影中心；写图失败不发布 `scene.json`。每图宽 1600 像素，标签需要时增加高度，超过 16384 像素会明确失败，不默默省略名字。
+四张布局图是几何调试视图，不是玩家相机、精确 mesh、碰撞或遮挡结果，也不能用来生成点击坐标。多个原生 scene 保持各自参考空间，不自动合并；实体 ID 不承诺跨重启稳定。原始 plist 中指向的临时 `.reality` 资产会在 detach 后清理，因此它不是自包含模型导出。
 
 ## 当前限制
 
-Roamer 使用 Xcode 的私有 CoreSimulator / SimulatorKit 接口。Xcode 更新可能改变这些接口；能力不可用时，Roamer 会直接报错，不会回退到 Device Hub 或 macOS 输入。
+Roamer 依赖 Xcode 的私有 CoreSimulator / SimulatorKit / RealitySimulation 接口。接口不可用或 ABI 改变时会直接失败，不回退到 Device Hub、macOS 输入、固定等待或像素猜测。
 
-当前验证环境：
+当前已验证环境是 Apple Silicon、Xcode 27、visionOS 27 Simulator。其它 Xcode / Simulator 版本、其它引擎或不可调试目标不在当前保证范围内。
 
-- Apple Silicon Mac
-- Xcode 27
-- visionOS 27 Simulator
+## 开发者
 
-`observe` 的原生 AX 和 `scene` 的实体/四图已在仓库测试 App 与未经修改的 HappyPianist 虚拟钢琴沉浸空间实测。普通唱片窗口的空 scene 不代表通道失败；此范围不保证其他引擎、不可调试目标或其他 Xcode 版本可读。
-
-`pose` 使用绝对 6DoF：位置单位为米，旋转单位为度。`crown` 的 `delta` 是 -20～20 的整数步数；总相对增量 `delta × 0.05` 一次交给 Simulator 处理，正负号表示两个旋转方向。最终沉浸度由系统曲线与范围钳制决定，不承诺线性变化。
-
-`long-press`、`drag`、`magnify`、`rotate` 的 `duration-ms` 必须大于 0 且不超过 60000；超出范围会在发送手势前报错。
+开发者先读 [AGENTS.md](AGENTS.md)；它负责模块导航、开发规则和验证入口。各功能模块的详细开发文档位于 `docs/`。
 
 ## 验证
 
-纯逻辑、几何/PNG 和错误释放回归运行 `swift test`。真实 Simulator 测试使用仓库内的单一 [测试 App](Tests/SimulatorFixture/README.md)，包含手势、文本编辑、键盘事件与空间 oracle；构建产物不入库。其 `Tools/verify-feedback.sh` 串行执行正式 observe → 根据最新画面输入坐标 → click/drag → scene → 关闭重开，核对原生 raw/JSON、真实手势结果和图片清单，不自动猜测或重放动作。此脚本不覆盖 pose、第二个 App 或原生覆盖层的完整现场验收。
+纯逻辑与数据回归：
+
+```bash
+swift test
+```
+
+真实 Simulator 的手势、Accessibility、调试覆盖层、实体快照与恢复验证统一使用仓库内的 [Simulator 测试 App](Tests/SimulatorFixture/README.md)。
 
 ## License
 

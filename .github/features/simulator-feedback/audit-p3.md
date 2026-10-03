@@ -59,6 +59,29 @@
 - 当前状态：`Resolved`
 - 剩余风险：P2-T2 原生实时覆盖层自动截图同步、并发会话安全及正式接入仍未完成；整个 plan 不能宣称完整实施。私有 API 仅验证本机 Xcode 27 / visionOS 27 与可调试的 RealityKit 场景，不保证其他引擎/版本；极端 debugger 不响应时报告失败并保留状态检查，未宣称 SIGKILL 后必然恢复。不存在本轮尚待取证且会改变 P3 Gate 的额外关键假设。
 
+## 2026-10-03 独立重审（不引用既有审计结论）
+
+### 逐 commit 核对
+
+- `291c037` → **PASS（生产）**：`CLI scene → SimulatorSceneSnapshot.capture → SimulatorSceneRuntime.capture`；迁入生产时删除 `probes/native-scene/` LLDB 原型，当前不存在双轨捕获。
+- `db5c394` → **PASS（生产）**：renderer 由 `SimulatorSceneSnapshot.capture` 直接调用，不是脱离项目的 helper；当前输出 overview/top/front/side。
+- `da94b96` → **PASS（根因修复）**：统一 runDebugger 结果、目标恢复状态和 scratch 清理错误，不丢第二个失败。
+- `ec54429` → **PASS（根因修复）**：共享准入拒绝 SZOMB/已退出未回收 PID；是真实 `sysctl` 进程状态边界，不是猜测围栏。
+- `643969f` → **PASS（闭环）**：正式 `verify-feedback.sh` / `verify-scene.py` / 文档落地，并删除被正式 verifier 取代的 `probes/native-scene/verify-snapshot.py`。
+- `d01a750`（P4 后续影响 P3 verifier）→ **PASS**：scene sidecar 现在也是正式端到端验收的一部分，删除 `scene-index.txt` 会失败。
+
+### 当前真实回归
+
+- fixture `scene` 与同一新 session oracle 逐实体核对：`RoamerSceneOrigin / RotatedParent / DraggableCube / OccludingCube / ReferencePlane` 的原生矩阵、父链与自身边界全部 **PASS**。
+- P1 同轮真实 click/drag/close/reopen 后 `verify-spatial.py` **PASS**；不是复用旧 capture。
+- 未修改 HappyPianist PID `2440`：虚拟钢琴 `scene` → **90 models / 90 index entries / 4×1600×1080**，同一 PID，宿主 frontmost 未变化。
+- scene 两次 `requireUntracedRunningProcess` 分别位于“创建输出目录前”和 runtime attach 前，前者避免拒绝路径留下目录、后者关闭 TOCTOU；不删除。
+- asset ownership、ABI version、finite matrix/bounds、PID-after-capture 检查均处在原生/文件信任边界；不是多余安全围栏。
+
+### 独立 Gate
+
+- `Go`：P3 三个 task 及其后续根因修复仍由真实产品调用链承载，当前没有遗留兼容后端或未接入 renderer。P2-T2 blocker 仍只影响完整 feature，不改变 P3 自身 Gate。
+
 ## 审计约束
 
 - 本文件对应一个 phase，不对应单个 task

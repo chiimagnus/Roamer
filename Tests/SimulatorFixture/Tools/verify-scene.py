@@ -88,14 +88,36 @@ assert matched == set(expected), (matched,set(expected))
 published = {entity['id'] for capture in manifest['scenes'] for entity in capture['entities']}
 assert set(expected) <= published
 assert len(manifest['layouts']) == len(manifest['scenes'])
+scenes_by_index = {scene['index']: scene for scene in manifest['scenes']}
 for layout in manifest['layouts']:
+    scene = scenes_by_index[layout['sceneIndex']]
+    models = [entity for entity in scene['entities'] if entity.get('localModelBounds') is not None]
+    assert layout['modelCount'] == len(models)
+    index_path = directory / layout['indexPath']
+    assert index_path.is_file(), f'missing scene index: {layout["indexPath"]}'
+    index_text = index_path.read_text()
+    sections = index_text.strip().split('\n\n')
+    entries = sections[1:] if models else []
+    assert len(entries) == len(models), (layout['indexPath'], len(entries), len(models))
+    for number, (entry, entity) in enumerate(zip(entries, models), 1):
+        lines = entry.splitlines()
+        expected_name = entity['name'] or '(unnamed)'
+        assert lines[0] == f'[{number}] {expected_name}', (number, lines[0])
+        assert lines[1] == f'ID {entity["id"]}', (number, lines[1])
+        assert lines[2].startswith('origin (') and lines[2].endswith(') m'), (number, lines[2])
+        indexed_origin = [float(value.strip()) for value in lines[2][8:-3].split(',')]
+        origin = entity['referenceTransformColumns'][3][:3]
+        compare(indexed_origin, origin)
+    if not models:
+        assert 'NO OWN-MODEL GEOMETRY' in index_text
     assert len(layout['views']) == 4
     assert {view['projection'] for view in layout['views']} == {'overview', 'top', 'front', 'side'}
     assert len({view['pixelsPerMeter'] for view in layout['views'] if view['projection'] != 'overview'}) == 1
     assert layout['axisLengthMeters'] == 0.12
     for view in layout['views']:
+        assert (view['width'], view['height']) == (1600, 1080)
         image = (directory / view['path']).read_bytes()
         assert image[:8] == b'\x89PNG\r\n\x1a\n'
-        assert struct.unpack('>II', image[16:24]) == (view['width'], view['height'])
+        assert struct.unpack('>II', image[16:24]) == (1600, 1080)
 assert (directory / manifest['screenshot']['path']).is_file()
-print('Native raw/published geometry and four layout PNGs PASS; 5 independent oracle entities matched')
+print('Native raw/published geometry, complete scene index and four layout PNGs PASS; 5 independent oracle entities matched')
