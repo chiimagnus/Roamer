@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 import ImageIO
 
-struct AccessibilityAttribute<Value: Codable>: Codable {
+struct AccessibilityAttribute<Value: Encodable>: Encodable {
     let errorCode: Int
     let value: Value?
 
@@ -14,14 +14,14 @@ struct AccessibilityAttribute<Value: Codable>: Codable {
     }
 }
 
-struct AccessibilityFrame: Codable, Equatable {
+struct AccessibilityFrame: Encodable, Equatable {
     let x: Double
     let y: Double
     let width: Double
     let height: Double
 }
 
-struct AccessibilityNode: Codable {
+struct AccessibilityNode: Encodable {
     let id: String
     let label: AccessibilityAttribute<String>
     let value: AccessibilityAttribute<String>
@@ -33,7 +33,7 @@ struct AccessibilityNode: Codable {
 }
 
 struct AccessibilityObservation: Encodable {
-    enum Status: String, Codable { case available, unavailable, failed }
+    enum Status: String, Encodable { case available, unavailable, failed }
     let source = "CoreSimulator.SimDevice / AXPTranslator"
     let coordinateSpace = "native platform/window frame; unconverted, not screenshot pixels or XYZ"
     let startedAt: Date
