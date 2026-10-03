@@ -2,10 +2,6 @@ import Darwin
 import Dispatch
 import Foundation
 
-private final class ProcessOutput: @unchecked Sendable {
-    var data = Data()
-}
-
 package struct ProcessResult: Sendable {
     package let stdout: String
     package let stderr: String
@@ -36,50 +32,56 @@ package enum ProcessRunner {
             throw RoamerError.message("无法运行 \(executable)：\(error)")
         }
 
-        let stdoutOutput = ProcessOutput()
-        let stderrOutput = ProcessOutput()
-        let stdoutReady = DispatchSemaphore(value: 0)
-        let stderrReady = DispatchSemaphore(value: 0)
-        DispatchQueue.global().async {
-            stdoutOutput.data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-            stdoutReady.signal()
+        defer {
+            if process.isRunning {
+                kill(process.processIdentifier, SIGKILL)
+                process.waitUntilExit()
+            }
+            stdoutPipe.fileHandleForReading.closeFile()
+            stderrPipe.fileHandleForReading.closeFile()
         }
-        DispatchQueue.global().async {
-            stderrOutput.data = stderrPipe.fileHandleForReading.readDataToEndOfFile()
-            stderrReady.signal()
-        }
+        var descriptors = [
+            pollfd(fd: stdoutPipe.fileHandleForReading.fileDescriptor, events: Int16(POLLIN), revents: 0),
+            pollfd(fd: stderrPipe.fileHandleForReading.fileDescriptor, events: Int16(POLLIN), revents: 0)
+        ]
+        var output = [Data(), Data()]
+        var buffer = [UInt8](repeating: 0, count: 65_536)
 
-        if let deadline {
-            while process.isRunning {
-                let now = DispatchTime.now().uptimeNanoseconds
+        while process.isRunning || descriptors.contains(where: { $0.fd >= 0 }) {
+            let now = DispatchTime.now().uptimeNanoseconds
+            if let deadline {
                 if now >= deadline.uptimeNanoseconds {
-                    process.terminate()
-                    let grace = DispatchTime.now().uptimeNanoseconds + 100_000_000
-                    while process.isRunning && DispatchTime.now().uptimeNanoseconds < grace {
-                        usleep(1_000)
-                    }
                     if process.isRunning {
-                        kill(process.processIdentifier, SIGKILL)
+                        process.terminate()
+                        let grace = DispatchTime.now() + .milliseconds(100)
+                        while process.isRunning && DispatchTime.now() < grace { usleep(1_000) }
                     }
-                    while process.isRunning {
-                        usleep(1_000)
-                    }
-                    stdoutPipe.fileHandleForReading.closeFile()
-                    stderrPipe.fileHandleForReading.closeFile()
                     throw RoamerError.message("命令执行超时：\(([executable] + arguments).joined(separator: " "))")
                 }
-                let remaining = deadline.uptimeNanoseconds - now
-                usleep(useconds_t(min(10_000, max(1, remaining / 1_000))))
             }
-        } else {
-            process.waitUntilExit()
+            let remainingMilliseconds = deadline.map {
+                max(1, ($0.uptimeNanoseconds - now) / 1_000_000)
+            } ?? 10
+            let result = poll(&descriptors, nfds_t(descriptors.count), Int32(min(10, remainingMilliseconds)))
+            if result < 0 {
+                if errno == EINTR { continue }
+                throw RoamerError.message("读取命令输出失败：\(String(cString: strerror(errno)))")
+            }
+            for index in descriptors.indices where descriptors[index].fd >= 0 && descriptors[index].revents != 0 {
+                let count = Darwin.read(descriptors[index].fd, &buffer, buffer.count)
+                if count > 0 {
+                    output[index].append(contentsOf: buffer.prefix(count))
+                } else if count == 0 {
+                    descriptors[index].fd = -1
+                } else if errno != EINTR {
+                    throw RoamerError.message("读取命令输出失败：\(String(cString: strerror(errno)))")
+                }
+            }
         }
-
-        stdoutReady.wait()
-        stderrReady.wait()
+        process.waitUntilExit()
         let result = ProcessResult(
-            stdout: String(decoding: stdoutOutput.data, as: UTF8.self),
-            stderr: String(decoding: stderrOutput.data, as: UTF8.self),
+            stdout: String(decoding: output[0], as: UTF8.self),
+            stderr: String(decoding: output[1], as: UTF8.self),
             status: process.terminationStatus
         )
         guard result.status == 0 else {

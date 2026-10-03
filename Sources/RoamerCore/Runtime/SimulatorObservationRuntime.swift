@@ -26,7 +26,7 @@ private final class AccessibilityBridge: NSObject {
     let device: AccessibilityDeviceMessaging
     let token = UUID().uuidString
     private let queue = DispatchQueue(label: "roamer.native-ax")
-    private let deadlineUptimeNanoseconds: UInt64?
+    private let deadline: DispatchTime?
 
     init(device: AnyObject, deadline: DispatchTime?) throws {
         guard let nativeClass = object_getClass(device),
@@ -37,15 +37,12 @@ private final class AccessibilityBridge: NSObject {
             throw NativeAccessibilityError.unavailable("SimDevice 缺少已验证的请求入口/ABI")
         }
         self.device = unsafeBitCast(device, to: AccessibilityDeviceMessaging.self)
-        deadlineUptimeNanoseconds = deadline?.uptimeNanoseconds
+        self.deadline = deadline
     }
 
     func reply(_ request: AnyObject) -> NSObject? {
-        let now = DispatchTime.now().uptimeNanoseconds
-        let localDeadline = now.addingReportingOverflow(5_000_000_000)
-        let fiveSecondDeadline = localDeadline.overflow ? UInt64.max : localDeadline.partialValue
-        let effectiveDeadline = min(deadlineUptimeNanoseconds ?? UInt64.max, fiveSecondDeadline)
-        guard effectiveDeadline > now else { return nil }
+        let effectiveDeadline = min(deadline ?? .distantFuture, .now() + .seconds(5))
+        guard effectiveDeadline > .now() else { return nil }
 
         let ready = DispatchSemaphore(value: 0)
         let box = AccessibilityReply()
@@ -53,7 +50,7 @@ private final class AccessibilityBridge: NSObject {
             box.value = response
             ready.signal()
         }
-        guard ready.wait(timeout: DispatchTime(uptimeNanoseconds: effectiveDeadline)) == .success else {
+        guard ready.wait(timeout: effectiveDeadline) == .success else {
             return nil
         }
         return box.value as? NSObject
@@ -136,13 +133,7 @@ enum SimulatorObservationRuntime {
                     guard let reply = bridge.reply(request) else {
                         throw NativeAccessibilityError.failed("\(identity) press 超时或没有 response")
                     }
-                    try requireSelectors(reply, ["error", "resultData"])
-                    guard let error = reply.value(forKey: "error") as? NSNumber else {
-                        throw NativeAccessibilityError.failed("\(identity) press 缺少原生 error code")
-                    }
-                    guard error.intValue == 0 else {
-                        throw NativeAccessibilityError.failed("\(identity) press error=\(error.intValue)")
-                    }
+                    try validatePressReply(reply, identity: identity)
                     return
                 }
                 let request = try makeRequest(for: element, requestClass: requestClass)
@@ -196,6 +187,16 @@ enum SimulatorObservationRuntime {
         }
         try requireBeforeDeadline(deadline)
         return try body(bridge, root, requestClass as AnyObject)
+    }
+
+    static func validatePressReply(_ reply: NSObject, identity: String) throws {
+        try requireSelectors(reply, ["error"])
+        guard let error = reply.value(forKey: "error") as? NSNumber else {
+            throw NativeAccessibilityError.failed("\(identity) press 缺少原生 error code")
+        }
+        guard error.intValue == 0 else {
+            throw NativeAccessibilityError.failed("\(identity) press error=\(error.intValue)")
+        }
     }
 
     private static func requireBeforeDeadline(_ deadline: DispatchTime?) throws {

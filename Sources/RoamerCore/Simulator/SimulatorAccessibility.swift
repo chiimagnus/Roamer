@@ -5,12 +5,7 @@ import Foundation
 package enum SimulatorAccessibility {
     package static func wait(bundleID: String, timeoutSeconds: Double = 15) throws -> Int32 {
         let timeout = try timeoutNanoseconds(timeoutSeconds)
-        let started = DispatchTime.now().uptimeNanoseconds
-        let addition = started.addingReportingOverflow(timeout)
-        guard !addition.overflow else {
-            throw RoamerError.message("wait timeout 溢出：\(timeoutSeconds)")
-        }
-        let deadline = DispatchTime(uptimeNanoseconds: addition.partialValue)
+        let deadline = DispatchTime.now() + .nanoseconds(Int(timeout))
         let simulator = SimulatorService()
         var lastFailure: NativeAccessibilityError?
 
