@@ -232,9 +232,6 @@ final class PrivateRuntime {
     }
 
     private static func loadFramework(_ path: String) throws -> UnsafeMutableRawPointer {
-        guard FileManager.default.fileExists(atPath: path) else {
-            throw RoamerError.message("缺少 Xcode private framework：\(path)")
-        }
         guard let handle = dlopen(path, RTLD_NOW | RTLD_GLOBAL) else {
             let detail = dlerror().map { String(cString: $0) } ?? "未知错误"
             throw RoamerError.message("无法加载 \(path)：\(detail)")
