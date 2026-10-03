@@ -31,6 +31,32 @@
 
 ## 发现项
 
+## 发现 F-102
+
+- 任务：`P4-T1`
+- 严重级别：`Medium`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Runtime/SimulatorObservationRuntime.swift:139`
+- 摘要：`P4-T1 承诺的 action reply 错误回归缺失，press 还要求从未读取的 resultData selector`
+- 风险：`原生缺失或非零 error code 的拒绝没有最小可运行回归；无关 selector 围栏扩大必要 ABI`
+- 预期修复：`将现有 reply 校验提取为最小可测试边界，只要求 error；覆盖成功、缺失、非零及不存在节点的真实拒绝`
+- 验证：`SimulatorObservationTests 和真实 fixture observe→press→observe/不存在节点/旧 PID 拒绝`
+- 解决证据：`SimulatorObservationTests 14/14 PASS，成功/非零/缺失 error/缺失 selector 均覆盖，成功 reply 无 resultData 仍接受；正式 fixture press 进入 Spatial scene/打开关闭空间/切换原 Key/RawKey 页均可观察；不存在 objectID0 明确失败；release PASS`
+
+
+## 发现 F-101
+
+- 任务：`P4-T3`
+- 严重级别：`High`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Support/ProcessRunner.swift:80`
+- 摘要：`deadline 仅约束 process.isRunning；子进程退出而后代持有 stdout/stderr 时，两处 semaphore.wait 无期限等待`
+- 风险：`wait 短 timeout 可在 simctl 包装进程退出后继续阻塞；后台读线程无法可靠收尾`
+- 预期修复：`在共享 ProcessRunner 以 poll/read 统一排空双管道和检查退出，所有等待遵守同一 deadline`
+- 验证：`ProcessRunnerTests 覆盖退出后继承管道、关闭输出后仍运行、大量双输出、原 deadline`
+- 解决证据：`ProcessRunnerTests 6/6 PASS；新增继承管道复现原实现 1.21s 假成功，修复后 100ms 超时；关闭输出后仍运行/大 stdout+stderr/非零 exit 均 PASS；release build PASS；正式 fixture launch→wait→observe 同 PID78190 AX available。提交见 git log`
+
+
 ## 发现 F-02
 
 - 任务：`P4-T2`
@@ -113,4 +139,17 @@
 
 - 本文件对应一个 phase，不对应单个 task
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
+## 2026-10-03 本轮独立逐提交复审
+
+本轮不采用历史 audit 结论。真实操作仅获准 RoamerTestApp。
+
+### 本轮任务映射
+
+- P4-T1：d5ff0eb → CLI.press → current PID/node ID → AXPTranslator 当前树查找 → request type 7/action 5 → 原生 reply。旧 PID 拒绝；无 frame 换算。
+- P4-T2：df30a34 → geometry → 固定 1600×1080 PNG + 全量 scene-index.txt → scene.json；d01a750 → 正式 verifier 完整索引/编号/原点/尺寸核对。
+- P4-T3：cb6a462 → CLI.wait → current PID → 原生树读取轮询；056c90d → 单一 deadline 贯穿 simctl 与 AX reply，但管道 EOF 等待仍无 deadline。
+
+## 发现项
+
+本轮发现由 feature_tool.py 追加。Gate 待修复与验证。
 

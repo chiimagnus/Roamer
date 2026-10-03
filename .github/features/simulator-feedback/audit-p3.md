@@ -86,3 +86,14 @@
 
 - 本文件对应一个 phase，不对应单个 task
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
+## 2026-10-03 本轮独立逐提交复审
+
+本轮不采用历史 audit 结论。真实操作仅获准 RoamerTestApp。
+
+### 本轮任务映射
+
+- P3-T1：291c037 → CLI.scene → SimulatorSceneSnapshot.capture → SimulatorSceneRuntime → owned LLDB attach/reset/getter/ReadMemory/detach/asset cleanup → decode；da94b96 合并恢复错误；ec54429 拒绝 zombie。
+- P3-T2：db5c394 → 同一次 captures → SpatialScene.entities → geometry/eight corners/parent matrices → renderer → layout PNG → scene.json。
+- P3-T3：643969f → verify-feedback.sh 实际串行调用正式 CLI；verify-scene.py 独立重算 raw plist，并与 App oracle、JSON、PNG/index 对照；build.sh 统一 SDK。
+
+当前静态路径无脱离 CLI 的生产模块，原捕获/AX/overlay 后端已迁移删除。父级、平面、空场景、无效数据与恢复验证待复跑。本轮 Gate 待验证。

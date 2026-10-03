@@ -25,6 +25,32 @@
 
 ## 发现项
 
+## 发现 F-102
+
+- 任务：`P2-T2`
+- 严重级别：`High`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Runtime/SimulatorDebugOverlayHelperSource.swift:182`
+- 摘要：`changedAxis/Bounds 只在 setter 回包成功后记录；setter 超时/报错时，已经可能发生的本次改动不会恢复`
+- 风险：`请求已应用但 completion 丢失/超时时留下 axis/bounds 开启；第一项失败甚至直接退出`
+- 预期修复：`原值关闭的项在发送 setter 前登记恢复责任；启用失败仍统一恢复所有已尝试项`
+- 验证：`生产 helper 全流程 harness 注入应用成功但回包超时，断言原值恢复；fixture debug`
+- 解决证据：`生产 helper 全流程 harness 覆盖 axis timeout/bounds timeout/bounds error，修改已发生且回包失效时均恢复；原实现 axis timeout 退出仍 axis=true；normal/original-axis 原值保留 PASS；正式 fixture debug/restore PASS`
+
+
+## 发现 F-101
+
+- 任务：`P2-T2`
+- 严重级别：`High`
+- 状态：`Resolved`
+- 位置：`Sources/RoamerCore/Runtime/SimulatorDebugOverlayHelperSource.swift:44`
+- 摘要：`所有异步请求共享全局 semaphore/result；超时后的旧 completion 会 signal 新请求并覆盖新 error，恢复可提前误报成功`
+- 风险：`成功 manifest 不能证明覆盖层已恢复，且存在异步全局数据竞争`
+- 预期修复：`请求的 semaphore/result 只由各自 completion 捕获，删除全局可变回包状态`
+- 验证：`编译生产 helper 函数到宿主测试 harness，注入迟到 completion；正常/错误/超时及真实 debug 恢复`
+- 解决证据：`新增编译生产 ObjC helper 的迟到 completion harness：原实现恢复提前返回且 axis 仍 true，修复 PASS；helper 3 tests PASS；正式 fixture observe --debug 图片 RGB axes/green bounds 可见，随后普通截图无覆盖层，PID78190；release PASS`
+
+
 ## 发现 F-02
 
 - 任务：`P2-T2`
@@ -106,4 +132,16 @@
 
 - 本文件对应一个 phase，不对应单个 task
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
+## 2026-10-03 本轮独立逐提交复审
+
+本轮不采用历史 audit 结论。真实操作仅获准 RoamerTestApp；跨 App 只核对已保存原始产物，不能冒称本轮重测。
+
+### 本轮任务映射
+
+- P2-T1：45ee1b2 → CLI.observe → SimulatorObservation.capture → runningPID/screenshot/SimulatorObservationRuntime → observation.json。属性错误、空 children、截图坐标与 AX frame 分离。
+- P2-T2：1a495f1 → CLI.--debug → withOverlay → 临时 RSSDebugService helper → GPU completion → SimScreen frame → screenshot → restore → manifest；5cee43b 关闭编译期间目标重启竞态。884f465/775ae34 为记录与 plan 更新，不是额外生产后端。
+
+## 发现项
+
+本轮发现由 feature_tool.py 追加。Gate 待修复与验证。
 
