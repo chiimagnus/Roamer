@@ -115,8 +115,7 @@ final class SimulatorAudioCapture {
             try writeManifest(state: .recording)
             return ready
         } catch {
-            let partialCompletion = tap.flatMap { try? $0.stop() }
-            markFailed(error, completion: partialCompletion)
+            _ = try? stop(failure: String(describing: error))
             throw error
         }
     }
@@ -139,8 +138,7 @@ final class SimulatorAudioCapture {
             finalized = true
             return manifest
         } catch {
-            let partialCompletion = try? tap.stop()
-            markFailed(error, completion: partialCompletion)
+            _ = try? stop(failure: String(describing: error))
             throw error
         }
     }
@@ -151,6 +149,40 @@ final class SimulatorAudioCapture {
         let tap = self.tap
         interruptionLock.unlock()
         tap?.requestInterruption()
+    }
+
+    @discardableResult
+    func stop(failure: String) throws -> Manifest? {
+        guard !finalized else { return nil }
+        requestInterruption()
+
+        var completion: CoreAudioProcessTap.Completion?
+        var cleanupError: Error?
+        if let tap {
+            do {
+                completion = try tap.stop()
+            } catch {
+                cleanupError = error
+            }
+        }
+
+        let routeAfter = try? Self.routeSnapshot(udid: device.udid)
+        let failureText = cleanupError.map {
+            "\(failure)；音频清理失败：\($0)"
+        } ?? failure
+        let manifest = makeManifest(
+            state: .failed,
+            completion: completion,
+            routeAfter: routeAfter,
+            failure: failureText
+        )
+        try write(manifest)
+        finalized = true
+
+        if cleanupError != nil {
+            throw RoamerError.message(failureText)
+        }
+        return manifest
     }
 
     var manifestPath: String {
@@ -191,22 +223,6 @@ final class SimulatorAudioCapture {
         _ = try capture.start()
         _ = try capture.waitUntilComplete()
         return capture.manifestPath
-    }
-
-    private func markFailed(
-        _ error: Error,
-        completion: CoreAudioProcessTap.Completion?
-    ) {
-        guard !finalized else { return }
-        finalized = true
-        let routeAfter = try? Self.routeSnapshot(udid: device.udid)
-        let manifest = makeManifest(
-            state: .failed,
-            completion: completion,
-            routeAfter: routeAfter,
-            failure: String(describing: error)
-        )
-        try? write(manifest)
     }
 
     private func writeManifest(state: State) throws {
