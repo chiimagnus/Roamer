@@ -115,6 +115,7 @@ enum SimulatorObservationRuntime {
     }
 
     static func press(udid: String, pid: Int32, objectID: UInt64) throws {
+        let targetIdentity = "\(pid):\(objectID)"
         try withTranslationRoot(udid: udid, pid: pid, deadline: nil) { bridge, root, requestClass in
             var pending = [root]
             var visited = Set<String>()
@@ -122,10 +123,7 @@ enum SimulatorObservationRuntime {
                 let identity = try translationIdentity(element, pid: pid)
                 guard visited.insert(identity).inserted else { continue }
                 element.setValue(bridge.token, forKey: "bridgeDelegateToken")
-                guard let currentObjectID = element.value(forKey: "objectID") as? NSNumber else {
-                    throw NativeAccessibilityError.failed("\(identity) 缺少 objectID")
-                }
-                if currentObjectID.uint64Value == objectID {
+                if identity == targetIdentity {
                     let request = try makeRequest(for: element, requestClass: requestClass)
                     try requireSelectors(request, ["setRequestType:", "setActionType:"])
                     request.setValue(7, forKey: "requestType")
