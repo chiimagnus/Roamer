@@ -62,6 +62,8 @@
 
 **P3 审计后的复核：** 已找到 `SimScreen` 原生帧回调，但 `SimDeviceScreen.ScreenEvent.frame` 不含目标/覆盖层请求标识，尚未建立其与 RSSDebugService 设置完成的因果关联；不能以“下一帧”或 screen properties seed 替代覆盖层 fence。跨 DTX 客户端所有权仍未证明。详细静态证据与限制见 `native-probe.md`，保持本任务 blocked，不缩减原验收。
 
+**再次执行时的用户决定与证据更新（2026-10-03）：** 用户允许明确要求覆盖层独占，但明确不允许人工确认。产品可以把目标覆盖层独占作为调用前提，不能声称已自动仲裁所有 Xcode/DTX 客户端；仍须拒绝已有 debugger、避免 Roamer 自有会话冲突并可靠恢复自有改动。未经修改 HappyPianist 的键盘已实测原生 XYZ/边界，十项开关独立读回恢复原值，第二 App 的实验门禁已补齐。必须保持全自动截图；`RSDebugServer` 的实体选项完成、`RSRenderer` 的 GPU capture scope 完成均尚未与 `simctl` 实际消费的呈现帧关联，不据此解除渲染同步门禁。无需为等候该契约新增未接入后端、人工输入步骤或固定等待。
+
 **Files:**
 - Modify: `CLI.run` / `help` 的 observe 选项；`SimulatorObservation` 的显式调试汇聚路径。
 - Modify: `SimulatorObservationRuntime` 中 P1-T2 已验证的覆盖层控制及清理；必要的 ABI 调用放在已有 native boundary，不扩成通用反射框架。

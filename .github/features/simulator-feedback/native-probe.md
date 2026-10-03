@@ -7,7 +7,7 @@
 | Simulator 实际画面 | 既有 `simctl io screenshot`，3840×2160 | 已有能力 |
 | 指定 App AX | fixture Button/TextField 变化、蓝色实体、HappyPianist UI 读取成功 | 已接入普通 observe；本轮正式 CLI 验证见 P2-T1 |
 | RealityKit 数字实体 | 官方库返回 fixture 7 实体/5 oracle 匹配；HappyPianist 虚拟钢琴 101 实体、90 自身模型 | fixture + 未修改 App 沉浸场景成立；不能宣传任意引擎/窗口 |
-| 原生 Axes/Bounds 实时覆盖层 | DebugHelper DTX 已读写真实开关、截图看到 XYZ/边界，正常/抓图失败均恢复原值 | 实验成立；自动截图渲染同步及并发会话安全尚未满足正式准入，见 P2-T2 续验 |
+| 原生 Axes/Bounds 实时覆盖层 | fixture 与未修改 HappyPianist 键盘实际显示 XYZ/边界；原值恢复独立读回成立 | 显式独占前提已获用户允许；全自动截图渲染同步及产品中断收尾仍未完成，见 P2-T2 再次执行 |
 | 相机/玩家测量 pose | 本次场景配置只有 contentOrigin，未证明相机矩阵 | 不输出测量值；Roamer 历史 pose 不是真值 |
 
 环境：2026-10-02，Apple Silicon，Xcode 27 beta `27A5209h`，xrOS 27 `24M5306g`。
@@ -181,7 +181,7 @@ xcrun swiftc -package-name Roamer \
 - `p2-overlay-capture-failure.log` 用不存在的父目录造成真正 simctl screenshot 失败，仍恢复 true/false 并取消自有连接；`p2-overlay-failure-readback.log` 独立确认。该版 helper 的顶层 Swift throw 导致自身 exit 133；归档版本改为 stderr/exit 1，不能将旧错误退出误算为测试 App 崩溃。
 - 外层会话结束后 `p2-overlay-final-state.log` 再次独立读回 axis=false/bounds=false，全部十项与本轮原值一致。实验前后 `spatial.json` 与 `p2-overlay-oracle-before.json` 字节一致，无实体/点击/拖动状态变化。
 
-### 尚未满足的准入
+### 首次续验后尚未满足的准入（后续更新见下）
 
 1. 没有建立“选项已作用于当前渲染帧”的原生 completion/fence；已实测存在 setter 状态正确而截图仍旧的窗口。不可堆固定等待或把任意画面变化当作覆盖层出现。
 2. 还没有跨客户端选项所有权/冲突拒绝契约，以及进程中断时可靠恢复的产品实现。多个会话设置同一 bundleID 会触及同一组选项，不能把独占测试授权当作产品天然独占。
@@ -202,3 +202,22 @@ xcrun swiftc -package-name Roamer \
 证据保存在忽略目录：`p2-frame-screen-metadata.log`、`p2-screen-protocol-metadata.log`、`p2-frame-contract-metadata.log`、`p2-screen-init-disassembly.log`、`p2-screen-register-disassembly.log`、`p2-screen-callback-disassembly.log`、`p2-screen-callback-tail-disassembly.log`；设置链路复用 `p2-overlay-xpc-metadata.log` / `p2-overlay-xpc-disassembly.log`。这些是静态接口复核，不冒充新的自动覆盖层实测，也不证明所有其他原生入口均不可能成立。
 
 结论：本轮限定路径没有解除 P2-T2 准入。P3 已 Go，完整 feature 仍未 Go；不为绕过问题新增固定等待、像素变化启发式、伪造覆盖层或兼容 fallback。继续产品化需要证明渲染完成和跨会话恢复契约；若无法取得，须明确调整原验收/约束后再推进，不无限逆向，也不把用户此前仅允许先做 P3 的门禁例外解释为删掉覆盖层需求。
+
+### P2-T2 再次执行：独占决定、第二 App 与渲染器边界（2026-10-03）
+
+用户明确答复“你当然可以显示独占，但是不会有人工”，本轮按“允许明确要求目标覆盖层独占，但保持全自动、没有人工确认步骤”继续；不把独占前提写成已经取得原生全局锁，也不降低画面验收。产品接入仍需自有会话互斥、已有 debugger 拒绝及信号/失败后的恢复，实验探针没有冒充这些完整实现。
+
+- 初态 Shutdown，启动既有设备和未经修改的 HappyPianist，PID 65755。冷启动观察如实报告 AX children error=3；就绪后的新请求 available。实际 HID 仅点“选择钢琴”和“虚拟钢琴”，进入运行期默认放置；未点完成设置、播放、练习、导入或琴键，未修改目标包/源码。
+- `p2-crossapp-original-state.log` 完整读回十项原值；`p2-crossapp-held.log` 设置 axis/bounds=true；新的只读连接 `p2-crossapp-enabled-readback.log` 独立确认。`p2-crossapp-enabled-independent.png` 看到窗口原生覆盖层；沿已有 pose 验收授权将 pitch 改为 −30° 后，`p2-crossapp-enabled-keyboard.png` 实际看到每个琴键的 RGB 轴与绿色边界。没有后期绘制或估计标注。
+- 本次持有探针通过已有 `--hold` 由智能体核对实验画面后继续，`p2-crossapp-held.png` 保存实际截图并恢复原值。这是跨 App 支持/恢复实验，**不是无人工确认的全自动同步实现**，不会作为产品等待方案。新的只读连接 `p2-crossapp-restored-state.log` 十项均等于原值，`p2-crossapp-restored-observe` 为 available，真实画面已没有轴/边界；独立 Python 断言也确认启用时其他八项不变。
+- 最后恢复 pose=0、终止本次启动的 App并 shutdown。`p2-crossapp-device-before.json` / `after.json` 均为 Shutdown，没有留下探针或 LLDB 会话；独立状态断言通过。
+
+沿新查到的实际服务端路径进一步限定复核：
+
+- runtime `RealitySimulationServices.framework` 的 `RSSDebugService` 是 XPC client，实体选项 setter 转发到 `RealitySimulation.framework` 的 `RSDebugServer`。服务端在 simulation queue 上枚举匹配 bundle/scene 的顶层实体，调用 `_setDebugOption:enabled:forEntity:applyToHierarchy:`；该方法调用 `RCPDebugComponentSetOptions` 与 `RENetworkMarkComponentDirty`，完成回调在更新实体后返回。这个完成表达的是实体选项修改，不包含 screen surface/present 标识。
+- `captureGPUFrameWithCompletion:` 转到 `RSRenderer.captureGPUFrameWithOutputPath:numFrames:completion:`；`_beginFrameCapture` 启动 Metal capture，`_endFrameCapture` 递减帧数、结束 capture scope 后调用 completion。调用点位于 `startRenderingFrame` 的 `endingEncodingWork` 附近；其中 dispatch group 的对应回调是 `RERenderFrameWorkloadAddEncodedHandler`，不能把这个 group 直接称为屏幕呈现完成。SDK `Metal/MTLCaptureScope.h` 明确 scope 包含 begin 后创建、end 前提交的 command buffers，没有赋予它 `simctl` 画面同步语义。本轮没有发起共享 GPU capture，也未创建或接管其他人的 capture。
+- `RSSRenderedContentService` 另有 `onRenderedSurface:metadata:timestamp:` 和按 scene 开始 capture 的入口，但服务端会创建专门 content source，不能仅凭 timestamp 就声称它是当前 Simulator 玩家画面的完成信号。本轮只核对静态入口，不把尚未验证的取景、共享 capture 状态或释放行为当作已成立的替代通路。
+
+新增静态证据为 `p2-rss-render-{symbols,strings,metadata}.log`、`p2-rss-set-debug-disassembly.log`、`p2-reality-simulation-debug-symbols.log`、`p2-rs-{set-debug-disassembly,apply-entity-debug,capture-disassembly,renderer-capture-disassembly,frame-capture-lifecycle,render-submit,rendered-content-start}.log`，均留在忽略的 `.build/simulator-feedback/`。本机 `xcdocs` 检索只找到 capture scope 概览，没有取得覆盖层呈现契约；不把索引缺失解释成平台能力不存在。
+
+本轮重新运行 observation 定向 9 tests、全量 87 tests、release、fixture build 均 PASS，日志 `p2-resume-{observation-tests,full-tests,release-build,fixture-build}.log`。没有新增未接入生产代码或兼容 fallback。第二 App 实验已成立，独占产品前提已获允许，但自动截图的原生完成契约仍未建立，P2-T2 继续 blocked，整个 feature 不能标 complete；下一步需要能把设置后的渲染帧与实际截图关联起来的已验证原生通路，不采用人工确认、固定 sleep 或无关联帧计数。
