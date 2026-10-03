@@ -58,6 +58,17 @@ final class SimulatorObservationTests: XCTestCase {
         XCTAssertThrowsError(try SimulatorObservationRuntime.translationIdentity(element, pid: 999))
     }
 
+    func testAccessibilityNodeIDRequiresCurrentPIDAndCanonicalUnsignedObjectID() throws {
+        XCTAssertEqual(
+            try SimulatorAccessibility.objectID(from: "85555:17001813286071910940", expectedPID: 85555),
+            17001813286071910940
+        )
+        XCTAssertThrowsError(try SimulatorAccessibility.objectID(from: "999:17001813286071910940", expectedPID: 85555))
+        XCTAssertThrowsError(try SimulatorAccessibility.objectID(from: "085555:17001813286071910940", expectedPID: 85555))
+        XCTAssertThrowsError(try SimulatorAccessibility.objectID(from: "85555:-1", expectedPID: 85555))
+        XCTAssertThrowsError(try SimulatorAccessibility.objectID(from: "85555", expectedPID: 85555))
+    }
+
     func testManifestSeparatesScreenshotScopeAndChannelTimes() throws {
         let manifest = ObservationManifest(
             deviceUDID: "test-device", bundleID: "com.example.Test", pid: 85555,

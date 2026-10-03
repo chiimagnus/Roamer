@@ -8,7 +8,7 @@ enum NativeAccessibilityError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .unavailable(let detail): "原生 AX 不可用：\(detail)"
-        case .failed(let detail): "原生 AX 读取失败：\(detail)"
+        case .failed(let detail): "原生 AX 请求失败：\(detail)"
         }
     }
 }
@@ -33,7 +33,7 @@ private final class AccessibilityBridge: NSObject {
                 "sendAccessibilityRequestAsync:completionQueue:completionHandler:"
               )), let encoding = method_getTypeEncoding(method),
               String(cString: encoding) == "v40@0:8@16@24@?32" else {
-            throw NativeAccessibilityError.unavailable("SimDevice 缺少已验证的只读请求入口/ABI")
+            throw NativeAccessibilityError.unavailable("SimDevice 缺少已验证的请求入口/ABI")
         }
         self.device = unsafeBitCast(device, to: AccessibilityDeviceMessaging.self)
     }
@@ -63,6 +63,96 @@ private final class AccessibilityBridge: NSObject {
 
 enum SimulatorObservationRuntime {
     static func readAccessibility(udid: String, pid: Int32) throws -> [AccessibilityNode] {
+        try withTranslationRoot(udid: udid, pid: pid) { bridge, root, requestClass in
+            var pending = [root]
+            var visited = Set<String>()
+            var nodes: [AccessibilityNode] = []
+            while let element = pending.popLast() {
+                let identity = try translationIdentity(element, pid: pid)
+                guard visited.insert(identity).inserted else { continue }
+                element.setValue(bridge.token, forKey: "bridgeDelegateToken")
+                let request = try makeRequest(for: element, requestClass: requestClass)
+                try requireSelectors(request, ["setRequestType:", "setAttributeType:"])
+                let label: AccessibilityAttribute<String> = try query(request, bridge: bridge, identity: identity, attribute: 33, decode: text)
+                let value: AccessibilityAttribute<String> = try query(request, bridge: bridge, identity: identity, attribute: 53, decode: text)
+                let role: AccessibilityAttribute<Int> = try query(request, bridge: bridge, identity: identity, attribute: 45) { try number($0).intValue }
+                let traits: AccessibilityAttribute<UInt64> = try query(request, bridge: bridge, identity: identity, attribute: 77) { try number($0).uint64Value }
+                let frame: AccessibilityAttribute<AccessibilityFrame> = try query(request, bridge: bridge, identity: identity, attribute: 21, decode: nativeFrame)
+                var children: [NSObject] = []
+                let childIDs: AccessibilityAttribute<[String]> = try query(request, bridge: bridge, identity: identity, attribute: 8) { result in
+                    guard let translations = result as? [NSObject] else {
+                        throw NativeAccessibilityError.failed("children 格式不是原生对象数组")
+                    }
+                    children = translations
+                    return try translations.map { try translationIdentity($0, pid: pid) }
+                }
+                _ = try childIDs.requiredValue("\(identity) children")
+                let actions: AccessibilityAttribute<[String]> = try query(request, bridge: bridge, identity: identity, attribute: 0, type: 9) { result in
+                    guard let values = result as? [Any] else {
+                        throw NativeAccessibilityError.failed("supportedActions 格式不是数组")
+                    }
+                    return try values.map(text)
+                }
+                nodes.append(.init(
+                    id: identity, label: label, value: value, role: role, traits: traits,
+                    nativeFrame: frame, children: childIDs, supportedActions: actions
+                ))
+                pending.append(contentsOf: children.reversed())
+            }
+            return nodes
+        }
+    }
+
+    static func press(udid: String, pid: Int32, objectID: UInt64) throws {
+        try withTranslationRoot(udid: udid, pid: pid) { bridge, root, requestClass in
+            var pending = [root]
+            var visited = Set<String>()
+            while let element = pending.popLast() {
+                let identity = try translationIdentity(element, pid: pid)
+                guard visited.insert(identity).inserted else { continue }
+                element.setValue(bridge.token, forKey: "bridgeDelegateToken")
+                guard let currentObjectID = element.value(forKey: "objectID") as? NSNumber else {
+                    throw NativeAccessibilityError.failed("\(identity) 缺少 objectID")
+                }
+                if currentObjectID.uint64Value == objectID {
+                    let request = try makeRequest(for: element, requestClass: requestClass)
+                    try requireSelectors(request, ["setRequestType:", "setActionType:"])
+                    request.setValue(7, forKey: "requestType")
+                    request.setValue(5, forKey: "actionType")
+                    guard let reply = bridge.reply(request) else {
+                        throw NativeAccessibilityError.failed("\(identity) press 超时或没有 response")
+                    }
+                    try requireSelectors(reply, ["error", "resultData"])
+                    guard let error = reply.value(forKey: "error") as? NSNumber else {
+                        throw NativeAccessibilityError.failed("\(identity) press 缺少原生 error code")
+                    }
+                    guard error.intValue == 0 else {
+                        throw NativeAccessibilityError.failed("\(identity) press error=\(error.intValue)")
+                    }
+                    return
+                }
+                let request = try makeRequest(for: element, requestClass: requestClass)
+                try requireSelectors(request, ["setRequestType:", "setAttributeType:"])
+                var children: [NSObject] = []
+                let childIDs: AccessibilityAttribute<[String]> = try query(request, bridge: bridge, identity: identity, attribute: 8) { result in
+                    guard let translations = result as? [NSObject] else {
+                        throw NativeAccessibilityError.failed("children 格式不是原生对象数组")
+                    }
+                    children = translations
+                    return try translations.map { try translationIdentity($0, pid: pid) }
+                }
+                _ = try childIDs.requiredValue("\(identity) children")
+                pending.append(contentsOf: children.reversed())
+            }
+            throw NativeAccessibilityError.failed("PID \(pid) 的当前 AX 树中不存在 objectID \(objectID)")
+        }
+    }
+
+    private static func withTranslationRoot<T>(
+        udid: String,
+        pid: Int32,
+        _ body: (AccessibilityBridge, NSObject, AnyObject) throws -> T
+    ) throws -> T {
         let runtime = try PrivateRuntime()
         let bridge = try AccessibilityBridge(device: runtime.resolveDevice(udid: udid))
         guard let translatorClass = NSClassFromString("AXPTranslator"),
@@ -88,61 +178,36 @@ enum SimulatorObservationRuntime {
         guard let root = application(translator, NSSelectorFromString("translationApplicationObjectForPid:"), pid) as? NSObject else {
             throw NativeAccessibilityError.failed("PID \(pid) 无 application object，或原生请求超时")
         }
-        var pending = [root]
-        var visited = Set<String>()
-        var nodes: [AccessibilityNode] = []
-        while let element = pending.popLast() {
-            let identity = try translationIdentity(element, pid: pid)
-            guard visited.insert(identity).inserted else { continue }
-            element.setValue(bridge.token, forKey: "bridgeDelegateToken")
-            guard let request = (requestClass as AnyObject).perform(
-                NSSelectorFromString("requestWithTranslation:"), with: element
-            )?.takeUnretainedValue() as? NSObject else {
-                throw NativeAccessibilityError.failed("无法创建只读请求")
-            }
-            try requireSelectors(request, ["setRequestType:", "setAttributeType:"])
-            func query<Value: Codable>(
-                _ attribute: Int, type: Int = 2,
-                decode: (Any) throws -> Value
-            ) throws -> AccessibilityAttribute<Value> {
-                request.setValue(type, forKey: "requestType")
-                request.setValue(attribute, forKey: "attributeType")
-                guard let reply = bridge.reply(request) else {
-                    throw NativeAccessibilityError.failed("\(identity) attribute \(attribute) 超时或没有 response")
-                }
-                try requireSelectors(reply, ["error", "resultData"])
-                guard let error = reply.value(forKey: "error") as? NSNumber else {
-                    throw NativeAccessibilityError.failed("\(identity) attribute \(attribute) 缺少原生 error code")
-                }
-                return try decodeAttribute(error: error.intValue, result: reply.value(forKey: "resultData"), decode: decode)
-            }
-            let label = try query(33, decode: text)
-            let value = try query(53, decode: text)
-            let role = try query(45) { try number($0).intValue }
-            let traits = try query(77) { try number($0).uint64Value }
-            let frame = try query(21, decode: nativeFrame)
-            var children: [NSObject] = []
-            let childIDs: AccessibilityAttribute<[String]> = try query(8) { result in
-                guard let translations = result as? [NSObject] else {
-                    throw NativeAccessibilityError.failed("children 格式不是原生对象数组")
-                }
-                children = translations
-                return try translations.map { try translationIdentity($0, pid: pid) }
-            }
-            _ = try childIDs.requiredValue("\(identity) children")
-            let actions: AccessibilityAttribute<[String]> = try query(0, type: 9) { result in
-                guard let values = result as? [Any] else {
-                    throw NativeAccessibilityError.failed("supportedActions 格式不是数组")
-                }
-                return try values.map(text)
-            }
-            nodes.append(.init(
-                id: identity, label: label, value: value, role: role, traits: traits,
-                nativeFrame: frame, children: childIDs, supportedActions: actions
-            ))
-            pending.append(contentsOf: children.reversed())
+        return try body(bridge, root, requestClass as AnyObject)
+    }
+
+    private static func makeRequest(for element: NSObject, requestClass: AnyObject) throws -> NSObject {
+        guard let request = requestClass.perform(
+            NSSelectorFromString("requestWithTranslation:"), with: element
+        )?.takeUnretainedValue() as? NSObject else {
+            throw NativeAccessibilityError.failed("无法创建原生 AX 请求")
         }
-        return nodes
+        return request
+    }
+
+    private static func query<Value: Codable>(
+        _ request: NSObject,
+        bridge: AccessibilityBridge,
+        identity: String,
+        attribute: Int,
+        type: Int = 2,
+        decode: (Any) throws -> Value
+    ) throws -> AccessibilityAttribute<Value> {
+        request.setValue(type, forKey: "requestType")
+        request.setValue(attribute, forKey: "attributeType")
+        guard let reply = bridge.reply(request) else {
+            throw NativeAccessibilityError.failed("\(identity) attribute \(attribute) 超时或没有 response")
+        }
+        try requireSelectors(reply, ["error", "resultData"])
+        guard let error = reply.value(forKey: "error") as? NSNumber else {
+            throw NativeAccessibilityError.failed("\(identity) attribute \(attribute) 缺少原生 error code")
+        }
+        return try decodeAttribute(error: error.intValue, result: reply.value(forKey: "resultData"), decode: decode)
     }
 
     static func requireSelectors(_ object: NSObject, _ names: [String]) throws {
