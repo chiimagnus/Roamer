@@ -56,7 +56,7 @@ enum SimulatorSceneRuntime {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
         process.arguments = ["lldb", "--no-lldbinit", "-b", "-Q", "-o",
-                             "script exec(__import__('base64').b64decode('\(script.data(using: .utf8)!.base64EncodedString())'))"]
+                             "script exec(__import__('base64').b64decode('\(Data(script.utf8).base64EncodedString())'))"]
         process.environment = environment
         let log = scratch.appendingPathComponent("debugger.log")
         guard FileManager.default.createFile(atPath: log.path, contents: nil,
