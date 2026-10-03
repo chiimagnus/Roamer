@@ -50,7 +50,7 @@
 
 **实现**：
 
-1. 新增 `roamer wait <bundle-id> [timeout-sec]`，默认 15 秒；先绑定当前 PID，再轮询同一原生 AX 读取路径，成功条件就是该运行实例的树可读。
+1. 新增 `roamer wait <bundle-id> [timeout-sec]`，默认 15 秒、显式范围 0.1～300 秒；先绑定当前 PID，再轮询同一原生 AX 读取路径，成功条件就是该运行实例的树可读。
 2. 等待期间若 PID 改变/退出立即失败；`NativeAccessibilityError.unavailable` 立即失败；暂时 `failed` 可继续到 deadline；超时返回最后一次真实错误。使用单调时钟/明确间隔，不写固定“启动后 sleep N 秒”。
 3. `launch` 与 `observe` 本身语义不变；自动流程显式 `launch → wait → observe/press/scene`。
 4. README/help 写清 workflow。真实执行 `reboot → launch → wait → observe → press → observe → scene`，至少覆盖 HappyPianist 主窗口和虚拟钢琴场景；确认目标 PID 一致、App 可交互、macOS focus 未被抢走。

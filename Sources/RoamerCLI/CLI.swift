@@ -60,6 +60,14 @@ struct CLI {
                 print(output)
             }
 
+        case "wait":
+            guard rest.count == 1 || rest.count == 2 else {
+                throw RoamerError.message("用法: roamer wait <bundle-id> [timeout-sec]")
+            }
+            let timeout = try rest.count == 2 ? parseDouble(rest[1], name: "timeout-sec") : 15
+            let pid = try SimulatorAccessibility.wait(bundleID: rest[0], timeoutSeconds: timeout)
+            print("simulator accessibility ready: PID=\(pid)")
+
         case "terminate":
             try requireCount(rest, 1, usage: "roamer terminate <bundle-id>")
             let device = try simulator.bootedAVP()
@@ -361,6 +369,7 @@ struct CLI {
       roamer press <bundle-id> <node-id>
       roamer scene <bundle-id> <new-output-dir>
       roamer launch <bundle-id>
+      roamer wait <bundle-id> [timeout-sec]
       roamer terminate <bundle-id>
       roamer reboot
       roamer home
@@ -384,6 +393,7 @@ struct CLI {
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     observe 保存实际截图与指定运行 App 的原生 AX；须使用新目录且父目录已存在，不自动启动 App。
     press 使用 observe 返回的 node-id 对当前 PID 的 AX 节点执行原生 Press；旧 PID 节点会拒绝。
+    wait 等待当前运行实例的原生 AX 真正可读，默认 15 秒、范围 0.1...300 秒；不启动 App。
     scene 显式短暂 attach/暂停目标后 detach，输出原生实体、实际截图及包围盒概览/三视图；不接管既有调试会话。
     AX frame 是未转换的平台/窗口坐标，不是截图 pixels 或 XYZ；不要把它换算给 click。渠道失败记录在 observation.json。
     Roamer 不操作 Device Hub，不移动 macOS 鼠标，也不抢 macOS focus。

@@ -31,6 +31,7 @@ roamer press <bundle-id> <node-id>
 roamer scene <bundle-id> <new-output-dir>
 
 roamer launch <bundle-id>
+roamer wait <bundle-id> [timeout-sec]
 roamer terminate <bundle-id>
 roamer reboot
 
@@ -62,9 +63,13 @@ roamer type "Hello 2026"
 
 ## 观察反馈
 
-`observe` 不启动/激活目标，不暂停 App，也不连接调试器；按当前 Simulator 的 UIKitApplication job 绑定 bundle ID 与 PID，输出本次实际 `screenshot.png` 和 `observation.json`。目录必须全新、父目录已存在，旧目录（含符号链接）会拒绝；失败时保留本次未完成产物，不删除用户目录。
+`observe` 不启动/激活目标，不暂停 App，也不连接调试器；按当前 Simulator 的 UIKitApplication job 绑定 bundle ID 与 PID，输出本次实际 `screenshot.png` 和 `observation.json`。目录必须全新、父目录已存在，旧目录（含符号链接）会拒绝；失败时保留本次未完成产物，不删除用户目录。它是一次性真实采集，不会为了掩盖启动时序自动重试。
+
+`launch` 返回 PID 只表示进程已经启动，不表示 SwiftUI / AX 已经可读。自动流程如果紧接着需要 `observe` 或 `press`，先显式执行 `wait`。默认超时 15 秒，可指定 0.1～300 秒；目标退出、PID 改变、平台不支持或超时都会明确失败，`wait` 本身不会启动 App。
 
 ```bash
+roamer launch com.chiimagnus.RoamerTestApp
+roamer wait com.chiimagnus.RoamerTestApp
 roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-before
 # 视觉空间手势：使用 screenshot.png 的像素坐标
 roamer click 1519 893
@@ -77,7 +82,7 @@ roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-after
 
 AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ；空间窗口尤其不能靠比例/偏移猜测换算。需要按截图中的视觉位置做空间手势时继续使用 `click/drag`；需要精确命中 `observe` 返回的 AX 控件时使用 `roamer press <bundle-id> <node-id>`。`press` 只接受当前运行 PID 的原生节点 ID，App 重启后的旧 ID 会拒绝。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不改变输入法。原生实时 Axes/Bounds 尚无可靠的自动截图同步契约，未提供 `--debug`。
 
-App 刚启动但 UI 尚未就绪时，原生 AX 可能返回错误；这会记录为 `failed`，不会自动重启 App、重放动作或伪装成空树。确认 UI 就绪后，可向另一个新目录发起新的观察。
+App 刚启动但 UI 尚未就绪时，原生 AX 可能返回错误；`observe` 会如实记录为 `failed`，不会自动重启 App、重放动作、重试或伪装成空树。需要自动等待时使用 `roamer wait`，不要猜固定 sleep 时间。
 
 ## 实体快照
 
