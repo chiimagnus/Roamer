@@ -1,3 +1,5 @@
+import Dispatch
+import Foundation
 import XCTest
 @testable import RoamerCore
 
@@ -25,5 +27,19 @@ final class ProcessRunnerTests: XCTestCase {
 
     func testMissingExecutableFailsWithoutWaiting() {
         XCTAssertThrowsError(try ProcessRunner.run("/nonexistent/roamer-test", []))
+    }
+
+    func testDeadlineTerminatesProcessBeforeNaturalExit() {
+        let started = Date()
+        XCTAssertThrowsError(
+            try ProcessRunner.run(
+                "/bin/sleep",
+                ["2"],
+                deadline: .now() + .milliseconds(100)
+            )
+        ) { error in
+            XCTAssertTrue(String(describing: error).contains("超时"), "\(error)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.6)
     }
 }

@@ -46,12 +46,38 @@ struct AccessibilityObservation: Encodable {
 struct ObservationManifest: Encodable {
     struct Screenshot: Encodable {
         let source = "simctl io screenshot"
-        let scope = "whole Simulator display, not isolated target App"
+        let scope: String
         let path = "screenshot.png"
         let startedAt: Date
         let finishedAt: Date
         let width: Int
         let height: Int
+
+        init(
+            startedAt: Date,
+            finishedAt: Date,
+            width: Int,
+            height: Int,
+            debugVisualization: Bool = false
+        ) {
+            scope = debugVisualization
+                ? "whole Simulator display with platform-rendered target entity axis/bounds"
+                : "whole Simulator display, not isolated target App"
+            self.startedAt = startedAt
+            self.finishedAt = finishedAt
+            self.width = width
+            self.height = height
+        }
+    }
+
+    struct DebugOverlay: Encodable {
+        let source = "RealitySimulationServices.RSSDebugService"
+        let options = ["entity_axis", "entity_bounds"]
+        let scope = "target bundle entity debug options; screenshot remains the whole Simulator display"
+        let renderFence: String
+        let originalAxis: Bool
+        let originalBounds: Bool
+        let restored = true
     }
     let schemaVersion = 1
     let deviceUDID: String
@@ -60,20 +86,70 @@ struct ObservationManifest: Encodable {
     let bindingSource = "device launchctl UIKitApplication job; checked before and after collection"
     let screenshot: Screenshot
     let accessibility: AccessibilityObservation
+    let debugOverlay: DebugOverlay?
     let capturesAreAtomic = false
+
+    init(
+        deviceUDID: String,
+        bundleID: String,
+        pid: Int32,
+        screenshot: Screenshot,
+        accessibility: AccessibilityObservation,
+        debugOverlay: DebugOverlay? = nil
+    ) {
+        self.deviceUDID = deviceUDID
+        self.bundleID = bundleID
+        self.pid = pid
+        self.screenshot = screenshot
+        self.accessibility = accessibility
+        self.debugOverlay = debugOverlay
+    }
 }
 
 package enum SimulatorObservation {
-    package static func capture(bundleID: String, outputPath: String) throws -> String {
+    package static func capture(
+        bundleID: String,
+        outputPath: String,
+        debugVisualization: Bool = false
+    ) throws -> String {
         let simulator = SimulatorService()
         let device = try simulator.bootedAVP()
         let pid = try simulator.runningPID(bundleID, on: device)
         let directory = try createOutputDirectory(outputPath)
         let imageURL = directory.appendingPathComponent("screenshot.png")
-        let screenshotStart = Date()
-        try simulator.screenshot(imageURL.path, from: device)
-        let screenshotEnd = Date()
-        let dimensions = try imageDimensions(imageURL)
+
+        func captureScreenshot() throws -> (startedAt: Date, finishedAt: Date, width: Int, height: Int) {
+            let startedAt = Date()
+            try simulator.screenshot(imageURL.path, from: device)
+            let finishedAt = Date()
+            let dimensions = try imageDimensions(imageURL)
+            return (startedAt, finishedAt, dimensions.width, dimensions.height)
+        }
+
+        let screenshot: (startedAt: Date, finishedAt: Date, width: Int, height: Int)
+        let debugOverlay: ObservationManifest.DebugOverlay?
+        if debugVisualization {
+            let result = try SimulatorDebugOverlayRuntime.withOverlay(
+                device: device,
+                bundleID: bundleID,
+                pid: pid
+            ) {
+                guard try simulator.runningPID(bundleID, on: device) == pid else {
+                    throw RoamerError.message("调试覆盖层就绪后目标运行实例已改变")
+                }
+                return try captureScreenshot()
+            }
+            screenshot = result.value
+            debugOverlay = .init(
+                renderFence: result.state.renderFence,
+                originalAxis: result.state.originalAxis,
+                originalBounds: result.state.originalBounds
+            )
+        } else {
+            screenshot = try captureScreenshot()
+            debugOverlay = nil
+        }
+
         let axStart = Date()
         let accessibility: AccessibilityObservation
         do {
@@ -97,9 +173,13 @@ package enum SimulatorObservation {
         let manifest = ObservationManifest(
             deviceUDID: device.udid, bundleID: bundleID, pid: pid,
             screenshot: .init(
-                startedAt: screenshotStart, finishedAt: screenshotEnd,
-                width: dimensions.width, height: dimensions.height
-            ), accessibility: accessibility
+                startedAt: screenshot.startedAt,
+                finishedAt: screenshot.finishedAt,
+                width: screenshot.width,
+                height: screenshot.height,
+                debugVisualization: debugVisualization
+            ), accessibility: accessibility,
+            debugOverlay: debugOverlay
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

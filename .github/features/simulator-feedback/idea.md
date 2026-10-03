@@ -21,6 +21,7 @@ Roamer 已能向 AVP Simulator 投递动作和保存截图，但投递成功不�
 - RealityKit 实体需要 App 提供无障碍描述，AX 树不等于几何树；当前官方文档限制原生 visionOS App 的 UI Testing，不能套用 iOS 的 XCUI 抓树方案。[visionOS 无障碍](https://developer.apple.com/documentation/visionos/improving-accessibility-support-in-your-app)、[XCUIAutomation](https://developer.apple.com/documentation/xcuiautomation)
 - 2026-10-02 本机 Xcode 27 存在 `RealityKitInspection`、`RealityToolsDeviceSupport`、`DebugHierarchyFoundation` 和 SimulatorKit 的 `SimAccessibilityManager` 相关元数据。后者还有 display view/token 相关方法；这些只给出调查入口，不证明脱离宿主界面后能够连接 visionOS。
 - 前面的生成图片只表达期望外观，不是实测、不是精确投影，不作为本 feature 的验收证据。
+- 2026-10-03 使用正式 Roamer 对未经修改的 HappyPianist 做完整真测：`click/drag/long-press/key/pose/scene` 均真实改变 App 或 Simulator 状态；同时暴露三个后续问题。第一，AX `nativeFrame` 与 3840×2160 screenshot pixel 不是同一坐标空间，尤其空间窗口不能靠比例换算，曾出现 `click: ok` 但目标未命中。第二，90 个模型把 `scene-overview.png` 拉到约 1600×5650，根因是完整实体 legend 直接决定图片高度。第三，reboot 后 App 进程已存在但 splash 期间原生 AX 尚未就绪，第一次 `observe` 会真实返回 failed，稍后恢复 available；不能靠固定 sleep 猜就绪时间。
 
 ## 核心需求
 
@@ -32,6 +33,9 @@ Roamer 已能向 AVP Simulator 投递动作和保存截图，但投递成功不�
 6. 不修改/重打包目标 App，不植入 Roamer SDK、常驻 agent 或自定义运行时钩子，不关闭系统安全措施。合法原生调试器的只读检查与官方调试支持库属于待取证路径，不等于要求每个 App 改代码。不借 macOS 鼠标/键盘、GUI AX 自动化、AppleScript、Peekaboo 或激活 Xcode/Device Hub 来绕过原生通道限制。Simulator 内原生 AX 数据是调查对象，不是宿主 AX。
 7. 不默认改变头部姿态、输入法、沉浸度或游戏内容。原生调试若需要 attach/短暂停顿/覆盖层，只允许显式调试请求；必须查清副作用并恢复调用前的调试状态，不恢复到自认为正确的默认值。
 8. 测试扩展仍是同一个 App、同一个 bundle ID；空间 UI、实体状态/测试记录分别承担单一职责。不新增多个探针 App，不把所有实现塞入一个 Swift 文件。
+9. AX 元素的精确自动化不得把 `nativeFrame` 猜成 screenshot pixel。二维/空间截图操作继续使用 screenshot pixel；需要命中 `observe` 中某个具体 AX 节点时，使用该节点的原生 ID 和原生 AX action，并拒绝旧 PID/失效节点。
+10. 启动进程与“可观察/可交互”是不同状态。提供显式 readiness gate；`observe` 仍保持一次性真实采集，不偷偷重试或把暂时失败改写成成功。
+11. 空间调试 PNG 的尺寸不再随实体数量增长。完整实体索引必须保留，但应与固定尺寸几何图解耦，不能通过缩小字体、截断或静默省略来掩盖拥挤。
 
 ## 产品接口与默认行为
 
@@ -39,7 +43,9 @@ Roamer 已能向 AVP Simulator 投递动作和保存截图，但投递成功不�
 
 - `roamer observe <bundle-id> <output-dir>`：保存实际画面和本次观察清单；仅接入 P1 证明可在不改变 App 运行状态时读取的原生结构化信息。不可用渠道在清单中说明原因。
 - `roamer observe <bundle-id> <output-dir> --debug`：显式请求原生 Axes/Bounds 等调试画面。不支持时失败，不默默退回普通截图。
-- `roamer scene <bundle-id> <output-dir>`：显式请求原生实体快照，随后由该快照生成空间概览和三视图；需要 attach/暂停时在文档说明。没有可信几何就失败，不生成猜测地图。
+- `roamer scene <bundle-id> <output-dir>`：显式请求原生实体快照，随后由该快照生成空间概览和三视图；需要 attach/暂停时在文档说明。没有可信几何就失败，不生成猜测地图。几何 PNG 固定为可读尺寸，完整 `[index] → entity` 索引另存文本 sidecar。
+- `roamer press <bundle-id> <node-id>`：对 `observe` 返回、且仍属于当前 PID 的 AX 节点执行已验证的原生 `AXPActionPress`；它解决精确控件命中，不改变现有 screenshot-pixel `click` 的空间手势语义。
+- `roamer wait <bundle-id> [timeout-sec]`：等待当前运行实例的原生 AX 树真正可读；PID 改变、平台不支持或超时均明确失败。它不启动 App，不替 `observe` 自动重试。
 
 沿用当前唯一 booted AVP 规则，不自动启动/重启设备或目标 App，不使用 host foreground 推断目标。输出到用户指定的新目录，不覆盖旧证据。普通截图与每个结构化渠道分别标记采集时间；不能声称它们是同一帧的原子快照。
 
@@ -72,3 +78,6 @@ P1 必须回答：原生覆盖层能否由无头客户端控制并被 `simctl` �
 7. 普通观察不改变运行状态；显式调试在成功和失败后均恢复自己改变的状态，不误断开其他调试会话。旧输入命令继续工作，宿主焦点未被工具抢占。
 8. 一条记录完整的真实“observe → action → observe/scene”序列能够证明动作的预期结果；不是孤立 helper、生成图片或投递成功计数。
 9. 对应 core 回归、release 构建和逐阶段审计通过；若几何路径不可用，上述未满足项仍是未完成，不因完成探索而宣布整个 feature 完成。
+10. 在 HappyPianist 或同等真实 App 上，`observe` 返回的节点 ID 能被 `press` 精确命中；同一 AX frame 不能被误标为 screenshot pixel，旧 PID 节点被拒绝。
+11. 约 90 个模型的真实场景输出仍保留全部实体索引，但每张 overview/top/front/side PNG 固定 1600×1080，不再被 legend 拉长。
+12. reboot/launch 后不使用固定 sleep：`wait` 在 splash/AX 未就绪期间继续等待，AX 可读后成功；若超时或目标实例变化则失败，随后 `observe` 可直接读取同一运行实例。

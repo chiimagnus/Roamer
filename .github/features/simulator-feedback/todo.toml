@@ -36,10 +36,10 @@ note = "9 observation/68全量测试、release与fixture build PASS；正式clic
 [[tasks]]
 id = "P2-T2"
 title = "接入显式原生 XYZ 与边界调试画面"
-status = "blocked"
+status = "completed"
 plan = "plan-p2.md#p2-t2"
-commit = ""
-note = "fixture/未修改钢琴原生XYZ边界及十开关恢复已实证；用户允许明确独占但禁止人工；RSS实体完成/GPU capture scope仍未建立截图present契约；9/87tests、release/fixture通过；native-probe.md"
+commit = "1a495f1"
+note = "正式 observe --debug：RSSDebugService entity axis/bounds → 未来 post-camera GPU command-buffer completion → 后续 SimScreen frame → screenshot；恢复同样经过 GPU+display fence。fixture 多轮、axis=true 原值保留、强制截图失败恢复、并发互斥、oracle 字节不变、HappyPianist 跨 App 均 PASS；92 tests/release/fixture build PASS。"
 
 [[tasks]]
 id = "P3-T1"
@@ -64,3 +64,27 @@ status = "completed"
 plan = "plan-p3.md#p3-t3"
 commit = "643969f3e1d4d53a4a8d9f39bc375196a6d76565"
 note = "正式click/drag/close/reopen完整闭环与五oracle PASS；HappyPianist101实体90模型/pose-only不变、新PID已验；捕获中断/写失败后恢复，原pose0/键盘/十开关/Shutdown已恢复；87tests/release/fixture build PASS；native-probe.md"
+
+[[tasks]]
+id = "P4-T1"
+title = "用原生 AX Press 精确命中 observe 节点"
+status = "completed"
+plan = "plan-p4.md#p4-t1"
+commit = "d5ff0eb"
+note = "88 tests + release build；HappyPianist observe 节点直接 press 打开诊断，旧 PID 节点重启后 fail-fast。"
+
+[[tasks]]
+id = "P4-T2"
+title = "固定场景 PNG 尺寸并拆出完整实体索引"
+status = "completed"
+plan = "plan-p4.md#p4-t2"
+commit = "df30a34"
+note = "88 tests + release build；HappyPianist 90 模型全部进入 scene-index.txt，四张图均固定 1600x1080；后续 d01a750 补齐正式 verifier 对 sidecar/编号/名称/ID/原点/固定尺寸的端到端校验。"
+
+[[tasks]]
+id = "P4-T3"
+title = "建立显式 AX readiness gate 并复测完整工作流"
+status = "completed"
+plan = "plan-p4.md#p4-t3"
+commit = "cb6a462"
+note = "89 tests + release build；HappyPianist reboot→launch 后无 sleep，wait 实际等待 13s；同 PID observe/press/scene 通过；后续 056c90d 将单一绝对 deadline 贯穿 simctl 与原生 AX reply，修复短 timeout 超时后继续运行；当前 90 tests/release 与真实跨 App 回归通过。"

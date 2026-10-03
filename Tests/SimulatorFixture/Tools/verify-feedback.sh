@@ -68,6 +68,34 @@ scene() {
     python3 -I "$tools_dir/verify-scene.py" "$evidence/$1-scene" "$evidence/spatial-$1.json"
 }
 
+debug_observe() {
+    local phase="$1"
+    local before="$evidence/$phase-debug-oracle-before.json"
+    local after="$evidence/$phase-debug-oracle-after.json"
+    cp "$container/Documents/spatial.json" "$before"
+    "$roamer" observe "$bundle" "$evidence/$phase-debug-observe" --debug
+    cp "$container/Documents/spatial.json" "$after"
+    cmp "$before" "$after"
+    "$roamer" observe "$bundle" "$evidence/$phase-debug-restored-observe"
+    python3 -I - \
+        "$evidence/$phase-debug-observe/observation.json" \
+        "$evidence/$phase-debug-restored-observe/observation.json" <<'PY'
+import json, sys
+from pathlib import Path
+debug = json.loads(Path(sys.argv[1]).read_text())
+plain = json.loads(Path(sys.argv[2]).read_text())
+overlay = debug['debugOverlay']
+assert debug['pid'] == plain['pid']
+assert debug['deviceUDID'] == plain['deviceUDID']
+assert overlay['source'] == 'RealitySimulationServices.RSSDebugService'
+assert overlay['options'] == ['entity_axis', 'entity_bounds']
+assert overlay['restored'] is True
+assert 'GPU completion' in overlay['renderFence'] and 'display frame' in overlay['renderFence']
+assert plain.get('debugOverlay') is None
+print('Formal observe --debug -> native fence -> restore PASS; inspect debug screenshot for platform XYZ/Bounds')
+PY
+}
+
 coordinates() {
     echo "请查看最新画面: $evidence/$1-observe/screenshot.png" >&2
     read -r -p "$2（Simulator 像素，不是宿主屏幕；空输入/EOF 退出）: " -a points
@@ -75,6 +103,7 @@ coordinates() {
 }
 
 oracle before
+debug_observe before
 scene before
 coordinates before "蓝色实体 click x y" 2
 "$roamer" click "${points[@]}"
