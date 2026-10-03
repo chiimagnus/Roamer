@@ -136,11 +136,8 @@ enum SimulatorDebugOverlayRuntime {
     }
 
     static func decodeHelperMessage(_ line: String) throws -> HelperMessage {
-        guard let data = line.data(using: .utf8) else {
-            throw RoamerError.message("原生调试覆盖层 helper 返回非 UTF-8")
-        }
         do {
-            return try JSONDecoder().decode(HelperMessage.self, from: data)
+            return try JSONDecoder().decode(HelperMessage.self, from: Data(line.utf8))
         } catch {
             throw RoamerError.message("原生调试覆盖层 helper 回复无效：\(line)")
         }
