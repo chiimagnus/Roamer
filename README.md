@@ -27,6 +27,7 @@ roamer --version
 roamer status
 roamer screenshot [path]
 roamer observe <bundle-id> <new-output-dir>
+roamer press <bundle-id> <node-id>
 roamer scene <bundle-id> <new-output-dir>
 
 roamer launch <bundle-id>
@@ -65,14 +66,16 @@ roamer type "Hello 2026"
 
 ```bash
 roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-before
-# 查看 screenshot.png 与 AX 标签/值，再用这张图的像素坐标操作
+# 视觉空间手势：使用 screenshot.png 的像素坐标
 roamer click 1519 893
+# 精确 AX 控件：使用 observation.json 中该节点的 id
+roamer press com.chiimagnus.RoamerTestApp 85555:17001813286071910940
 roamer observe com.chiimagnus.RoamerTestApp /tmp/roamer-after
 ```
 
 清单记录设备、bundle ID、PID、实际图片尺寸，以及截图/AX 各自的采集区间。截图是整个 Simulator 显示，不是目标 App 的独占截图；各渠道不是原子同帧快照。AX 保留对象 ID、标签、值、role/traits 的原生代码、支持动作和逐属性 error code。`available` 包含真实结果（可能没有子元素），`unavailable` 表示缺少已验证原生接口，`failed` 表示读取失败；后两种有原因、没有假空树。命令生成有效清单不代表 AX 或业务操作必定成功，应检查渠道 status。
 
-AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不发送 AX actions、不改变输入法。原生实时 Axes/Bounds 尚无可靠的自动截图同步契约，未提供 `--debug`。
+AX 的 `nativeFrame` 是未转换的平台/窗口边界，不能直接用作 screenshot 的点击 pixels 或 XYZ；空间窗口尤其不能靠比例/偏移猜测换算。需要按截图中的视觉位置做空间手势时继续使用 `click/drag`；需要精确命中 `observe` 返回的 AX 控件时使用 `roamer press <bundle-id> <node-id>`。`press` 只接受当前运行 PID 的原生节点 ID，App 重启后的旧 ID 会拒绝。RealityKit 未提供无障碍描述的实体可能不在 AX 中；AX 不等于完整几何树。本次不启用 VoiceOver、不改变输入法。原生实时 Axes/Bounds 尚无可靠的自动截图同步契约，未提供 `--debug`。
 
 App 刚启动但 UI 尚未就绪时，原生 AX 可能返回错误；这会记录为 `failed`，不会自动重启 App、重放动作或伪装成空树。确认 UI 就绪后，可向另一个新目录发起新的观察。
 

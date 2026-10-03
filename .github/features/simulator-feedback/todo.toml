@@ -1,5 +1,5 @@
 version = 1
-current_task_id = ""
+current_task_id = "P4-T1"
 
 [[tasks]]
 id = "P1-T1"
@@ -64,3 +64,27 @@ status = "completed"
 plan = "plan-p3.md#p3-t3"
 commit = "643969f3e1d4d53a4a8d9f39bc375196a6d76565"
 note = "正式click/drag/close/reopen完整闭环与五oracle PASS；HappyPianist101实体90模型/pose-only不变、新PID已验；捕获中断/写失败后恢复，原pose0/键盘/十开关/Shutdown已恢复；87tests/release/fixture build PASS；native-probe.md"
+
+[[tasks]]
+id = "P4-T1"
+title = "用原生 AX Press 精确命中 observe 节点"
+status = "in_progress"
+plan = "plan-p4.md#p4-t1"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P4-T2"
+title = "固定场景 PNG 尺寸并拆出完整实体索引"
+status = "pending"
+plan = "plan-p4.md#p4-t2"
+commit = ""
+note = ""
+
+[[tasks]]
+id = "P4-T3"
+title = "建立显式 AX readiness gate 并复测完整工作流"
+status = "pending"
+plan = "plan-p4.md#p4-t3"
+commit = ""
+note = ""
