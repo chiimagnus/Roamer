@@ -20,19 +20,11 @@
 - 不加入固定 sleep、重试风暴、像素猜测或旧行为 fallback。
 - 只清理本 feature 真正替代的代码；现有 Paloma root-hand/pinch 路径是活代码，不能当“旧兼容”删除。
 
-## P1 冻结契约（P1-T1 PASS 后必须全部填实）
+## P1 Gate 状态：FAIL，P2 禁止执行
 
-- Virtual Hand service 获取链：`TBD`
-- 必需 class / selector / method encoding：`TBD`
-- move translation/rotation 参考空间与单位：`TBD`
-- chirality 原生值：`TBD`
-- P2 所需最小 action 集：`TBD`
-- completion / stop / disable 生命周期：`TBD`
-- Virtual Hand ownership / 并发语义：`TBD`
-- 最小公共 CLI 语法：`TBD`
-- P1 observer 中实际看到的 ARKit joint 行为：`TBD`
+P1 已证明私有 `com.apple.realitysimulation.vi` Virtual Interaction 服务可调用，Move→Stop 也能完成；但普通 visionOS App 在当前 Xcode 27 / visionOS 27 Simulator 中 `HandTrackingProvider.isSupported=false`，无论 Mixed/Full Space 均无法得到 `HandAnchor` / joint sample。HappyPianist 当前也没有替代 hand provider。
 
-> P1 只允许用真实证据替换以上项目。不要因为 P2 已经写好就反推答案。
+因此以下 production 契约**刻意不冻结**：move 的稳定外部坐标语义、duration 与跨连接 ownership、公共 CLI 语法。继续为它们逆向或实现 Fixture/CLI 只会产出无法被 ARKit/HappyPianist消费的伪能力。除非未来 Simulator runtime 先让普通 App 的 `HandTrackingProvider` 支持真实 hand anchors，否则 P2-T1/T2/T3 均保持未执行；恢复本计划时必须从 P1 Gate 重新验证，不能沿用本次私有服务成功结果当作 joint 成功。
 
 ---
 

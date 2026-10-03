@@ -8,7 +8,22 @@ Roamer 当前的空间 HID 建立在 XROS `IndigoHIDMessageForPalomaCollection` 
 
 HappyPianist 的 3D 虚拟钢琴不是根据“手模型是否看起来碰到琴键”判定输入。它读取 ARKit `HandTrackingProvider` 的 `HandAnchor.handSkeleton`，提取 `.indexFingerTip` 等 joint 的 world-space 位置，再用位置、琴键平面和向下速度产生 `PianoKeyContactObservation.started`。此前真实 `roamer drag` 虽然发送成功，但没有产生琴键 contact，因此不能宣称 Roamer 已经能用手指弹琴。
 
-执行前静态审查发现，visionOS 27 Simulator runtime 另有 Apple 自己的 Virtual Hand / Synthetic Natural Input 链：`RSSVirtualInteractionService`、`RSSVirtualHandActionMove/Grasp/Stop/Wait`、`RSVirtualHand`、`RSHandEventProvider`、`RSSSyntheticNaturalInputDriver`。其中 `RSVirtualHandOperationMove` 会操作 event hand 的 `indexFinger`、`thumb`、`palm`。这比扩展 Paloma collection 更符合平台原生设计，但目前还没有真实证明它会让普通 App 的 ARKit `HandTrackingProvider` 产出 joint 更新，所以必须先做硬 Gate。
+执行前静态审查发现，visionOS 27 Simulator runtime 另有 Apple 自己的 Virtual Hand / Synthetic Natural Input 链：`RSSVirtualInteractionService`、`RSSVirtualHandActionMove/Grasp/Stop/Wait`、`RSVirtualHand`、`RSHandEventProvider`、`RSSSyntheticNaturalInputDriver`。其中 `RSVirtualHandOperationMove` 会操作 event hand 的 `indexFinger`、`thumb`、`palm`。这比扩展 Paloma collection 更符合平台原生设计，因此 P1 用真实 Simulator 做硬 Gate，而不是直接包装成 production API。
+
+## P1 Gate 结果（2026-10-04）
+
+**结论：FAIL，停止本 feature 的 production 实现。** 当前 Xcode 27.0（27A5209h）/ xrsimulator 27.0 中，Apple 的私有 Virtual Interaction 服务真实存在并可执行，但普通 visionOS App 的公开 ARKit `HandTrackingProvider` 明确报告 `isSupported=false`，因此无法形成 Issue #8 要求的 `HandAnchor.handSkeleton → indexFingerTip` 数据链。
+
+已实际验证：
+
+- `RSSVirtualInteractionService` 直接连接 `com.apple.realitysimulation.vi`；此前把 `RSSSharedSimulationHostService.enableVirtualHands:` 当成 Virtual Hand 会话入口的假设被反汇编否定——该方法实际只切换 hand matting。
+- chirality 的真实合法值是 `0=right, 1=left`。静态执行路径还证明必须拒绝其它值：查询 API 对“非 1”走 right，而 action executor 对“非 0”走 left，非法值会产生不一致路由。
+- 一次探索性 `Move + Stop` 使用了非法值 2：调用 completion 仍返回 true/error=nil，但 action 实际被路由到 left；这直接证明 production 必须严格枚举校验，不能依赖私有 API 的默认分支。
+- `Stop` 只停止 RealityKit animation，不直接清理 `entityToAnimationGroup`；最终使用本轮拥有的 `disableVirtualHandsServiceWithCompletion:` 做 service teardown，返回 true/error=nil，并以合法 chirality 0/1 复核左右 `moving=false`，恢复到探索前状态。
+- 独立临时 visionOS App 直接使用 `ARKitSession + HandTrackingProvider`；无论 Mixed Space 还是 Full Space、并补齐 hand/world usage description，`HandTrackingProvider.isSupported` 都为 false，0 个 hand/joint sample。
+- HappyPianist 没有 Simulator hand-tracking fallback：它同样以 `HandTrackingProvider.isSupported` 为门禁，false 时不会启动 hand provider，也不会产生 `FingerTipsSnapshot`。
+
+因此“Virtual Hand 私有服务调用成功”不能满足本需求，也不能被包装成 `roamer hand` 后冒充真实 fingertip 输入。P2 保持不执行；不新增 fallback、兼容后端或 HappyPianist 专用注入。
 
 ## 核心需求
 

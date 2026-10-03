@@ -40,10 +40,10 @@
 
 使用 xrsimulator 内的 `RealitySimulationServices.framework`，验证并记录以下候选 ABI，而不是在宿主 macOS 进程直接 `dlopen` runtime framework：
 
-- `RSSSharedSimulationHostService` 的连接/`enableVirtualHands:completion:` 链；
-- `RSSVirtualInteractionService` 的建立方式；
-- `performActions:handActions:completion:`、`disableVirtualHandsServiceWithCompletion:`；
-- `RSSVirtualHandActionMove` 及实际需要的最小 action class。
+- `RSSVirtualInteractionService` 的实际 Mach service 与建立方式；
+- hand-only `performActions:completion:`、只读 moving 状态与必要清理语义；
+- `RSSVirtualHandActionMove` / `RSSVirtualHandActionStop` 的真实 ABI；
+- 同时核对 `RSSSharedSimulationHostService.enableVirtualHands:`，防止把名字相似但实际只控制 hand matting 的 API 误当 Virtual Hand 会话入口。
 
 所有 selector 必须读取真实 method encoding；任何 ABI 与静态调查不一致都直接停止当前路径。
 
@@ -76,7 +76,25 @@ P1 默认不产生 production/source commit。若且仅若 `docs/private-apis.md
 
 ---
 
+## P1-T1 实际结果
+
+- 环境：Xcode 27.0 / build 27A5209h，xrsimulator SDK 27.0，RealitySimulationServices 240.0.2。
+- `RSSVirtualInteractionService` 的 Mach service 已解析并真实连通：`com.apple.realitysimulation.vi`。
+- 已验证 ABI：
+  - `isHandMovingWithChirality:completion:` → `v32@0:8q16@?24`
+  - `performActions:completion:` → `v32@0:8@16@?24`
+  - `disableVirtualHandsServiceWithCompletion:` → `v24@0:8@?16`
+  - `RSSVirtualHandActionMove.initWithDuration:translation:rotation:chirality:` → `@64@0:8d1624{?=}40q56`
+  - `RSSVirtualHandActionStop.initWithChirality:` → `@24@0:8q16`
+- 服务动作层可调用，但同时发现关键 ABI 语义：合法 chirality 为 `0=right, 1=left`。查询 selector 对非 1 默认走 right，而 action executor 对非 0 默认走 left；因此非法值必须在调用前拒绝。
+- 探索中曾用非法 chirality=2 发送 Move→Stop；completion 返回 `result=true, error=nil`，但服务端实际路由到 left。`Stop` 不会同步清空 animation dictionary，随后用本轮拥有的 `disableVirtualHandsServiceWithCompletion:` 做 service teardown，返回 true/error=nil，最终以合法 0/1 查询左右 `moving=false`。
+- ARKit Gate 失败：独立 App 在 Mixed 与 Full Space 两次均得到 `HandTrackingProvider.isSupported=false`，samples=0。补齐 `NSHandsTrackingUsageDescription` 与 `NSWorldSensingUsageDescription` 后结论不变。
+- HappyPianist 当前同样以 `HandTrackingProvider.isSupported` 决定是否启动 hand provider，且没有 Simulator fallback，因此不能通过该私有 Virtual Hand 服务获得其需要的 `HandAnchor.handSkeleton`。
+- 已确认本次 service teardown 的 ownership：探索前左右 moving 均为 false，非法 chirality action 是唯一改变 hand animation 状态的调用；teardown 后左右恢复 false。未继续冻结 move 坐标、duration 与一般化跨连接 ownership：这些只有在 ARKit joint Gate 通过后才有产品意义；在已失败的 Gate 后继续逆向属于无效扩展范围。
+- Gate：**FAIL**。P2 不执行，不创建 production `hand` 命令，不增加 fallback。
+- `docs/private-apis.md` 不更新：本轮发现的是未进入 production 的失败候选链，按仓库规则留在 feature evidence，不污染长期支持契约。
+
 ## Phase Audit
 
 - Audit file: `audit-p1.md`
-- Rule: 完成本 phase 全部 tasks 后，`executing-plans` 必须自动进入该文件的审计闭环；P1 Gate 未 PASS 时不得审计为“可进入 P2”。
+- Rule: 完成本 phase 全部 tasks 后，`executing-plans` 必须自动进入该文件的审计闭环；本轮 Gate 为 FAIL，审计不得给出进入 P2 的 Go。
