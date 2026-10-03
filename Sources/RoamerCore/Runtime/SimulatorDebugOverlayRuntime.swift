@@ -51,6 +51,13 @@ enum SimulatorDebugOverlayRuntime {
         defer { try? FileManager.default.removeItem(at: temporary) }
 
         let helper = try buildHelper(in: temporary)
+        let simulator = SimulatorService()
+        let currentPID = try simulator.runningPID(bundleID, on: device)
+        guard currentPID == pid else {
+            throw RoamerError.message("调试覆盖层准备期间目标 PID 从 \(pid) 变为 \(currentPID)；未修改 Simulator 状态")
+        }
+        try SimulatorSceneRuntime.requireUntracedRunningProcess(pid)
+
         let process = Process()
         let input = Pipe()
         let output = Pipe()
