@@ -42,4 +42,25 @@ final class ProcessRunnerTests: XCTestCase {
         }
         XCTAssertLessThan(Date().timeIntervalSince(started), 0.6)
     }
+
+    func testDeadlineIncludesPipesInheritedByDescendantsAfterProcessExit() {
+        let started = Date()
+        XCTAssertThrowsError(try ProcessRunner.run(
+            "/bin/sh", ["-c", "sleep 1 &"], deadline: .now() + .milliseconds(100)
+        )) { error in
+            XCTAssertTrue(String(describing: error).contains("超时"), "\(error)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.6)
+    }
+
+    func testDeadlineIncludesProcessAfterItClosesBothOutputPipes() {
+        let started = Date()
+        XCTAssertThrowsError(try ProcessRunner.run(
+            "/bin/sh", ["-c", "exec 1>&- 2>&-; exec sleep 2"],
+            deadline: .now() + .milliseconds(100)
+        )) { error in
+            XCTAssertTrue(String(describing: error).contains("超时"), "\(error)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.6)
+    }
 }

@@ -15,7 +15,7 @@
 - `launch` 只代表目标进程已经启动，不代表 UI / Accessibility ready；需要 AX 的流程继续使用 `wait`。
 - `screenshot` 通过 `simctl io <udid> screenshot` 获取整个 Simulator 显示，不伪装成目标 App 专属截图。
 - `reboot` 后旧的 Roamer head pose 状态失效。状态以 Simulator 的 boot identifier 分代，旧代必须回到 identity。
-- 外部子进程有 deadline 时，deadline 必须真正约束子进程本身，不能等命令返回后再检查时间。
+- 外部子进程有 deadline 时，deadline 必须同时约束进程退出与 stdout/stderr 排空；包装进程退出而后代仍持有管道时也不能无限等待。
 - 不通过激活 Simulator.app、Device Hub 或宿主 UI 来完成设备控制。
 
 ## 修改时
