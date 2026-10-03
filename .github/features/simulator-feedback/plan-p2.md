@@ -60,6 +60,8 @@
 
 **2026-10-03 准入更新：** 已通过 `com.apple.DebugHelper` v1 的 DTX control JSON 读取/设置目标 App 的 `entity_axis` / `entity_bounds`，独占 fixture 上正常/截图失败/既有选项开启的原值恢复均有独立读回证据，见 `native-probe.md` P2-T2 续验。初始空回包不能当作原状态；setter 回包后立即截图实测可能没有覆盖层。正式接入仍受渲染完成契约、跨会话安全和第二个 App 实测门禁约束，不用固定 sleep 补齐。原任务与验收保留，未迁移到生产的实验不算完成。
 
+**P3 审计后的复核：** 已找到 `SimScreen` 原生帧回调，但 `SimDeviceScreen.ScreenEvent.frame` 不含目标/覆盖层请求标识，尚未建立其与 RSSDebugService 设置完成的因果关联；不能以“下一帧”或 screen properties seed 替代覆盖层 fence。跨 DTX 客户端所有权仍未证明。详细静态证据与限制见 `native-probe.md`，保持本任务 blocked，不缩减原验收。
+
 **Files:**
 - Modify: `CLI.run` / `help` 的 observe 选项；`SimulatorObservation` 的显式调试汇聚路径。
 - Modify: `SimulatorObservationRuntime` 中 P1-T2 已验证的覆盖层控制及清理；必要的 ABI 调用放在已有 native boundary，不扩成通用反射框架。

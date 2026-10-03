@@ -188,3 +188,17 @@ xcrun swiftc -package-name Roamer \
 3. 未修改第二个 3D App 的覆盖层验收尚未完成；既有 HappyPianist 数字几何证据不能替代它。
 
 因此不添加猜测时序的正式 `--debug`，P2-T2 不标记完成，P2 不给 Go。已成立的读写与恢复证据保留，剩余问题不是“完全找不到原生入口”。用户已于 2026-10-03 明确允许调整门禁，先实施独立的 P3 实体快照与三视图；完整 feature 验收不因此缩减。
+
+### P3 审计后的限定帧契约复核（2026-10-03）
+
+只读取本机原生二进制与 ObjC 元数据，没有启动 Simulator、实例化宿主视图或更改目标状态；设备仍为 Shutdown。
+
+- SimulatorKit 的 `SimDeviceScreen` 是屏幕包装，不是宿主 display view。已核对 `initWithDevice:screenID:` 的 ABI `@28@0:8@16I24`，以及 `SimScreen` protocol 的 `registerScreenCallbacksWithUUID:callbackQueue:frameCallback:surfacesChangedCallback:propertiesChangedCallback:` ABI `v56@0:8@16@24@?32@?40@?48`，对应注销方法存在。此前 IO 类中没有帧方法不能当作平台没有帧通道的证据。
+- Swift 导出包含 `SimDeviceScreen.ScreenEvent.frame`（无关联值）和 `surfacesChanged(IOSurface?, IOSurface?)`；本机 block 类型字符串包含 `v8@?0`、`v24@?0@"IOSurface"8@"IOSurface"16` 与 properties 回调。这个包装的 frame 事件没有携带目标 bundleID、覆盖层命令序号或设置 generation。screen properties 的 `seed` 是另一条属性接口，尚无证据与 RSSDebugService 的设置完成建立因果关联，不能自行用它充当覆盖层 fence。
+- 再核对 DebugHelperXPCService 的真实调用链，实体选项仍由 `setEntityDebugOption:enabled:forBundleID:orSceneID:completion:` 设置，命令/更新仍只传选项 Bool；此次没有建立与屏幕 frame/present 之间的同步契约。不能把“setter 回包后的下一帧”或若干次帧事件算作已经绘制 XYZ/边界。
+- SimRenderingServices 插件承担端口/设备生命周期；SimFramebuffer 有 swapchain surface fence 符号，但尚未建立其与目标覆盖层请求的关联。存在 fence 符号不等于已经取得可用的捕获完成协议，也没有据此发起未经核实的 ABI 调用。
+- 跨客户端仲裁仍未证明：恢复前读回 Bool 不能识别同值的他人写入，Roamer 自己的文件锁也不能约束 Xcode/其他 DTX 客户端。独占本次验收许可没有变成生产环境的全局所有权保证。
+
+证据保存在忽略目录：`p2-frame-screen-metadata.log`、`p2-screen-protocol-metadata.log`、`p2-frame-contract-metadata.log`、`p2-screen-init-disassembly.log`、`p2-screen-register-disassembly.log`、`p2-screen-callback-disassembly.log`、`p2-screen-callback-tail-disassembly.log`；设置链路复用 `p2-overlay-xpc-metadata.log` / `p2-overlay-xpc-disassembly.log`。这些是静态接口复核，不冒充新的自动覆盖层实测，也不证明所有其他原生入口均不可能成立。
+
+结论：本轮限定路径没有解除 P2-T2 准入。P3 已 Go，完整 feature 仍未 Go；不为绕过问题新增固定等待、像素变化启发式、伪造覆盖层或兼容 fallback。继续产品化需要证明渲染完成和跨会话恢复契约；若无法取得，须明确调整原验收/约束后再推进，不无限逆向，也不把用户此前仅允许先做 P3 的门禁例外解释为删掉覆盖层需求。

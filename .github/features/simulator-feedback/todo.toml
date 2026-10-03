@@ -39,7 +39,7 @@ title = "接入显式原生 XYZ 与边界调试画面"
 status = "blocked"
 plan = "plan-p2.md#p2-t2"
 commit = ""
-note = "DTX读写/真实XYZ边界/正常与失败恢复已实证；setter回包先于画面，尚无渲染完成及并发会话契约。用户2026-10-03授权门禁例外先实施P3；native-probe.md续验"
+note = "DTX读写/真实XYZ边界/原值恢复已实证；setter先于画面，SimScreen帧事件亦未建立覆盖层fence/跨客户端所有权；P3已Go，完整feature未Go；native-probe.md"
 
 [[tasks]]
 id = "P3-T1"
