@@ -1,15 +1,8 @@
 # Accessibility 与 Observation
 
-本模块负责普通 `observe`、`wait` 和 `press`。它把目标 App 当前 PID 的原生 Accessibility translation tree 暴露为稳定 JSON，并允许对当前节点发送原生 Press。
+本页记录普通 `observe`、`wait` 和 `press` 的长期约束。它把目标 App 当前 PID 的原生 Accessibility translation tree 暴露为稳定 JSON，并允许对当前节点发送原生 Press。代码归属见 [AGENTS](../AGENTS.md)。
 
 `observe --debug` 的覆盖层部分由 [调试覆盖层](debug-overlay.md) 单独负责。
-
-## 源码 owner
-
-- `Sources/RoamerCore/Simulator/SimulatorObservation.swift`：截图、AX 采集、manifest 发布。
-- `Sources/RoamerCore/Simulator/SimulatorAccessibility.swift`：`wait` 与 `press` 的产品语义。
-- `Sources/RoamerCore/Runtime/SimulatorObservationRuntime.swift`：AXPTranslator 私有运行时绑定、树遍历、attribute/action 请求。
-- `Sources/RoamerCore/Simulator/SimulatorService.swift`：当前 PID 绑定。
 
 ## Observation 契约
 
@@ -44,6 +37,4 @@ AX selector、method encoding、attribute/action type 都属于私有 ABI。变�
 
 ## 验证
 
-主要回归：`SimulatorObservationTests` 与 `ProcessRunnerTests`。
-
-真实验证至少覆盖：冷启动 `wait`、短 deadline、普通 `observe`、一个真实 `press`、目标重启后的 stale node 拒绝，以及未经修改 App 的跨 App 读取。
+基础验证按 [AGENTS](../AGENTS.md) 执行。真实验证使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，至少覆盖冷启动 `wait`、短 deadline、普通 `observe`、一个真实 `press`、目标重启后的 stale node 拒绝，以及未经修改 App 的跨 App 读取。

@@ -15,7 +15,7 @@ import Foundation
     func unregister(_ uuid: NSUUID)
 }
 
-struct SimulatorDebugOverlayState: Encodable, Equatable {
+struct SimulatorDebugOverlayState {
     let originalAxis: Bool
     let originalBounds: Bool
     let renderFence = "RSSDebugService post-camera GPU completion + next Simulator display frame"
@@ -69,12 +69,8 @@ enum SimulatorDebugOverlayRuntime {
         process.standardError = error
         try process.run()
 
-        var requestedRestore = false
         defer {
             if process.isRunning {
-                if !requestedRestore {
-                    try? input.fileHandleForWriting.write(contentsOf: Data("restore\n".utf8))
-                }
                 try? input.fileHandleForWriting.close()
                 _ = try? waitForExit(process, timeoutSeconds: 20)
                 if process.isRunning { process.terminate() }
@@ -103,8 +99,6 @@ enum SimulatorDebugOverlayRuntime {
             return try body()
         }
         let restoreResult = Result { () throws -> Void in
-            requestedRestore = true
-            try input.fileHandleForWriting.write(contentsOf: Data("restore\n".utf8))
             try input.fileHandleForWriting.close()
             let restoredLine = try readLine(
                 output.fileHandleForReading,
@@ -143,7 +137,7 @@ enum SimulatorDebugOverlayRuntime {
         }
     }
 
-    private static func waitForDisplayFrame(udid: String, timeoutSeconds: Double = 5) throws {
+    private static func waitForDisplayFrame(udid: String) throws {
         let runtime = try PrivateRuntime()
         guard let device = try runtime.resolveDevice(udid: udid) as? NSObject,
               device.responds(to: NSSelectorFromString("io")),
@@ -184,7 +178,7 @@ enum SimulatorDebugOverlayRuntime {
             propertiesChanged: { _ in }
         )
         defer { screen.unregister(registration) }
-        guard ready.wait(timeout: .now() + timeoutSeconds) == .success else {
+        guard ready.wait(timeout: .now() + .seconds(5)) == .success else {
             throw RoamerError.message("等待 Simulator 下一显示帧超时")
         }
     }
@@ -247,10 +241,7 @@ enum SimulatorDebugOverlayRuntime {
             guard now - started < timeout else {
                 throw RoamerError.message("等待原生调试覆盖层 helper 回复超时")
             }
-            let remainingMilliseconds = Int32(max(1, min(
-                UInt64(Int32.max),
-                (timeout - (now - started)) / 1_000_000
-            )))
+            let remainingMilliseconds = Int32(max(1, (timeout - (now - started)) / 1_000_000))
             var pollDescriptor = pollfd(fd: descriptor, events: Int16(POLLIN | POLLHUP), revents: 0)
             let result = poll(&pollDescriptor, 1, remainingMilliseconds)
             if result < 0 {
