@@ -24,6 +24,19 @@
 
 ## 发现项
 
+## 发现 F-101
+
+- 任务：`P1-T3`
+- 严重级别：`Low`
+- 状态：`Resolved`
+- 位置：`.github/features/simulator-feedback/probes/ax-dispatch.py:8`
+- 摘要：`AX 地址跳转探针硬编码一次性 shared-cache 地址，配对 metadata helper 已由正式 AX 实现取代且没有当前调用者`
+- 风险：`保留失效探索代码可被误当可复跑通道；不提供任何当前产品能力`
+- 预期修复：`删除过时地址探针及其配对 request-description helper，保留通用 ABI 方法枚举和历史文字证据`
+- 验证：`git 引用搜索；正式 observe/press/wait 与 core 回归`
+- 解决证据：`删除 ax-dispatch.py/ax-request-types.swift，保留 runtime-methods.py；无现役脚本引用；源码无双轨 AX/overlay/scene 后端；full tests98/98、observation14/14 PASS；正式 fixture observe/press/wait 已实测`
+
+
 ## 发现 F-01
 
 - 任务：`P1-T1`
@@ -88,3 +101,14 @@
 
 - 本文件对应一个 phase，不对应单个 task
 - 如果由 `executing-plans` 自动进入审计，也沿用同一模板
+## 2026-10-03 本轮独立逐提交复审
+
+本轮不读取、采用下方历史 audit 的判断。以当前 todo、idea、plan、逐提交 diff、当前真实调用链和独立运行结果为依据。真实操作仅获准 RoamerTestApp，不操作 HappyPianist 或整机 reboot。
+
+### 本轮任务映射
+
+- P1-T1：f9f1371 → App/SpatialSceneView/SpatialSceneState/verify-spatial.py；45d269e → dismiss 后 oracle 同步。同一个 App、顶层通配构建、原三页保留。
+- P1-T2：730cd98 → 原生 LLDB/plist 探索；44957bf → 几何准入；36eb9bb → overlay 取证及门禁例外；后续正式 scene/overlay 接管原型。
+- P1-T3：730cd98 → 原生 AX bridge 探索；45ee1b2 → 正式 observe 并删除旧 bridge。cc50e63 已删除误入库字节码。
+
+本轮 Gate 待针对性验证；历史取证不是本轮端到端实测。旧硬编码宿主地址 AX 探针待清理。
