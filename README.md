@@ -1,6 +1,6 @@
 # Roamer
 
-Roamer 是一个直接控制 Apple Vision Pro Simulator 的 macOS CLI。它支持 App 启停、头部与沉浸度控制、键盘和空间手势、Accessibility 观察，以及空间实体捕获；整个过程不操作 Device Hub，不移动 macOS 鼠标，也不抢占当前焦点。
+Roamer 是一个直接控制 Apple Vision Pro Simulator 的 macOS CLI。它支持 App 启停、空间输入、Accessibility、实体捕获、音频采集和音画录制；整个过程不操作 Device Hub，不移动 macOS 鼠标，也不抢占当前焦点。
 
 ## 构建
 
@@ -24,8 +24,19 @@ swift run roamer status
 roamer launch <bundle-id>
 roamer wait <bundle-id>
 roamer observe <bundle-id> /tmp/roamer-observe
+roamer audio status
+roamer audio capture 5 /tmp/roamer-audio
+roamer record 10 /tmp/roamer-recording
 roamer screenshot /tmp/avp.png
 ```
+
+## 音频与录制
+
+`roamer audio status` 只读显示当前 Simulator 的输入/输出路由和可用宿主音频设备。
+
+`roamer audio capture <duration-sec> <new-output-dir>` 只录当前 AVP Simulator 的输出，生成 `audio.wav` 与 `audio.json`；不会混入 Mac 其它 App，也不会修改音频路由。
+
+`roamer record <duration-sec> <new-output-dir>` 同步录制 Simulator 画面和上述音频，生成 `recording.mov` 与 `recording.json`，并保留原始音视频作为证据。`audio capture` 和 `record` 需要 macOS 14.2+；其它命令仍支持 macOS 14+。
 
 ## 输入控制
 
@@ -37,7 +48,7 @@ roamer screenshot /tmp/avp.png
 
 `pose` 使用绝对 6DoF，位置单位为米、旋转单位为度。`crown` 按 Xcode Simulator 自己的步进语义调整系统沉浸度；只有支持可调沉浸度的 progressive immersive space 才有可观察变化。
 
-AI 或其它自动化连续控制 Simulator 时，可先执行 `roamer indicator on`。它直接打开 XROS/Device Hub 自带的 **Show Gaze Target**，画面会显示系统灰色 gaze 标志，让旁观者知道当前存在外部自动控制；结束时用 `roamer indicator off`。Roamer 不另外绘制 App 内 badge。
+Roamer 默认开启 XROS 原生 **Show Gaze Target**。`roamer indicator off` 可临时关闭；下一次 Roamer 再绑定当前 AVP 时会恢复默认开启。Roamer 不自绘额外标志。
 
 ## 观察与精确操作
 

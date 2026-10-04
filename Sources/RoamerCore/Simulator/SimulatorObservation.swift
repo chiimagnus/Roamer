@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 import ImageIO
 
@@ -115,7 +114,7 @@ package enum SimulatorObservation {
         let simulator = SimulatorService()
         let device = try simulator.bootedAVP()
         let pid = try simulator.runningPID(bundleID, on: device)
-        let directory = try createOutputDirectory(outputPath)
+        let directory = try NewOutputDirectory.create(path: outputPath)
         let imageURL = directory.appendingPathComponent("screenshot.png")
 
         func captureScreenshot() throws -> (startedAt: Date, finishedAt: Date, width: Int, height: Int) {
@@ -187,18 +186,6 @@ package enum SimulatorObservation {
         let manifestURL = directory.appendingPathComponent("observation.json")
         try encoder.encode(manifest).write(to: manifestURL, options: .atomic)
         return manifestURL.path
-    }
-
-    static func createOutputDirectory(_ path: String) throws -> URL {
-        guard !path.isEmpty, !path.utf8.contains(0) else {
-            throw RoamerError.message("输出目录不能为空或包含 NUL")
-        }
-        let directory = URL(fileURLWithPath: path).standardizedFileURL
-        let result = directory.withUnsafeFileSystemRepresentation { mkdir($0!, 0o700) }
-        guard result == 0 else {
-            throw RoamerError.message("无法创建新的观察目录 \(directory.path)：\(String(cString: strerror(errno)))；父目录须存在，旧目录不会覆盖")
-        }
-        return directory
     }
 
     static func imageDimensions(_ url: URL) throws -> (width: Int, height: Int) {
