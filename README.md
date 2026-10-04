@@ -48,7 +48,7 @@ roamer screenshot /tmp/avp.png
 
 `pose` 使用绝对 6DoF，位置单位为米、旋转单位为度。`crown` 按 Xcode Simulator 自己的步进语义调整系统沉浸度；只有支持可调沉浸度的 progressive immersive space 才有可观察变化。
 
-AI 或其它自动化连续控制 Simulator 时，可先执行 `roamer indicator on`。它直接打开 XROS/Device Hub 自带的 **Show Gaze Target**，画面会显示系统灰色 gaze 标志，让旁观者知道当前存在外部自动控制；结束时用 `roamer indicator off`。Roamer 不另外绘制 App 内 badge。
+Roamer 默认打开 XROS/Device Hub 自带的 **Show Gaze Target**，因此正常控制和录制时画面会显示系统灰色 gaze 标志，让旁观者知道当前存在外部自动控制。`roamer indicator off` 可以临时关闭，但下一次 Roamer 再绑定当前 AVP Simulator 时会恢复默认开启；`indicator on` 可随时显式重新打开。Roamer 不另外绘制 App 内 badge。
 
 ## 观察与精确操作
 
