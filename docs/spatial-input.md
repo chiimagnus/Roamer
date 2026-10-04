@@ -8,7 +8,7 @@
 
 `pose` 成功发送后才保存新的 head pose。Simulator reboot 后旧 pose 不再复用。
 
-`indicator on|off` 直接调用 XROS `SimVirtualHeadsetRemoteService.setCursorVisible:`，对应 Device Hub 的 **Show Gaze Target**。它是宿主 Simulator 的系统 gaze 标志，不是 App 内容，也不应由 Roamer 自绘替代。当前 XROS 没有提供经过验证的 cursor-visible getter，因此 Roamer 不把该开关偷偷包进每条输入命令；需要连续 AI/自动化控制时显式管理它。
+Roamer 绑定当前唯一 booted AVP Simulator 时默认打开 XROS **Show Gaze Target**；因此正常控制、观察、音频和录制流程都会显示系统灰色 gaze 标志。`indicator on|off` 仍可显式设置当前状态；`indicator off` 只临时关闭，下一次 Roamer 再绑定 AVP 时会恢复默认开启。它是 Simulator 的系统 gaze 标志，不是 App 内容，也不应由 Roamer 自绘替代。
 
 ## 不变量
 

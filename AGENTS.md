@@ -28,7 +28,7 @@
 ## 不可破坏的边界
 
 - Roamer 通过 Simulator 自身通道工作；不要新增会移动 macOS 鼠标、发送宿主输入、激活 Device Hub 或抢焦点的实现。
-- AI/自动化连续控制 Simulator 需要可见标志时，使用 `roamer indicator on|off` 控制 XROS 原生 **Show Gaze Target**；不要自绘“AI 控制中”覆盖层。
+- Roamer 绑定当前唯一 AVP Simulator 时默认开启 XROS 原生 **Show Gaze Target**；`roamer indicator off` 只临时关闭，下一次绑定恢复默认开启。不要自绘“AI 控制中”覆盖层。
 - screenshot pixels、Accessibility `nativeFrame` 和 scene reference space 是不同坐标域；禁止用比例、偏移或经验值互转。
 - 私有 ABI 不匹配时 fail fast。禁止用 Device Hub、固定 sleep、像素变化、旧缓存或 fixture 数据作为生产 fallback。
 - 修改外部状态必须有明确 ownership：只恢复本次改动；只 detach 自己创建的 debugger；只删除能证明属于本次捕获的临时资产。

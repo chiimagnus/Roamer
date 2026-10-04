@@ -29,7 +29,7 @@ CLI 返回 `ok`、函数正常返回、消息已经发出，都不能单独证�
 | `observe` / `press` | 当前 PID 的 AX 树与目标 App 实际状态一致；真实 Press 改变目标 UI；旧 PID node 被拒绝 |
 | `key` / `type` | Fixture 的 SwiftUI/UIKit oracle 收到真实 down/up、modifier、文本或 submit；AX ready / first responder 不代替键盘焦点 |
 | `pose` / `gaze` / 空间手势 | screenshot 或 Fixture callback/oracle 显示真实画面/手势结果；结束后恢复本轮改变的 pose |
-| `indicator` | `on` 后 Device Hub 画面真实出现 XROS 系统 gaze target，`off` 后消失；不得用 App 自绘标志冒充 |
+| `indicator` | Roamer 首次绑定当前 AVP 时默认出现 XROS 系统 gaze target；`indicator off` 后消失，下一次普通 Roamer 命令再次绑定 AVP 时自动恢复；不得用 App 自绘标志冒充 |
 | `crown` | 只在 progressive immersive space 验收；结果必须与 XROS 官方 Simulator 的相同步进语义一致，并恢复验收前状态 |
 | `observe --debug` | screenshot 中真实出现平台 XYZ/Bounds；普通 observe 后恢复；并发会话正确互斥 |
 | `scene` | `scene.json` 与独立 `spatial.json` oracle 一致，并通过 `verify-scene.py`；四张布局图还要人工确认可读性 |

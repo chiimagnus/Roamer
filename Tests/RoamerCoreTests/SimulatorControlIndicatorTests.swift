@@ -3,14 +3,22 @@ import XCTest
 @testable import RoamerCore
 
 final class SimulatorControlIndicatorTests: XCTestCase {
-    func testIndicatorForwardsSystemCursorVisibility() {
+    func testIndicatorDefaultsToVisible() {
         let remote = IndicatorCapturingHeadsetRemote()
-        let indicator = SimulatorControlIndicator(remote: remote)
+
+        _ = SimulatorControlIndicator(remote: remote)
+
+        XCTAssertEqual(remote.cursorVisibility, [true])
+    }
+
+    func testIndicatorCanStartHiddenAndChangeVisibility() {
+        let remote = IndicatorCapturingHeadsetRemote()
+        let indicator = SimulatorControlIndicator(remote: remote, visible: false)
 
         indicator.setVisible(true)
         indicator.setVisible(false)
 
-        XCTAssertEqual(remote.cursorVisibility, [true, false])
+        XCTAssertEqual(remote.cursorVisibility, [false, true, false])
     }
 }
 
