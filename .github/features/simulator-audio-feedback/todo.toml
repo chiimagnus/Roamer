@@ -54,7 +54,8 @@ note = "117 tests、Release/Fixture build 全绿；真实 2s record smoke：3840
 [[tasks]]
 id = "P3-T2"
 title = "完成 Fixture 与 HappyPianist 音画录制真实验收"
-status = "in_progress"
+status = "completed"
 plan = "plan-p3.md#p3-t2"
 commit = ""
-note = ""
+no_commit_reason = "P3-T2 仅执行真实验收与生成本地 Demo，不产生 production 改动"
+note = "Fixture 正常/干扰隔离/SIGINT 全部 PASS；HappyPianist 纯音频与 35s 正式 A/V Demo PASS，成片 ~/Movies/Roamer-HappyPianist-Demo-20261004-audio.mov；独立 HappyPianist sampler lifecycle bug 已跟踪为 issue #214"
