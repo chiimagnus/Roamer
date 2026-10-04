@@ -4,7 +4,7 @@ import RoamerCore
 struct CLI {
     private let simulator = SimulatorService()
 
-    func run(arguments: [String]) throws {
+    func run(arguments: [String]) async throws {
         guard let command = arguments.first else {
             print(Self.help)
             return
@@ -29,6 +29,40 @@ struct CLI {
             try requireCount(rest, 0, usage: "roamer status")
             let device = try simulator.bootedAVP()
             print("UDID=\(device.udid)")
+
+        case "audio":
+            guard let subcommand = rest.first else {
+                throw RoamerError.message("用法: roamer audio <status|capture>")
+            }
+            let audioArguments = Array(rest.dropFirst())
+            switch subcommand {
+            case "status":
+                try requireCount(audioArguments, 0, usage: "roamer audio status")
+                print(try SimulatorAudioStatus.current().json())
+            case "capture":
+                try requireCount(
+                    audioArguments,
+                    2,
+                    usage: "roamer audio capture <duration-sec> <new-output-dir>"
+                )
+                let duration = try parseDouble(audioArguments[0], name: "duration-sec")
+                print(try SimulatorAudioCaptureCommand.run(
+                    requestedDurationSeconds: duration,
+                    outputPath: audioArguments[1]
+                ))
+            default:
+                throw RoamerError.message(
+                    "未知 audio 子命令：\(subcommand)\n用法: roamer audio <status|capture>"
+                )
+            }
+
+        case "record":
+            try requireCount(rest, 2, usage: "roamer record <duration-sec> <new-output-dir>")
+            let duration = try parseDouble(rest[0], name: "duration-sec")
+            print(try await SimulatorRecordingCommand.run(
+                requestedDurationSeconds: duration,
+                outputPath: rest[1]
+            ))
 
         case "screenshot":
             guard rest.count <= 1 else {
@@ -135,9 +169,8 @@ struct CLI {
             case "off": visible = false
             default: throw RoamerError.message("indicator 必须是 on 或 off：\(rest[0])")
             }
-            let device = try simulator.bootedAVP()
-            let indicator = try SimulatorControlIndicator(udid: device.udid)
-            indicator.setVisible(visible)
+            let device = try simulator.bootedAVP(showDefaultIndicator: false)
+            _ = try SimulatorControlIndicator(udid: device.udid, visible: visible)
             print("simulator control indicator: \(visible ? "on" : "off")")
 
         case "key":
@@ -385,6 +418,9 @@ struct CLI {
     用法:
       roamer --version
       roamer status
+      roamer audio status
+      roamer audio capture <duration-sec> <new-output-dir>
+      roamer record <duration-sec> <new-output-dir>
       roamer screenshot [path]
       roamer observe <bundle-id> <new-output-dir> [--debug]
       roamer press <bundle-id> <node-id>
@@ -408,10 +444,13 @@ struct CLI {
       roamer drag <from-x> <from-y> <to-x> <to-y> [duration-ms] [--hand left|right]
 
     key 支持 Return/Escape/Delete/Tab/Space/方向键、字母、数字，以及 Shift/Control/Option chord。
+    audio status 只读取当前 Simulator Input/Output route、effective host device 与可用宿主音频设备，不修改 route。
+    audio capture 只采集当前 AVP Simulator 的 output，source set 在开始时冻结；需要 macOS 14.2+，输出目录必须不存在。
+    record 使用 Simulator 原生 framebuffer + 同一套 Simulator-only audio capture 生成 raw video/audio 与最终 A/V；需要 macOS 14.2+，输出目录必须不存在。
     type 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格；不会自动切换输入法。
     Xcode 27 Apple Vision Pro Simulator 当前不支持 Command modifier。
     crown delta 范围为 -20...20，总相对增量为 delta × 0.05，最终沉浸度由 Simulator 处理。
-    indicator 直接控制 XROS 原生 Show Gaze Target；AI/自动化连续控制时可用它显示系统灰色 gaze 标志，不自绘覆盖层。
+    Roamer 默认打开 XROS 原生 Show Gaze Target；indicator off 只临时关闭，下一次绑定当前 AVP 时会恢复默认开启；不自绘覆盖层。
     click/long-press/double-click/drag 默认使用右手，可用 --hand left 切换左手。
     gaze/click/long-press/double-click/magnify/rotate/drag 坐标来自 roamer screenshot 生成的 Simulator 图片。
     observe 保存实际截图与指定运行 App 的原生 AX；--debug 会在原生 render fence 后抓取平台 XYZ/边界并恢复原值。须使用新目录且父目录已存在，不自动启动 App。

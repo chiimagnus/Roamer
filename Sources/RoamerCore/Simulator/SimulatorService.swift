@@ -29,7 +29,10 @@ package struct SimulatorService: Sendable {
     }
 
 
-    package func bootedAVP(deadline: DispatchTime? = nil) throws -> SimulatorDevice {
+    package func bootedAVP(
+        deadline: DispatchTime? = nil,
+        showDefaultIndicator: Bool = true
+    ) throws -> SimulatorDevice {
         let result = try ProcessRunner.run(
             xcrun,
             ["simctl", "list", "devices", "booted", "-j"],
@@ -67,7 +70,11 @@ package struct SimulatorService: Sendable {
             let ids = matches.map(\.udid).joined(separator: ", ")
             throw RoamerError.message("发现多个已启动的 Apple Vision Pro Simulator：\(ids)")
         }
-        return matches[0]
+        let device = matches[0]
+        if showDefaultIndicator {
+            _ = try SimulatorControlIndicator(udid: device.udid)
+        }
+        return device
     }
 
 
@@ -157,6 +164,7 @@ package struct SimulatorService: Sendable {
         _ = try ProcessRunner.run(xcrun, ["simctl", "shutdown", device.udid])
         _ = try ProcessRunner.run(xcrun, ["simctl", "boot", device.udid])
         _ = try ProcessRunner.run(xcrun, ["simctl", "bootstatus", device.udid, "-b"])
+        _ = try SimulatorControlIndicator(udid: device.udid)
     }
 
     package func headPose(for device: SimulatorDevice) throws -> HeadPose {

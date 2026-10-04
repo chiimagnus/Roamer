@@ -21,6 +21,7 @@ Roamer 依赖 Xcode、CoreSimulator、SimulatorKit 和 RealitySimulation 的私�
 - [Accessibility](accessibility.md)：AXPTranslator、deadline、node/PID 绑定。
 - [调试覆盖层](debug-overlay.md)：RealitySimulation、SimulatorKit、render/display fence 与恢复。
 - [Scene 捕获](scene-capture.md)：LLDB、view-debugger、原生 scene 数据和临时资产 ownership。
+- [Simulator 音频与音画录制](audio-feedback.md)：CoreSimulator HostRoute、音频采集与录制边界。
 
 不要把这些模块的详细规则复制回本页。
 
