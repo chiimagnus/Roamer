@@ -33,6 +33,8 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 
 当前 CoreAudio process object 实测也证明 guest App 是独立宿主 audio client：HappyPianist PID 的 process object bundle ID 是 `com.chiimagnus.HappyPianistAVP` 且 `isRunningOutput=true`；Simulator 的 `backboardd`、`systemsoundserver-simd` 也分别是独立 CoreAudio process object，而 `SimAudioProcessorService` 本身不是输出音源。
 
+P1 真实 Gate 已通过：当前 device 的 `dataPath/var/run/launchd_bootstrap.plist` 可通过 `sysctl(KERN_PROCARGS2)` 精确定位唯一 `launchd_sim`，再由 `libproc` 父链筛出 guest CoreAudio process object。Process Tap 在不设置 `tapautostart`、不改 route 的情况下稳定输出真实 PCM；当前 tap ASBD 为 48 kHz stereo Float32 interleaved，使用 `ExtAudioFileWriteAsync` 可直接写成标准 PCM16 WAV。Simulator 997 Hz 与宿主 1234 Hz 同时播放时，宿主频率相对 Simulator 频率低约 67 dB；early-stop 也能完整 teardown。`AudioTimeStamp.mHostTime` 与 `AudioGetCurrentHostTime()` / `mach_absolute_time()` 实测同一时钟域。另一个关键事实是 macOS 26+ 的 `CATapDescription.processRestoreEnabled` 默认开启，因此正式 capture 必须显式关闭它，保持 capture-start snapshot。
+
 因此本 feature 的正式方向是：**HostRoute 只读状态 + CoreAudio process tap 捕获当前唯一 AVP Simulator 的 guest audio process 集合 + `simctl recordVideo` 原生 framebuffer + AVFoundation 最终 mux**。不再研究 ScreenCaptureKit/window audio，也不把 HostRoute 当 PCM API。
 
 ## 核心需求
@@ -62,6 +64,8 @@ Roamer 已经能获取 screenshot、Accessibility、scene 和视频，但此前 
 - capture source set 是启动时 snapshot；metadata 必须记录实际绑定的 PID / bundle ID / AudioObjectID，不能把后续新进程假装成已捕获。
 - 初版只采集 Simulator **output**。Input route 会显示在 status 中，但不录麦克风输入。
 - `record` 是有限时长录制：先让 framebuffer recorder ready，再让 audio first-sample ready，以两者共同可用的时间点作为内容起点，最终成片时长按用户请求裁剪。
+- P3 视频 Gate 已在当前 macOS/Xcode 27 + AVP Simulator 实测通过：`simctl recordVideo` 不改变宿主前台 App/鼠标，raw H.264 MOV 为 3840×2160、约 60 fps、video track 从 PTS 0 开始且可完整解码。正式 `videoReadyHostTime` 在读到 `Recording started` marker 时用 `AudioGetCurrentHostTime()` 记录，并把 raw PTS 0 作为对应媒体原点。
+- 两次 Fixture 大页面切换中，App `onAppear` wall-time 映射到 marker 后的 host timeline，再与 raw MOV 最大画面变化比较，得到约 75.99 ms / 73.49 ms（差约 2.5 ms）的稳定可见渲染延迟。它属于 UI/render/display pipeline 观察值，不作为录屏补偿常量；Roamer 不添加经验 offset。
 
 ## 非目标
 

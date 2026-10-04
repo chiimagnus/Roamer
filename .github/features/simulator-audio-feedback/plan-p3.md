@@ -56,7 +56,7 @@ Gate 条件：宿主前台与鼠标没有因这次录像改变，且 raw MOV 可
 
 同时用 Fixture 的一个可观察画面变化做最小时间锚点实验，确认 `Recording started` host time 与 raw video timeline 的关系足够稳定。若仅凭 marker 无法解释实际媒体时间，则在继续 production 前调查 Simulator-native display/frame timing；不允许以后用人工常量修正。
 
-**Gate 决策必须在写 production 前完成**：PASS 时把实际 host-safety 与 timing 契约写回本 plan/idea 后删除整个 video-gate probe；FAIL 时同样记录失败层并删除 probe，P3-T1 停止且不创建 `record` public command。
+**Gate 结果：PASS。** 当前 macOS/Xcode 27 + booted AVP 上，10 ms 连续宿主监视未发现一次 focus/mouse 变化；raw H.264 MOV 为 3840×2160、约 60 fps，track start=0 且 AVFoundation 可完整解码。两次 Fixture `Interaction → Audio` 大页面变化使用 marker 的 wall+monotonic 双锚点和 App `audio.json.changedAt` 交叉，页面变化视频 PTS 相对 App onAppear 分别约 +75.99 ms / +73.49 ms，波动约 2.5 ms。该差值视为 UI/render/display pipeline 延迟，只证明 marker→MOV timeline 稳定，不写入任何经验补偿。正式实现读到 `Recording started` 时使用 P1 同域的 `AudioGetCurrentHostTime()` 记录 `videoReadyHostTime`，raw MOV PTS 0 为媒体原点。Gate probe 在结论回写后删除。
 
 **Step 2: Gate PASS 后固化 `record` 用户语义并建立私有 video lifecycle owner**
 
@@ -97,7 +97,7 @@ P3 直接消费这个 API；如果到这里才发现必须改变 AudioCapture �
 5. 令 `contentStartHostTime = audioFirstSampleHostTime`；因为 video 已先 ready，所以它只包含一段可裁掉的 pre-roll；
 6. audio 从 first sample 起采满用户请求 duration；
 7. audio 完成后立即停止 video，并等待 raw MOV 封口；
-8. `videoTrimStart = contentStartHostTime - videoReadyHostTime`，只使用 P1 已证明的 audio host clock 与 P3 Step 1 Gate 已证明的 video marker/media-time 关系换算；
+8. `videoTrimStart = contentStartHostTime - videoReadyHostTime`，其中两端都使用 `AudioGetCurrentHostTime` 同一 host clock；raw video PTS 0 对应 `Recording started` marker，直接换算，不加 Gate 中观察到的 UI/render 延迟或其它经验补偿；
 9. final A/V 只取 raw video `[videoTrimStart, videoTrimStart + duration]` 和 raw audio `[0, duration]`；
 10. 若 raw video 实际可用区间不足 requested duration，明确失败，不靠缩短成片掩盖问题。
 
