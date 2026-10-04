@@ -8,7 +8,7 @@
 
 `pose` 成功发送后才保存新的 head pose。Simulator reboot 后旧 pose 不再复用。
 
-Roamer 绑定当前唯一 booted AVP Simulator 时默认打开 XROS **Show Gaze Target**；因此正常控制、观察、音频和录制流程都会显示系统灰色 gaze 标志。`indicator on|off` 仍可显式设置当前状态；`indicator off` 只临时关闭，下一次 Roamer 再绑定 AVP 时会恢复默认开启。它是 Simulator 的系统 gaze 标志，不是 App 内容，也不应由 Roamer 自绘替代。
+Roamer 每次绑定当前唯一 AVP Simulator 时默认开启 XROS **Show Gaze Target**。`indicator off` 只临时关闭；下一次绑定会恢复默认开启。该标志来自 Simulator 系统层，不由 Roamer 自绘。
 
 ## 不变量
 
@@ -18,7 +18,6 @@ Roamer 绑定当前唯一 booted AVP Simulator 时默认打开 XROS **Show Gaze 
 - 发送序列中途失败时，优先尝试释放已经进入按下/捏合状态的输入，再返回原始错误。
 - 不为更“稳定”加入宿主鼠标移动、窗口激活、固定屏幕坐标或录制回放 fallback。
 - `RoamerPrivateABI` 只处理 ABI，不拥有手势策略、参数规则或状态。
-- 自动控制标志必须复用 XROS `Show Gaze Target`；不要增加 App 内“AI 控制中”浮层或依赖 Device Hub UI 自动化。
 
 ## 修改时
 

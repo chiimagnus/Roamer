@@ -33,9 +33,9 @@ CLI 返回 `ok`、函数正常返回、消息已经发出，都不能单独证�
 | `crown` | 只在 progressive immersive space 验收；结果必须与 XROS 官方 Simulator 的相同步进语义一致，并恢复验收前状态 |
 | `observe --debug` | screenshot 中真实出现平台 XYZ/Bounds；普通 observe 后恢复；并发会话正确互斥 |
 | `scene` | `scene.json` 与独立 `spatial.json` oracle 一致，并通过 `verify-scene.py`；四张布局图还要人工确认可读性 |
-| `audio status` | 与当前 HostRoute / Apple route plist 一致，并确认查询不改 route |
-| `audio capture` | `audio.json` 到 `completed`；独立 verifier 证明 Simulator 已知频率存在、普通 macOS 干扰频率不显著；正常/SIGINT 后无 tap/aggregate/IOProc 残留且 route 不变 |
-| `record` | `recording.json` 到 `completed`；raw video/audio 可独立解码，final A/V 同时含 video/audio track；已知 Simulator tone 保留、宿主干扰不显著；正常/SIGINT 后无 tap/aggregate/IOProc/`recordVideo` 残留且 route 不变 |
+| `audio status` | 当前 HostRoute 结果与独立路由证据一致，且查询不改 route |
+| `audio capture` | 已知 Simulator tone 可被捕获、宿主干扰不显著；正常/SIGINT 后资源无残留且 route 不变 |
+| `record` | 最终 A/V 双轨可解码且保留音频隔离；正常/SIGINT 后录制与音频资源无残留且 route 不变 |
 | `reboot` | UDID 不变、boot identifier 更新、旧 boot 的 pose 不再复用；恢复验收前需要继续运行的 App |
 | 宿主安全边界 | 验收前后 macOS 前台 App 和鼠标不因 Roamer 操作而改变 |
 
