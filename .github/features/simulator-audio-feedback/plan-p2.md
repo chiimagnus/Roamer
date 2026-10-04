@@ -27,19 +27,19 @@
 
 ## P1 冻结契约（P1-T1 PASS 后必须全部填实）
 
-- macOS 14.2 availability / 14.0 package baseline 处理：`TBD`
-- Simulator process ancestry API：`TBD`
-- source process snapshot 规则：`TBD`
-- process tap description / required flags：`TBD`
-- private aggregate device dictionary / required keys：`TBD`
-- tap stream format：`TBD`
-- output container / PCM format / filename：`TBD`
-- writer API 与 real-time callback 约束：`TBD`
-- first-buffer readiness / timeout 语义：`TBD`
-- `AudioTimeStamp.mHostTime` 与宿主 monotonic/mach clock 的可比较契约：`TBD`
-- cleanup 顺序与 residual-object 验证：`TBD`
-- 系统音频捕获权限行为：`TBD`
-- P1 isolation 结果：`TBD`
+- macOS availability：`AudioHardwareCreateProcessTap` 官方从 macOS 14.2 可用；package 继续保持 macOS 14.0。`audio capture` / `record` 在创建目录和任何 capture 资源前用 `#available(macOS 14.2, *)` fail-fast，`audio status` 不受影响。
+- Simulator process ancestry API：从当前 `SimDevice.dataPath` 得到精确 `var/run/launchd_bootstrap.plist`；用 `sysctl(KERN_PROCARGS2)` 找到唯一持有该**精确参数**的 `launchd_sim` PID，再用 `proc_pidinfo(..., PROC_PIDTBSDINFO, ...)` 沿 `pbi_ppid` 判断 descendant。production 不解析 `ps` 文本，也不靠 executable 名猜设备。
+- source process snapshot：读取 `kAudioHardwarePropertyProcessObjectList`，capture start 时一次性收集所有属于该 `launchd_sim` 父树的 CoreAudio process object；不按 `isRunningOutput` 过滤，不动态加入后续新对象。当前实测 HappyPianist、`backboardd`、`systemsoundserver-simd` 正确归入 guest，普通 macOS tone helper 被排除。
+- process tap：`CATapDescription.initStereoMixdownOfProcesses` + `privateTap=true` + `muteBehavior=.unmuted`；禁止 global/exclusive tap。macOS 26+ 必须显式 `processRestoreEnabled=false`（当前默认值实测为 true），保持 capture-start snapshot；更早系统没有该属性。
+- private aggregate：只需要唯一 `uid`、`name`、`private=1`、`taps=[{"uid": <tap UUID>}]`。P1 未设置 `tapautostart` 仍稳定得到真实 buffer，因此 production 不使用 `kAudioAggregateDeviceTapAutoStartKey`，也不预加 drift/subdevice 配置。
+- tap stream format：当前 Xcode 27 / visionOS 27 实测 `48 kHz / stereo / Float32 interleaved / packed`（`lpcm flags=0x9`、8 bytes/frame）；production 每次读取 `kAudioTapPropertyFormat` 并记录真实 ASBD，不硬编码该值。
+- output：`audio.wav`，WAVE PCM16，保持 tap 的实际 sample rate / channel count；转换由 Apple `ExtAudioFile` 完成。
+- writer：`ExtAudioFileCreateWithURL` → client format 设为 tap ASBD → `ExtAudioFileWriteAsync(file, 0, NULL)` 预热。实时 IO callback 只调用后续 `ExtAudioFileWriteAsync`、计数和记录 timestamp；不混用同步 write，不自造 ring buffer。
+- readiness / duration：`AudioDeviceStart` 返回不等于 ready；只有 IOProc 收到第一批非空 input buffer 才 ready。P1 用 5 秒 startup deadline 验证通过；duration 以 callback frame count 达到 `requestedSeconds * actualSampleRate` 为准，不用 sleep 计时。
+- host-time：`AudioTimeStamp.mHostTime` 与 `AudioGetCurrentHostTime()` / `mach_absolute_time()` 实测同一 host clock 域；当前 timebase 为 125/3，callback 内读取 current host time 比首帧 timestamp 晚约 10.7 ms。production 统一用 `AudioGetCurrentHostTime()` / `AudioConvertHostTimeToNanos` 与 sample timestamp 对齐，不用 `mach_continuous_time` 做 A/V 基准。
+- cleanup：`AudioDeviceStop` → `AudioDeviceDestroyIOProcID` → `ExtAudioFileDispose`（flush async writer）→ `AudioHardwareDestroyAggregateDevice` → `AudioHardwareDestroyProcessTap`。HAL object list 可能在 destroy 后短暂异步收敛；验证按 UID 有界轮询实际消失，不用固定 sleep。正常和 first-buffer 后 early-stop 均实测无残留。
+- 系统音频权限：当前 macOS 27 probe 未出现新的交互提示，`AudioHardwareCreateProcessTap` 返回 `noErr`。production 对任何权限/OSStatus 失败原样 fail-fast，不回退 global tap/ScreenCaptureKit，也不擅自改系统授权。
+- P1 isolation：Simulator 997 Hz + macOS 1234 Hz 同时播放时，3.008 s capture 中 997 Hz 幅度约 0.07196，1234 Hz 约 0.000031，低约 67.3 dB；独立 1.003 s 复测约低 58.3 dB。WAV 非静音、route 前后不变，紧邻 capture 的宿主前台 App 与鼠标完全不变。
 
 > P1 只允许用真实 probe 结果替换这些字段；不要因为 P2 已经规划好就反推答案。
 
