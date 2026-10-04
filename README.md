@@ -26,6 +26,7 @@ roamer wait <bundle-id>
 roamer observe <bundle-id> /tmp/roamer-observe
 roamer audio status
 roamer audio capture 5 /tmp/roamer-audio
+roamer record 10 /tmp/roamer-recording
 roamer screenshot /tmp/avp.png
 ```
 
@@ -34,6 +35,8 @@ roamer screenshot /tmp/avp.png
 `roamer audio status` 只读显示当前 Simulator 的 Input / Output selection、System default 实际对应的宿主设备，以及 HostRoute 当前可用的宿主音频设备；它不会修改音频路由。
 
 `roamer audio capture <duration-sec> <new-output-dir>` 捕获当前唯一 AVP Simulator 的 output，生成 `audio.wav` 与 `audio.json`。source set 在采集开始时冻结，因此需要先启动并等待目标 App；不会录整个 Mac 的系统混音，也不会改 Simulator Output。该命令需要 macOS 14.2+，其它 Roamer 命令仍保持 macOS 14+ 基线。
+
+`roamer record <duration-sec> <new-output-dir>` 使用 Simulator 原生 framebuffer 录像和同一套 Simulator-only 音频采集，保留 raw video/audio，并生成同步后的 `recording.mov` 与 `recording.json`。录制不会为了取声切换用户的音频路由，也不通过桌面录屏或 Device Hub UI 兜底；需要 macOS 14.2+。
 
 ## 输入控制
 

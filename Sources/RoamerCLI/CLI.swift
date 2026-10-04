@@ -4,7 +4,7 @@ import RoamerCore
 struct CLI {
     private let simulator = SimulatorService()
 
-    func run(arguments: [String]) throws {
+    func run(arguments: [String]) async throws {
         guard let command = arguments.first else {
             print(Self.help)
             return
@@ -55,6 +55,14 @@ struct CLI {
                     "未知 audio 子命令：\(subcommand)\n用法: roamer audio <status|capture>"
                 )
             }
+
+        case "record":
+            try requireCount(rest, 2, usage: "roamer record <duration-sec> <new-output-dir>")
+            let duration = try parseDouble(rest[0], name: "duration-sec")
+            print(try await SimulatorRecordingCommand.run(
+                requestedDurationSeconds: duration,
+                outputPath: rest[1]
+            ))
 
         case "screenshot":
             guard rest.count <= 1 else {
@@ -413,6 +421,7 @@ struct CLI {
       roamer status
       roamer audio status
       roamer audio capture <duration-sec> <new-output-dir>
+      roamer record <duration-sec> <new-output-dir>
       roamer screenshot [path]
       roamer observe <bundle-id> <new-output-dir> [--debug]
       roamer press <bundle-id> <node-id>
@@ -438,6 +447,7 @@ struct CLI {
     key 支持 Return/Escape/Delete/Tab/Space/方向键、字母、数字，以及 Shift/Control/Option chord。
     audio status 只读取当前 Simulator Input/Output route、effective host device 与可用宿主音频设备，不修改 route。
     audio capture 只采集当前 AVP Simulator 的 output，source set 在开始时冻结；需要 macOS 14.2+，输出目录必须不存在。
+    record 使用 Simulator 原生 framebuffer + 同一套 Simulator-only audio capture 生成 raw video/audio 与最终 A/V；需要 macOS 14.2+，输出目录必须不存在。
     type 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格；不会自动切换输入法。
     Xcode 27 Apple Vision Pro Simulator 当前不支持 Command modifier。
     crown delta 范围为 -20...20，总相对增量为 delta × 0.05，最终沉浸度由 Simulator 处理。
