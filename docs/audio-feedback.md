@@ -1,6 +1,6 @@
-# Simulator 音频反馈
+# Simulator 音频与音画录制
 
-本页记录 Simulator 音频路由状态与 output capture 的长期约束。公共用法见根 [README](../README.md)，私有运行时共同规则见 [私有 API 边界](private-apis.md)。
+本页记录 Simulator 音频路由、output capture 与 A/V recording 的长期约束。公共用法见根 [README](../README.md)，私有运行时共同规则见 [私有 API 边界](private-apis.md)。
 
 ## 路由状态
 
@@ -34,7 +34,21 @@ Capture 使用 macOS 14.2+ 的 CoreAudio Process Tap，只绑定采集开始时�
 
 Capture 的资源 ownership 固定为 Process Tap → private aggregate → IOProc/writer，退出时反向 `AudioDeviceStop` → destroy IOProc → dispose writer → destroy aggregate → destroy tap。SIGINT/SIGTERM 只中断本轮 capture，保留 partial evidence，不修改或“恢复”用户 route。
 
-macOS 14.0/14.1 上只有 capture/后续 record 不可用；Roamer 的 package-wide 最低系统仍是 macOS 14.0。
+macOS 14.0/14.1 上只有 capture / record 不可用；Roamer 的 package-wide 最低系统仍是 macOS 14.0。
+
+## A/V recording
+
+```bash
+roamer record <duration-sec> <new-output-dir>
+```
+
+`record` 只组合两条已经独立验证的 Simulator 输出通道：视频来自 `simctl io <udid> recordVideo` 的原生 framebuffer，音频直接复用同一 `SimulatorAudioCapture` session；不 shell-out 调自己的 `audio capture` CLI，也不建立第二套音频后端。
+
+输出目录必须是新目录。成功保留 `video.mov`、`audio.wav`、`audio.json`、最终 `recording.mov` 和 `recording.json`。`recording.json state=recording` 只在 video 的 `Recording started` 已出现且 audio 第一批真实 sample 已到达后发布；失败或中断保留已经产生的 raw evidence。
+
+视频先进入 ready，再启动音频。`videoReadyHostTime` 和 `audioFirstSampleHostTime` 都使用 CoreAudio host clock；最终成片从 audio 第一帧对应的共同时间点开始，裁掉 raw video 的启动 pre-roll，不加入 UI/render 延迟或其它经验补偿。raw video/audio 任一不足请求时长时直接失败，不悄悄缩短最终成片。
+
+`record` 只拥有本轮创建的 `simctl recordVideo` 子进程、audio session 和 AVFoundation export。SIGINT/SIGTERM 会停止本轮资源并保留 partial evidence；不会终止 Simulator App，不会修改或“恢复”用户 route，也不会通过 ScreenCaptureKit、`screencapture`、Device Hub UI、宿主鼠标/焦点做 fallback。
 
 ## HostRoute 边界
 
@@ -51,8 +65,10 @@ CoreSimulator 的 System default selection 使用平台协议 sentinel `__sim__h
 - 本模块不会替用户切换 Input/Output；以后如果增加 route 修改能力，应作为独立需求重新定义 ownership 与恢复语义。
 - 音频 PCM 采集不是 HostRoute 的职责；正式 capture 的数据链由 CoreAudio Process Tap 单独拥有。
 - Process Tap 必须 `private`、`unmuted`；macOS 26+ 显式关闭 process restore，保持 capture-start snapshot。
-- `audio.json` 是单次 capture 的 source/format/route/time 真源；不把瞬时 AudioObjectID/tap ID 写入 `SimulatorStateStore`。
+- `audio.json` 是单次 capture 的 source/format/route/time 真源；`recording.json` 只拥有 A/V 文件关系与同步时间轴，不复制 audio source/route 成第二真源。
+- `record` 复用 capture-start source snapshot；录制中途新启动的 guest audio process 不动态加入。
+- 不把瞬时 AudioObjectID、tap ID 或 recording 子进程状态写入 `SimulatorStateStore`。
 
 ## 验证
 
-基础代码验证按 [AGENTS](../AGENTS.md) 执行。真实 Simulator 验收必须同时验证：`audio status` 与 HostRoute/Apple plist 一致；Fixture 已知频率可被 capture；并行普通 macOS 干扰频率不形成显著分量；正常结束和一次 SIGINT 后无 Roamer tap/aggregate/IOProc 残留；route、macOS 前台 App 和鼠标不因 Roamer 改变。
+基础代码验证按 [AGENTS](../AGENTS.md) 执行。真实 Simulator 验收必须同时验证：`audio status` 与 HostRoute/Apple plist 一致；Fixture 已知频率可被 capture；并行普通 macOS 干扰频率不形成显著分量；正常结束和一次 SIGINT 后无 Roamer tap/aggregate/IOProc 残留；`record` 的 raw video/audio 与 final A/V 均可解码、最终同时含 video/audio track、请求时长和同步窗口成立、无 `recordVideo` 残留；route、macOS 前台 App 和鼠标不因 Roamer 改变。
