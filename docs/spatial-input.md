@@ -1,30 +1,34 @@
 # 空间输入
 
-本页记录 `home`、`pose`、`crown`、`indicator`、`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 的长期约束。它把 screenshot 像素与当前 head pose 转成 Simulator 私有输入消息，并使用 XROS 原生控制状态，不操作 macOS 鼠标。
+负责 `home`、`pose`、`crown`、`indicator`、`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag`。
 
-## 控制流
+## 坐标与状态
 
-空间手势的输入坐标始终来自**当前** `roamer screenshot` 的原始 PNG 像素。图片查看器可能按窗口缩放预览，预览尺寸不能作为输入坐标；应使用文件本身的 pixel width / height。Roamer 读取当前 display geometry 和本次 boot 下保存的 head pose，计算 gaze ray，再构造手部轨迹发送给 Simulator。
+空间手势的输入坐标始终来自**最新 `roamer screenshot` 的原始 PNG 像素**。图片查看器的缩放尺寸不能作为输入坐标。
 
-`pose` 成功发送后才保存新的 head pose。Simulator reboot 后旧 pose 不再复用。
+Roamer 读取当前 display geometry 和本次 boot 保存的 head pose，计算 gaze ray，再把手部轨迹发送给 Simulator。
 
-Roamer 每次绑定当前唯一 AVP Simulator 时默认开启 XROS **Show Gaze Target**。`indicator off` 只临时关闭；下一次绑定会恢复默认开启。该标志来自 Simulator 系统层，不由 Roamer 自绘。
+`pose` 只有发送成功后才保存；Simulator reboot 后旧 pose 不再复用。
+
+Roamer 每次正常绑定当前 AVP Simulator 时默认开启 XROS **Show Gaze Target**。`indicator off` 只临时关闭，下一次正常绑定恢复开启。
 
 ## 不变量
 
-- screenshot pixels、Accessibility `nativeFrame`、scene reference space 是三个不同坐标域，禁止经验换算。
-- 最终命中由 visionOS hit-testing 决定；Roamer 不实现“穿透前景窗口”的深度选择。
-- 手势时长、scale、rotation 等参数继续在进入私有 ABI 前验证为有限且在受支持范围内。
-- 发送序列中途失败时，优先尝试释放已经进入按下/捏合状态的输入，再返回原始错误。
-- 不为更“稳定”加入宿主鼠标移动、窗口激活、固定屏幕坐标或录制回放 fallback。
+- screenshot pixels、Accessibility `nativeFrame`、scene reference space 是三个独立坐标域，禁止用固定比例、偏移或经验值互转。
+- 最终命中由 visionOS hit-testing 决定；Roamer 不提供“点穿前景窗口”的深度选择。
+- 手势时长、scale、rotation 等参数进入私有 ABI 前必须完成范围与有限值校验。
+- 输入序列中途失败时，优先释放已经进入按下/捏合状态的输入，再返回原始错误。
+- 不增加宿主鼠标移动、窗口激活、固定屏幕坐标或录制回放 fallback。
 - `RoamerPrivateABI` 只处理 ABI，不拥有手势策略、参数规则或状态。
 
 ## 修改时
 
-改变投影、head pose、轨迹采样或消息布局时，必须验证 App 是否真的收到预期 gesture，不能用函数成功返回代替真实行为。
+改变投影、head pose、轨迹采样或消息布局后，必须验证目标 App 确实收到预期手势，不能把“函数返回成功”当作结果。
 
-如果新增手势，优先复用现有 gaze / trajectory / HID 发送链；只有平台消息本身不同才扩展 ABI。
+新增手势优先复用现有 gaze / trajectory / HID 链；只有平台消息本身不同才扩展 ABI。
 
 ## 验证
 
-基础验证按 [AGENTS](../AGENTS.md) 执行；真实行为使用 [Simulator Fixture](../Tests/SimulatorFixture/README.md)，检查 click/drag/magnify/rotate 回调、pose 画面变化，以及 progressive immersive space 中 Crown 的原生 immersion level 变化与恢复；同时确认 macOS 鼠标和焦点保持不变。
+真实验收至少覆盖 click / drag / magnify / rotate 的 App 回调、pose 的画面变化、progressive immersive space 中 Crown 的实际变化与恢复，同时确认宿主焦点和鼠标不变。
+
+完整规则见 [真实 Simulator 验收规范](real-simulator-acceptance.md)。

@@ -1,63 +1,72 @@
 # 真实 Simulator 验收规范
 
-本页是 Roamer **真实运行验收的唯一横向规范**。当前产品只支持 Apple Vision Pro Simulator，因此这里的“真实验收”指真实 macOS + CoreSimulator + visionOS Simulator 运行链，不是 mock、单元测试，也不代表物理 Apple Vision Pro 已验证。
+这是 Roamer 真实运行验收的统一规则。
 
-各模块自己的行为不变量仍由对应 `docs/*.md` 负责；测试 App 与独立 oracle 的具体使用见 [Simulator Fixture](../Tests/SimulatorFixture/README.md)。
+当前产品只支持 Apple Vision Pro Simulator，因此这里的“真实验收”指真实 macOS + CoreSimulator + visionOS Simulator 运行链，不代表物理 Apple Vision Pro 已验证。
+
+各功能不变量由对应 `docs/*.md` 负责；Fixture 和独立 oracle 的具体用法见 [Simulator Fixture](../Tests/SimulatorFixture/README.md)。
 
 ## 什么时候必须跑
 
-修改 HID/空间输入、键盘、Accessibility、debug overlay、scene、Simulator 生命周期、display geometry、私有 ABI、恢复/清理逻辑或真实输出语义时，都必须做与改动面相称的真实验收。
+修改以下任一部分时，除了单元测试，还必须做与改动面相称的真实验收：
 
-普通纯逻辑改动仍先完成 `AGENTS.md` 规定的自动验证；真实验收不能替代单元测试，单元测试也不能替代真实验收。
+- HID / 空间输入；
+- 键盘；
+- Accessibility；
+- debug overlay；
+- scene；
+- Simulator 生命周期和 display geometry；
+- 私有 ABI；
+- audio / record；
+- 恢复、清理或宿主焦点边界。
 
-## 验收前保护现场
+## 验收前
 
-- 只允许一个 AVP Simulator 处于 booted；先记录 UDID、宿主前台 App、鼠标位置和 Simulator 内正在运行的 App。
-- 证据写入新的 `.build/acceptance/<run-id>/`，失败证据也保留；不要提交这些运行产物。
-- 只启动/停止本轮拥有的 Fixture。不得为了测试顺手终止其它 App、移动 macOS 鼠标、发送宿主输入或抢焦点。
-- 会影响整个 Simulator 的 `reboot` 只有在允许中断现有 App 时才执行；执行前记录需要恢复的 App。
-- 空间输入一律使用最新 `roamer screenshot` **原始 PNG** 的像素坐标，不使用图片查看器缩放后的显示坐标。
+- 只允许一个 AVP Simulator 处于 booted。
+- 记录 UDID、宿主前台 App、鼠标位置和 Simulator 内正在运行的 App。
+- 证据写入新的 `.build/acceptance/<run-id>/`，失败证据也保留，不提交。
+- 只启动或停止本轮拥有的 Fixture；不顺手终止其它 App、移动鼠标、发送宿主输入或抢焦点。
+- `reboot` 会影响整个 Simulator，只有允许中断时才执行，并在结束后恢复需要继续运行的 App。
+- 空间输入一律使用最新 `roamer screenshot` 原始 PNG 的像素坐标。
 
 ## 什么才算通过
 
-CLI 返回 `ok`、函数正常返回、消息已经发出，都不能单独证明行为成功。验收必须看到目标层自己的结果：
+CLI 返回 `ok`、函数返回成功或消息已经发出，都不能单独证明行为成立。
 
-| Surface | 必须看到的独立结果 |
+| 功能 | 必须看到的结果 |
 | --- | --- |
-| `launch` / `wait` / `terminate` | 真实进程状态；`wait` 后完整 AX 可读，不能把 launch 成功当 ready |
-| `screenshot` | 可解码的真实 Simulator 原图，尺寸来自文件本身 |
-| `observe` / `press` | 当前 PID 的 AX 树与目标 App 实际状态一致；真实 Press 改变目标 UI；旧 PID node 被拒绝 |
-| `key` / `type` | Fixture 的 SwiftUI/UIKit oracle 收到真实 down/up、modifier、文本或 submit；AX ready / first responder 不代替键盘焦点 |
-| `pose` / `gaze` / 空间手势 | screenshot 或 Fixture callback/oracle 显示真实画面/手势结果；结束后恢复本轮改变的 pose |
-| `indicator` | Roamer 首次绑定当前 AVP 时默认出现 XROS 系统 gaze target；`indicator off` 后消失，下一次普通 Roamer 命令再次绑定 AVP 时自动恢复；不得用 App 自绘标志冒充 |
-| `crown` | 只在 progressive immersive space 验收；结果必须与 XROS 官方 Simulator 的相同步进语义一致，并恢复验收前状态 |
-| `observe --debug` | screenshot 中真实出现平台 XYZ/Bounds；普通 observe 后恢复；并发会话正确互斥 |
-| `scene` | `scene.json` 与独立 `spatial.json` oracle 一致，并通过 `verify-scene.py`；四张布局图还要人工确认可读性 |
-| `audio status` | 当前 HostRoute 结果与独立路由证据一致，且查询不改 route |
-| `audio capture` | 已知 Simulator tone 可被捕获、宿主干扰不显著；正常/SIGINT 后资源无残留且 route 不变 |
-| `record` | 最终 A/V 双轨可解码且保留音频隔离；正常/SIGINT 后录制与音频资源无残留且 route 不变 |
-| `reboot` | UDID 不变、boot identifier 更新、旧 boot 的 pose 不再复用；恢复验收前需要继续运行的 App |
-| 宿主安全边界 | 验收前后 macOS 前台 App 和鼠标不因 Roamer 操作而改变 |
+| `launch` / `wait` / `terminate` | 真实进程状态；`wait` 后完整 AX 可读 |
+| `screenshot` | 可解码的真实 Simulator 原图 |
+| `observe` / `press` | 当前 PID 的 AX 与 App 状态一致；真实 Press 改变目标 UI；旧 PID node 被拒绝 |
+| `key` / `type` | Fixture 收到真实 down/up、modifier、文本或 submit |
+| `pose` / 空间手势 | screenshot 或 Fixture oracle 出现真实画面 / 手势结果 |
+| `indicator` | XROS 原生 gaze target 符合默认开启、临时关闭、下次恢复语义 |
+| `crown` | progressive immersive space 中出现与官方 Simulator 相同的步进效果，并能恢复 |
+| `observe --debug` | screenshot 中真实出现平台 XYZ / Bounds，并正确恢复 |
+| `scene` | `scene.json` 与独立 `spatial.json` oracle 一致；布局图可读 |
+| `audio status` | 当前 HostRoute 与独立路由证据一致，查询不改 route |
+| `audio capture` | 已知 Simulator tone 可捕获，宿主干扰被隔离，结束后资源无残留 |
+| `record` | 最终 A/V 双轨可解码、同步，结束后资源无残留 |
+| `reboot` | UDID 不变、boot identifier 更新、旧 pose 失效 |
+| 宿主边界 | macOS 前台 App 和鼠标不因 Roamer 操作而改变 |
 
-跨 App 或私有运行时边界发生变化时，除 Fixture 外再选一个未经修改的真实 App 做不破坏性验证；不要把 Fixture 专用数据当 production fallback。
+跨 App 或私有运行时边界变化时，除 Fixture 外再选一个未经修改的 App 做不破坏验证。
 
-## 失败、恢复与证据
+## 失败与恢复
 
-一次动作失败后先读取已有证据和目标 App oracle，确认结果未知还是确定失败；没有新证据时不要自动重放输入。涉及按下、捏合、debug overlay、debugger attach、临时资产或其它外部状态时，必须验证失败路径也完成本轮拥有状态的释放/恢复。
+动作失败后先读取已有证据和目标 App oracle，判断结果是“未知”还是“确定失败”；没有新证据时不要自动重放输入。
 
-`wait` 的 timeout 是完整绝对 deadline，覆盖设备查询、进程查询和 AX reply。冷启动允许原生 AX 暂时失败，但只有在同一 PID 的完整 AX 树真正可读后才算 ready；不能用固定 sleep、旧缓存或较弱探针替代。
+涉及按下、捏合、debug overlay、debugger attach、临时资产或其它外部状态时，必须验证失败路径也释放或恢复本轮拥有的状态。
 
-## 每轮验收的收尾
+`wait` 的 timeout 是完整绝对 deadline，覆盖设备查询、进程查询和 AX reply。冷启动期间 AX 可以暂时失败，但只有同一 PID 的完整 AX 树真正可读才算 ready。
 
-每一个发现必须在本轮结束前归入以下一种结果：
+## 收尾
 
-1. **确认缺陷且能安全修复**：直接修根因，补最小回归，再重跑受影响的真实验收；提交记录就是历史证据，不额外制造已解决 Issue。
-2. **确认缺陷/优化但本轮不能完成**：创建 GitHub Issue，至少写清 observed / expected、环境、复现步骤、证据位置、外部副作用和完成条件；不能只留在聊天或本地笔记里。
-3. **长期规则或容易再次踩坑的负知识**：更新对应 canonical doc；不要把一次运行数字、临时 PID、截图路径等一次性证据写成永久契约。
-4. **一次性观察且没有后续动作**：只留在本次 evidence / commit / PR 说明中，不污染长期 docs。
+每个发现必须在本轮结束前归入一种结果：
 
-结束前必须恢复本轮拥有的 Simulator 状态，停止 Fixture，恢复测试前需要继续运行的 App，确认无残留 debugger/helper，并再次检查宿主前台/鼠标与 Git 工作区。
+1. **能修的缺陷**：修根因，补最小回归，再重跑受影响验收。
+2. **本轮不能完成的问题**：创建 GitHub Issue，写清 observed / expected、环境、复现、证据和完成条件。
+3. **长期规则**：更新对应 canonical doc。
+4. **一次性观察**：留在 evidence / commit / PR，不污染长期 docs。
 
-## 编辑触发
-
-以下变化必须同步检查本页：真实验收入口、Fixture/oracle、证据目录约定、宿主安全边界、reboot/Crown 等全局恢复规则，或支持环境从 Simulator 扩展到其它真实运行目标。单一模块自己的业务验收点变化，只更新对应模块文档和 Fixture，不在本页复制。
+结束前恢复本轮拥有的 Simulator 状态，停止 Fixture，确认无残留 debugger/helper，再检查宿主前台/鼠标和 Git 工作区。
