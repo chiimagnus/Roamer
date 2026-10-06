@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: xcode-27
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify version
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${GITHUB_REF_NAME#v}"
+          actual="$(sed -n 's/.*current = "\([^"]*\)".*/\1/p' Sources/RoamerCLI/RoamerVersion.swift)"
+          test "$actual" = "$expected"
+
+      - name: Test
+        run: swift test
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Verify CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(.build/release/roamer --version)" = "roamer ${GITHUB_REF_NAME#v}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
