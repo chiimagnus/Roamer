@@ -5,7 +5,7 @@
 ## 行为
 
 - `audio status` 只读当前 AVP Simulator 的输入/输出路由和可用宿主设备；查询失败直接报错，不用缓存或 plist 冒充当前结果。
-- `audio capture` 只采集启动时属于当前 AVP Simulator 的音频进程集合；采集期间新启动的进程不会动态加入，也不会混入 Mac 其它 App。
+- `audio capture` 只采集启动时属于当前 AVP Simulator 的音频进程集合；集合内进程稍后开始输出时会原生刷新 tap，新启动的进程仍不会动态加入，也不会混入 Mac 其它 App。
 - `record` 使用 Simulator 原生 framebuffer 录像，并复用同一套音频采集；不建立第二套音频后端，也不回退桌面录屏。
 - 本模块不修改用户 Input / Output route，因此失败或中断时没有“恢复路由”步骤。
 - Roamer 整体要求 macOS 26.6+、Xcode 27+ 和 visionOS 27+ Simulator；CoreAudio Process Tap 的更早 availability 不再作为产品兼容基线。

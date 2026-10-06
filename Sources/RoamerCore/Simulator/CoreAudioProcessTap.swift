@@ -45,6 +45,11 @@ final class CoreAudioProcessTap {
         let writeError: OSStatus
     }
 
+    private struct SourceOutputListener {
+        let objectID: AudioObjectID
+        let block: AudioObjectPropertyListenerBlock
+    }
+
     private static let startupTimeout: DispatchTimeInterval = .seconds(5)
     private static let unmuted = CATapMuteBehavior(rawValue: 0)!
 
@@ -52,11 +57,14 @@ final class CoreAudioProcessTap {
     private let outputURL: URL
     private let requestedDurationSeconds: Double
     private let callbackQueue = DispatchQueue(label: "roamer.audio.tap")
+    private let sourceActivityQueue = DispatchQueue(label: "roamer.audio.source-activity")
     private let readySemaphore = DispatchSemaphore(value: 0)
     private let terminalSemaphore = DispatchSemaphore(value: 0)
     private let interruptionLock = NSLock()
+    private let runtimeFailureLock = NSLock()
 
     private var interruptionRequested = false
+    private var runtimeFailure: String?
     private var tapID = AudioObjectID(kAudioObjectUnknown)
     private var aggregateID = AudioObjectID(kAudioObjectUnknown)
     private var ioProcID: AudioDeviceIOProcID?
@@ -64,6 +72,8 @@ final class CoreAudioProcessTap {
     private var deviceStarted = false
     private var tapUID: String?
     private var aggregateUID: String?
+    private var tapDescription: CATapDescription?
+    private var sourceOutputListeners: [SourceOutputListener] = []
 
     // Only the realtime callback queue mutates these fields while the device is running.
     private var callbackFrameCount: UInt64 = 0
@@ -111,6 +121,8 @@ final class CoreAudioProcessTap {
                 AudioHardwareCreateProcessTap(tapDescription, &tapID),
                 "创建 CoreAudio Process Tap"
             )
+            self.tapDescription = tapDescription
+            try installSourceOutputListeners()
 
             let stream = try readTapFormat(tapID)
             let format = StreamFormat(stream)
@@ -242,6 +254,13 @@ final class CoreAudioProcessTap {
 
     func waitUntilComplete() throws -> Completion {
         terminalSemaphore.wait()
+        if let runtimeFailure = runtimeFailureText {
+            let cleanupError = cleanup()
+            if let cleanupError {
+                throw RoamerError.message("\(runtimeFailure)；清理失败：\(cleanupError)")
+            }
+            throw RoamerError.message(runtimeFailure)
+        }
         if isInterruptionRequested {
             let cleanupError = cleanup()
             if let cleanupError {
@@ -300,6 +319,85 @@ final class CoreAudioProcessTap {
         interruptionLock.lock()
         defer { interruptionLock.unlock() }
         return interruptionRequested
+    }
+
+    private var runtimeFailureText: String? {
+        runtimeFailureLock.lock()
+        defer { runtimeFailureLock.unlock() }
+        return runtimeFailure
+    }
+
+    private func installSourceOutputListeners() throws {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioProcessPropertyIsRunningOutput,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        for objectID in sourceObjectIDs {
+            let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+                self?.refreshTapWhenSourceStartsOutput(objectID)
+            }
+            try check(
+                AudioObjectAddPropertyListenerBlock(
+                    objectID,
+                    &address,
+                    sourceActivityQueue,
+                    block
+                ),
+                "监听 CoreAudio source output 状态"
+            )
+            sourceOutputListeners.append(.init(objectID: objectID, block: block))
+        }
+    }
+
+    private func refreshTapWhenSourceStartsOutput(_ objectID: AudioObjectID) {
+        guard !isInterruptionRequested,
+              tapID != kAudioObjectUnknown,
+              let tapDescription else {
+            return
+        }
+        do {
+            guard try AudioHardwareProcess(id: objectID).isRunningOutput else { return }
+            try AudioHardwareTap(id: tapID).setDescription(tapDescription)
+        } catch {
+            recordRuntimeFailure("刷新 CoreAudio Process Tap 失败：\(error)")
+        }
+    }
+
+    private func recordRuntimeFailure(_ failure: String) {
+        runtimeFailureLock.lock()
+        let shouldSignal = runtimeFailure == nil
+        if shouldSignal {
+            runtimeFailure = failure
+        }
+        runtimeFailureLock.unlock()
+        if shouldSignal {
+            terminalSemaphore.signal()
+        }
+    }
+
+    private func removeSourceOutputListeners() -> [String] {
+        var failures: [String] = []
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioProcessPropertyIsRunningOutput,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        for listener in sourceOutputListeners {
+            let status = AudioObjectRemovePropertyListenerBlock(
+                listener.objectID,
+                &address,
+                sourceActivityQueue,
+                listener.block
+            )
+            if status != noErr {
+                failures.append("AudioObjectRemovePropertyListenerBlock(\(listener.objectID))=\(status)")
+            }
+        }
+        sourceOutputListeners.removeAll()
+        sourceActivityQueue.sync {}
+        tapDescription = nil
+        return failures
     }
 
     private func createWriter(clientFormat: AudioStreamBasicDescription) throws {
@@ -413,7 +511,7 @@ final class CoreAudioProcessTap {
 
     @discardableResult
     private func cleanup() -> String? {
-        var failures: [String] = []
+        var failures = removeSourceOutputListeners()
 
         if deviceStarted {
             let status = AudioDeviceStop(aggregateID, ioProcID)
