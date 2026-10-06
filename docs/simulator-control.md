@@ -1,6 +1,6 @@
 # Simulator 生命周期与截图
 
-本页记录 `status`、`screenshot`、`launch`、`terminate`、`reboot` 等设备/进程操作的长期约束。公共用法见根 [README](../README.md)，代码归属见 [AGENTS](../AGENTS.md)。
+本页记录 `status`、`screenshot`、`launch`、`terminate`、`reboot` 等设备/进程操作的长期约束。公共用法见根 [README](../README.md)，
 
 ## 核心约束
 

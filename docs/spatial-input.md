@@ -1,6 +1,6 @@
 # 空间输入
 
-本页记录 `home`、`pose`、`crown`、`indicator`、`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 的长期约束。它把 screenshot 像素与当前 head pose 转成 Simulator 私有输入消息，并使用 XROS 原生控制状态，不操作 macOS 鼠标。代码归属见 [AGENTS](../AGENTS.md)。
+本页记录 `home`、`pose`、`crown`、`indicator`、`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 的长期约束。它把 screenshot 像素与当前 head pose 转成 Simulator 私有输入消息，并使用 XROS 原生控制状态，不操作 macOS 鼠标。
 
 ## 控制流
 

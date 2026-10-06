@@ -1,6 +1,6 @@
 # 原生调试覆盖层
 
-本页记录 `observe --debug` 的长期约束：临时开启目标 bundle 的平台 XYZ 轴与 Bounds，确认它们已经进入真实渲染/显示链，再截图并恢复调用前状态。代码归属见 [AGENTS](../AGENTS.md)。
+本页记录 `observe --debug` 的长期约束：临时开启目标 bundle 的平台 XYZ 轴与 Bounds，确认它们已经进入真实渲染/显示链，再截图并恢复调用前状态。
 
 ## 正式同步链
 

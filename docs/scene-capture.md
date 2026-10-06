@@ -1,6 +1,6 @@
 # Scene 捕获与几何调试图
 
-本页记录 `scene` 的长期约束：短暂 attach 目标 App，读取 Apple 原生 spatial scene debug representation，解析实体层级、变换和模型自身边界，detach 后生成 JSON、原始 plist、实际 screenshot 与几何调试图。代码归属见 [AGENTS](../AGENTS.md)。
+本页记录 `scene` 的长期约束：短暂 attach 目标 App，读取 Apple 原生 spatial scene debug representation，解析实体层级、变换和模型自身边界，detach 后生成 JSON、原始 plist、实际 screenshot 与几何调试图。
 
 ## 捕获顺序
 
