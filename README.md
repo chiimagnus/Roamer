@@ -16,15 +16,11 @@ Head pose and spatial clicks drive a 3D piano. The clip itself is captured with 
 
 https://github.com/user-attachments/assets/3fc5e790-6710-4c18-be45-f709901007c5
 
-[Download MP4](https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-HappyPianist-Demo.mp4)
-
 ### Museum · 6DoF navigation + drag/throw
 
 Walk and turn through visionOS's built-in Museum, then grab and throw a RealityKit demo ball with `roamer drag`.
 
 https://github.com/user-attachments/assets/90f9315e-2f72-4616-9bbd-629760b671a0
-
-[Download MP4](https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-Museum-Demo.mp4)
 
 ## Requirements
 

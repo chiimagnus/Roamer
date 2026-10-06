@@ -16,15 +16,11 @@ Roamer 可以在不操作 macOS 桌面 UI 的情况下自动化已经启动的 A
 
 https://github.com/user-attachments/assets/3fc5e790-6710-4c18-be45-f709901007c5
 
-[下载 MP4](https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-HappyPianist-Demo.mp4)
-
 ### Museum · 6DoF 移动 + 抓取/抛掷
 
 直接在 visionOS 自带 Museum 中移动和转向，再用 `roamer drag` 抓取并抛出 RealityKit 演示球体。
 
 https://github.com/user-attachments/assets/90f9315e-2f72-4616-9bbd-629760b671a0
-
-[下载 MP4](https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-Museum-Demo.mp4)
 
 ## 环境要求
 
