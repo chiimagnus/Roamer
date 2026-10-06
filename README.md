@@ -1,10 +1,25 @@
 # Roamer
 
-Roamer 是一个直接控制 Apple Vision Pro Simulator 的 macOS CLI。它支持 App 启停、空间输入、Accessibility、实体捕获、音频采集和音画录制；整个过程不操作 Device Hub，不移动 macOS 鼠标，也不抢占当前焦点。
+Command-line control for Apple Vision Pro Simulator.
 
-## 构建
+[简体中文](README.zh-CN.md)
 
-需要 macOS 14+、Xcode，以及一个已经启动的 Apple Vision Pro Simulator。
+Roamer automates a booted Apple Vision Pro Simulator without driving the macOS UI. It can launch apps, send spatial and keyboard input, inspect Accessibility and RealityKit state, and capture Simulator-only audio and video.
+
+It does **not** move the Mac pointer, send host keyboard input, open Device Hub, or steal focus.
+
+## Requirements
+
+- Apple Silicon Mac
+- macOS 14+
+- Xcode with an Apple Vision Pro Simulator
+- exactly one booted Apple Vision Pro Simulator
+
+`audio capture` and `record` require macOS 14.2+.
+
+The currently verified environment is Xcode 27 with visionOS 27 Simulator. Roamer uses private Xcode/Simulator interfaces, so other versions may require updates.
+
+## Build
 
 ```bash
 swift build -c release
@@ -12,93 +27,87 @@ swift build -c release
 .build/release/roamer --help
 ```
 
-开发时也可以直接运行：
+The examples below assume `.build/release/roamer` is available as `roamer`.
 
-```bash
-swift run roamer status
-```
+## Quick start
 
-`roamer --help` 是完整命令语法的唯一入口。下面示例假设 `roamer` 已在 `PATH`；否则直接使用 `.build/release/roamer`。常见流程如下：
+Launch an app and wait until its Accessibility tree is ready:
 
 ```bash
 roamer launch <bundle-id>
 roamer wait <bundle-id>
-roamer observe <bundle-id> /tmp/roamer-observe
-roamer audio status
-roamer audio capture 5 /tmp/roamer-audio
-roamer record 10 /tmp/roamer-recording
+```
+
+Take a screenshot:
+
+```bash
 roamer screenshot /tmp/avp.png
 ```
 
-## 音频与录制
-
-`roamer audio status` 只读显示当前 Simulator 的输入/输出路由和可用宿主音频设备。
-
-`roamer audio capture <duration-sec> <new-output-dir>` 只录当前 AVP Simulator 的输出，生成 `audio.wav` 与 `audio.json`；不会混入 Mac 其它 App，也不会修改音频路由。
-
-`roamer record <duration-sec> <new-output-dir>` 同步录制 Simulator 画面和上述音频，生成 `recording.mov` 与 `recording.json`，并保留原始音视频作为证据。`audio capture` 和 `record` 需要 macOS 14.2+；其它命令仍支持 macOS 14+。
-
-## 输入控制
-
-`gaze`、`click`、`long-press`、`double-click`、`magnify`、`rotate` 和 `drag` 使用 `roamer screenshot` **原始图片文件**中的 Simulator 像素坐标，不是 macOS 屏幕坐标，也不是图片查看器缩放后的显示坐标。先读取 PNG 的真实像素尺寸，再按原图坐标取点。最终命中仍由 visionOS 空间 hit-testing 决定；多个窗口沿同一视线重叠时，Roamer 不提供“点穿”前景窗口的深度选择。
-
-`click`、`long-press`、`double-click` 和 `drag` 默认使用右手，可切换左手；`magnify` 和 `rotate` 使用双手。
-
-`key` 支持 Return、Escape、Delete、Tab、Space、方向键、字母、数字，以及 Shift / Control / Option 组合。`type` 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格，不会自动切换输入法。Xcode 27 的 Apple Vision Pro Simulator 当前不支持 Command modifier。
-
-`pose` 使用绝对 6DoF，位置单位为米、旋转单位为度。`crown` 按 Xcode Simulator 自己的步进语义调整系统沉浸度；只有支持可调沉浸度的 progressive immersive space 才有可观察变化。
-
-Roamer 默认开启 XROS 原生 **Show Gaze Target**。`roamer indicator off` 可临时关闭；下一次 Roamer 再绑定当前 AVP 时会恢复默认开启。Roamer 不自绘额外标志。
-
-## 观察与精确操作
+Use coordinates from that **original PNG** for spatial input:
 
 ```bash
-roamer observe <bundle-id> <new-output-dir>
-roamer observe <bundle-id> <new-output-dir> --debug
-roamer press <bundle-id> <node-id>
+roamer click 900 700
+roamer drag 900 700 1200 700
 ```
 
-`observe` 对当前正在运行的目标 App 做一次真实采集，输出：
-
-- `screenshot.png`：整个 Simulator 显示；
-- `observation.json`：目标 App 的原生 Accessibility 结果与采集元数据。
-
-它不会启动、激活、暂停或自动重试目标 App。输出目录必须是不存在的新目录；失败时保留已经产生的证据。
-
-`launch` 返回 PID 只说明进程已经启动，不说明 UI / Accessibility 已就绪。自动流程应先执行 `wait`；默认超时 30 秒，可指定 0.1～300 秒。
-
-`press` 使用 `observe` 返回的当前 `node-id` 执行原生 Press。App 重启后的旧 PID 节点会被拒绝。Accessibility 的 `nativeFrame` 是平台/窗口坐标，不是 screenshot 像素或空间 XYZ，不能拿来换算 `click` 坐标。
-
-`observe ... --debug` 会临时开启目标 bundle 的平台原生 XYZ 轴与边界，等待已验证的原生渲染/显示完成信号后截图，再恢复调用前的状态。截图失败也会尝试恢复。已有 debugger、暂停目标或并发的 Roamer debug 会话会被拒绝；不要在调用期间让其它调试客户端同时修改同一组覆盖层选项。
-
-## 实体快照
+Inspect the running app:
 
 ```bash
-roamer scene <bundle-id> <new-output-dir>
+roamer observe <bundle-id> /tmp/roamer-observe
+roamer scene <bundle-id> /tmp/roamer-scene
 ```
 
-`scene` 会短暂 attach 指定 App，读取本次原生实体快照后立即 detach。目标必须已经运行且允许调试；已有 debugger 或暂停目标会被拒绝。
+Record ten seconds of Simulator video and audio:
 
-成功输出包括：
+```bash
+roamer record 10 /tmp/roamer-recording
+```
 
-- `scene.json`：实体 ID、名称、父子关系、局部/复合变换和模型自身边界；
-- `native-scene-<index>.plist`：本次原生回复；
-- `screenshot.png`：detach 后另外采集的实际 Simulator 画面；
-- `scene-overview.png`、`top.png`、`front.png`、`side.png`；
-- `scene-index.txt`：完整模型名称、ID 与原点索引。
+Run `roamer --help` for the complete command syntax.
 
-四张布局图是几何调试视图，不是玩家相机、精确 mesh、碰撞或遮挡结果，也不能用来生成点击坐标。多个原生 scene 保持各自参考空间，不自动合并；实体 ID 不承诺跨重启稳定。原始 plist 中指向的临时 `.reality` 资产会在 detach 后清理，因此它不是自包含模型导出。
+## What Roamer can control
 
-## 当前限制
+- **App lifecycle:** `status`, `launch`, `wait`, `terminate`, `reboot`
+- **Spatial input:** `gaze`, `click`, `long-press`, `double-click`, `drag`, `magnify`, `rotate`
+- **System controls:** `home`, `pose`, `crown`, `indicator`
+- **Keyboard:** `key`, `type`
+- **Inspection:** `screenshot`, `observe`, `press`, `scene`, `observe --debug`
+- **Capture:** `audio status`, `audio capture`, `record`
 
-Roamer 依赖 Xcode 的私有 CoreSimulator / SimulatorKit / RealitySimulation 接口。接口不可用或 ABI 改变时会直接失败，不回退到 Device Hub、macOS 输入、固定等待或像素猜测。
+## Coordinate rule
 
-当前已验证环境是 Apple Silicon、Xcode 27、visionOS 27 Simulator。其它 Xcode / Simulator 版本、其它引擎或不可调试目标不在当前保证范围内。
+Spatial gestures use pixels from the latest `roamer screenshot` image.
 
-## 开发者
+Do not substitute:
 
-开发者先读 [AGENTS.md](AGENTS.md)；它负责模块导航、修改规则和基础验证。各功能的长期约束位于 `docs/`，真实 Simulator 验收统一使用 [Simulator 测试 App](Tests/SimulatorFixture/README.md)。
+- macOS screen coordinates;
+- coordinates measured from a scaled image preview;
+- Accessibility `nativeFrame`;
+- Scene XYZ coordinates or generated scene views.
+
+If the head pose, window layout, or scene changes, take a new screenshot before choosing coordinates again.
+
+## Current limits
+
+- Roamer controls Apple Vision Pro **Simulator**, not a physical Apple Vision Pro.
+- Final spatial hit-testing is still performed by visionOS. Roamer cannot click through a foreground window to a hidden one.
+- `type` currently supports letters, digits, and spaces in the verified visionOS English (US) input mode.
+- Xcode 27 Apple Vision Pro Simulator does not currently support the Command modifier through Roamer.
+- Unsupported private interfaces fail explicitly instead of falling back to macOS mouse/keyboard automation, stale data, or guessed coordinates.
+
+## Development
+
+Developer documentation is in Chinese and organized by feature. Start with [AGENTS.md](AGENTS.md), which links each module document and the real Simulator acceptance workflow.
+
+Basic verification:
+
+```bash
+swift test
+swift build -c release
+git diff --check
+```
 
 ## License
 
-AGPL-3.0。见 `LICENSE`。
+AGPL-3.0. See [LICENSE](LICENSE).
