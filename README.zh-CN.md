@@ -10,22 +10,21 @@ Roamer 可以在不操作 macOS 桌面 UI 的情况下自动化已经启动的 A
 
 ## Demo
 
-<table>
-<tr>
-<td width="50%" valign="top">
-<a href="https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-HappyPianist-Demo.mp4"><img src="assets/demo-happypianist.jpg" alt="HappyPianist Demo"></a><br>
-<strong>HappyPianist · 3D 输入 + 音画录制</strong><br>
-用 head pose 和空间点击控制 3D 钢琴；这段视频本身也由 <code>roamer record</code> 录制。
-</td>
-<td width="50%" valign="top">
-<a href="https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-Museum-Demo.mp4"><img src="assets/demo-museum.jpg" alt="Museum Demo"></a><br>
-<strong>Museum · 6DoF 移动 + 抓取/抛掷</strong><br>
-直接在 visionOS 自带 Museum 中移动和转向，再用 <code>roamer drag</code> 抓取并抛出 RealityKit 演示球体。
-</td>
-</tr>
-</table>
+### HappyPianist · 3D 输入 + 音画录制
 
-点击任意预览图即可播放完整视频。
+用 head pose 和空间点击控制 3D 钢琴；这段视频本身也由 `roamer record` 录制。
+
+https://github.com/user-attachments/assets/3fc5e790-6710-4c18-be45-f709901007c5
+
+[下载 MP4](https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-HappyPianist-Demo.mp4)
+
+### Museum · 6DoF 移动 + 抓取/抛掷
+
+直接在 visionOS 自带 Museum 中移动和转向，再用 `roamer drag` 抓取并抛出 RealityKit 演示球体。
+
+https://github.com/user-attachments/assets/90f9315e-2f72-4616-9bbd-629760b671a0
+
+[下载 MP4](https://github.com/chiimagnus/Roamer/releases/download/v0.1.0/Roamer-Museum-Demo.mp4)
 
 ## 环境要求
 
