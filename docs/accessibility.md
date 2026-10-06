@@ -1,6 +1,6 @@
 # Accessibility 与 Observation
 
-本页记录普通 `observe`、`wait` 和 `press` 的长期约束。它把目标 App 当前 PID 的原生 Accessibility translation tree 暴露为稳定 JSON，并允许对当前节点发送原生 Press。代码归属见 [AGENTS](../AGENTS.md)。
+本页记录普通 `observe`、`wait` 和 `press` 的长期约束。它把目标 App 当前 PID 的原生 Accessibility translation tree 暴露为稳定 JSON，并允许对当前节点发送原生 Press。
 
 `observe --debug` 的覆盖层部分由 [调试覆盖层](debug-overlay.md) 单独负责。
 

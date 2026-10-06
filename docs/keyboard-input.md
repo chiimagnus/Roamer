@@ -1,6 +1,6 @@
 # 键盘输入
 
-本页记录 `key` 与 `type` 的长期约束。`key` 发送已验证的 HID usage/chord；`type` 把有限字符集转换为按键序列，并在发送前确认当前 visionOS 输入模式受支持。代码归属见 [AGENTS](../AGENTS.md)。
+本页记录 `key` 与 `type` 的长期约束。`key` 发送已验证的 HID usage/chord；`type` 把有限字符集转换为按键序列，并在发送前确认当前 visionOS 输入模式受支持。
 
 ## 不变量
 
