@@ -510,7 +510,7 @@ package enum SimulatorRecordingCommand {
         }
         guard #available(macOS 14.2, *) else {
             throw RoamerError.message(
-                "record 需要 macOS 14.2 或更高版本；其它 Roamer 命令仍支持 macOS 14+"
+                "record 需要 CoreAudio Process Tap 支持"
             )
         }
 

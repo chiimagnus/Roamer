@@ -8,7 +8,7 @@
 - `audio capture` 只采集启动时属于当前 AVP Simulator 的音频进程集合；采集期间新启动的进程不会动态加入，也不会混入 Mac 其它 App。
 - `record` 使用 Simulator 原生 framebuffer 录像，并复用同一套音频采集；不建立第二套音频后端，也不回退桌面录屏。
 - 本模块不修改用户 Input / Output route，因此失败或中断时没有“恢复路由”步骤。
-- `audio capture` 和 `record` 需要 macOS 14.2+；其它命令保持 macOS 14+。
+- Roamer 整体要求 macOS 26.6+、Xcode 27+ 和 visionOS 27+ Simulator；CoreAudio Process Tap 的更早 availability 不再作为产品兼容基线。
 
 ## 输出与状态
 
