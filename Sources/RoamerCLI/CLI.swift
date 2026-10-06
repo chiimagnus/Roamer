@@ -445,8 +445,8 @@ struct CLI {
 
     key 支持 Return/Escape/Delete/Tab/Space/方向键、字母、数字，以及 Shift/Control/Option chord。
     audio status 只读取当前 Simulator Input/Output route、effective host device 与可用宿主音频设备，不修改 route。
-    audio capture 只采集当前 AVP Simulator 的 output，source set 在开始时冻结；需要 macOS 14.2+，输出目录必须不存在。
-    record 使用 Simulator 原生 framebuffer + 同一套 Simulator-only audio capture 生成 raw video/audio 与最终 A/V；需要 macOS 14.2+，输出目录必须不存在。
+    audio capture 只采集当前 AVP Simulator 的 output，source set 在开始时冻结；输出目录必须不存在。
+    record 使用 Simulator 原生 framebuffer + 同一套 Simulator-only audio capture 生成 raw video/audio 与最终 A/V；输出目录必须不存在。
     type 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格；不会自动切换输入法。
     Xcode 27 Apple Vision Pro Simulator 当前不支持 Command modifier。
     crown delta 范围为 -20...20，总相对增量为 delta × 0.05，最终沉浸度由 Simulator 处理。

@@ -11,13 +11,12 @@ Roamer 可以在不操作 macOS 桌面 UI 的情况下自动化已经启动的 A
 ## 环境要求
 
 - Apple Silicon Mac
-- macOS 14+
-- 已安装 Xcode 和 Apple Vision Pro Simulator
+- macOS 26.6+
+- Xcode 27+
+- visionOS 27+ Apple Vision Pro Simulator
 - 当前只启动一个 Apple Vision Pro Simulator
 
-`audio capture` 和 `record` 需要 macOS 14.2+。
-
-目前验证环境为 Xcode 27 + visionOS 27 Simulator。Roamer 使用 Xcode / Simulator 私有接口，其它版本可能需要适配。
+Roamer 依赖 Xcode / Simulator 私有接口，不支持更早的 Xcode 或 visionOS Simulator 版本。
 
 ## 构建
 

@@ -11,13 +11,12 @@ It does **not** move the Mac pointer, send host keyboard input, open Device Hub,
 ## Requirements
 
 - Apple Silicon Mac
-- macOS 14+
-- Xcode with an Apple Vision Pro Simulator
+- macOS 26.6+
+- Xcode 27+
+- visionOS 27+ Apple Vision Pro Simulator
 - exactly one booted Apple Vision Pro Simulator
 
-`audio capture` and `record` require macOS 14.2+.
-
-The currently verified environment is Xcode 27 with visionOS 27 Simulator. Roamer uses private Xcode/Simulator interfaces, so other versions may require updates.
+Roamer uses private Xcode and Simulator interfaces. Earlier Xcode or visionOS Simulator generations are not supported.
 
 ## Build
 
