@@ -18,7 +18,13 @@ It does **not** move the Mac pointer, send host keyboard input, open Device Hub,
 
 Roamer uses private Xcode and Simulator interfaces. Earlier Xcode or visionOS Simulator generations are not supported.
 
-## Build
+## Install
+
+```bash
+brew install chiimagnus/tap/roamer
+```
+
+## Build from source
 
 ```bash
 swift build -c release
