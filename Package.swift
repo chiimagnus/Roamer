@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "Roamer",
     platforms: [
-        .macOS(.v26)
+        .macOS("26.6")
     ],
     products: [
         .executable(name: "roamer", targets: ["RoamerCLI"])

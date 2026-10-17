@@ -38,6 +38,8 @@ Roamer uses private Xcode and Simulator interfaces. Earlier Xcode or visionOS Si
 brew install chiimagnus/tap/roamer
 ```
 
+Homebrew installs a precompiled Apple Silicon binary. Xcode 27 and the visionOS 27 Simulator are still required to operate Roamer, but not to compile it during installation. See [Release details](docs/release.md).
+
 ## Build from source
 
 ```bash

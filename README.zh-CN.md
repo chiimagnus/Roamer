@@ -38,6 +38,8 @@ Roamer 依赖 Xcode / Simulator 私有接口，不支持更早的 Xcode 或 visi
 brew install chiimagnus/tap/roamer
 ```
 
+Homebrew 现在直接安装预编译 Apple Silicon 程序，不再要求安装时从源码编译；但运行 Roamer 仍需 Xcode 27 和 visionOS 27 Simulator。详见 [发布说明](docs/release.md)。
+
 ## 从源码构建
 
 ```bash

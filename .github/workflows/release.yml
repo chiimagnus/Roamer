@@ -2,40 +2,85 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  queue: max
 
 jobs:
   release:
     runs-on: xcode-27
-
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      attestations: write
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Verify version
+      - name: Verify tag, main CI and publication state
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+            echo "Release tag must be vMAJOR.MINOR.PATCH." >&2
+            exit 1
+          }
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           expected="${GITHUB_REF_NAME#v}"
           actual="$(sed -n 's/.*current = "\([^"]*\)".*/\1/p' Sources/RoamerCLI/RoamerVersion.swift)"
           test "$actual" = "$expected"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor HEAD origin/main || {
+            echo "Release tag must belong to main." >&2
+            exit 1
+          }
+          state="$(gh run list --workflow ci.yml --event push --commit "$GITHUB_SHA" --limit 5 --json status,conclusion --jq 'if length == 0 then "missing" else .[0].status + ":" + (.[0].conclusion // "") end')"
+          test "$state" = completed:success || {
+            echo "Exact-commit main CI must succeed: $state" >&2
+            exit 1
+          }
+          tags="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name')"
+          if printf '%s\n' "$tags" | grep -Fxq "$GITHUB_REF_NAME"; then
+            echo "GitHub Release already exists." >&2
+            exit 1
+          fi
 
-      - name: Test
-        run: swift test
-
-      - name: Build
-        run: swift build -c release
-
-      - name: Verify CLI
+      - name: Test and package Apple Silicon executable
         shell: bash
         run: |
           set -euo pipefail
-          test "$(.build/release/roamer --version)" = "roamer ${GITHUB_REF_NAME#v}"
+          test "$(uname -m)" = arm64
+          swift test
+          swift build -c release --arch arm64
+          binary=".build/release/roamer"
+          test "$(lipo -archs "$binary")" = arm64
+          vtool -show-build "$binary" | grep -Eq 'minos[[:space:]]+26\.6'
+          test "$("$binary" --version)" = "roamer ${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          COPYFILE_DISABLE=1 tar -czf dist/roamer-macos-arm64.tar.gz -C .build/release roamer -C "$GITHUB_WORKSPACE" LICENSE
+          test "$(tar -tzf dist/roamer-macos-arm64.tar.gz | sort | tr '\n' ' ')" = "LICENSE roamer "
 
-      - name: Create GitHub Release
+      - name: Attest release archive
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: dist/roamer-macos-arm64.tar.gz
+
+      - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+        shell: bash
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/roamer-macos-arm64.tar.gz \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes --title "$GITHUB_REF_NAME" --latest

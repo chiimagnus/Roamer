@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: xcode-27
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify Apple Silicon and Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+
+      - name: Test and build
+        run: |
+          swift test
+          swift build -c release --arch arm64
+          test "$(lipo -archs .build/release/roamer)" = arm64
+          vtool -show-build .build/release/roamer | grep -Eq 'minos[[:space:]]+26\.6'
+          expected="$(sed -n 's/.*current = "\([^"]*\)".*/\1/p' Sources/RoamerCLI/RoamerVersion.swift)"
+          test "$(.build/release/roamer --version)" = "roamer $expected"
