@@ -2,6 +2,13 @@
 
 负责 `observe --debug`：临时开启目标 bundle 的平台 XYZ 轴与 Bounds，在确认进入真实渲染/显示链后截图，再恢复调用前状态。
 
+## Invariants
+
+- 目标 PID 必须仍然在运行且未被其它 debugger 跟踪；并发 Roamer debug 会话在更改状态前互斥拒绝。
+- 平台 XYZ／Bounds 必须在 setter 之后的 GPU 完成与之后的显示帧中**实际出现**，不能以 sleep、ACK 或像素变化替代。
+- 原状态是唯一恢复依据，结束、异常或中断只还原本次开启的项，原已开启的选项必须保留。
+- helper 属于本次调用，不安装、不留下后台服务；恢复失败也必须对调用者可见。
+
 ## 同步链
 
 顺序不能弱化：
@@ -17,14 +24,13 @@
 9. 结束 helper，只恢复本轮修改；
 10. 再经过同类 GPU + display fence 确认恢复。
 
-## 不变量
+## 失败与恢复
 
-- 不使用固定 `sleep`、像素变化、IOSurface seed、setter ACK 或人工确认代替“已经画出来”。
+- IOSurface seed 或人工确认也不能代替真实的 GPU + display fence。
 - 不连接受私有 entitlement 保护的 rendered-content service。
-- helper 只为本次调用临时编译、运行、删除，不安装进目标 App，也不留下 daemon。
-- 调用前已开启的 overlay 必须保持开启；恢复不是“一律关闭”。
+- helper 的编译产物只属于当前调用，不得共享或遗留在目标 App 中。
+- 恢复以调用前的实际状态为准，不通过“一律关闭”或“总是打开”假装恢复。
 - capture body 抛错、helper 失败或用户中断后仍要尝试恢复本轮修改，并暴露恢复失败。
-- 并发 Roamer debug 会话必须在修改状态前互斥拒绝。
 
 ## 修改时
 
@@ -34,4 +40,4 @@
 
 真实验收确认 XYZ / Bounds 在实际 screenshot 中可见，并覆盖正常、重复、截图失败和并发会话；每种情况下都只恢复本轮修改，同时确认 macOS 前台焦点不变。
 
-完整规则见 [真实 Simulator 验收规范](real-simulator-acceptance.md)。
+完整规则见 [测试与验收](../testing.md)。

@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a Roamer CLI capability
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: "中文优先，英文亦可。Roamer 当前只控制 Apple Vision Pro Simulator，不支持实体 AVP。"
+  - type: textarea
+    id: task
+    attributes:
+      label: 想完成什么 / Desired task
+      description: 从使用者角度描述入口、动作与期望得到的结果；不必先设计内部 API。
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 为什么属于 Roamer / Why Roamer?
+      description: 说明此功能补足哪个 Simulator 自动化任务；若依赖尚未验证的 Apple 私有能力，请说明具体平台前提。
+    validations:
+      required: true

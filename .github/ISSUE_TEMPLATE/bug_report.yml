@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible Roamer problem
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        中文优先，英文亦可。涉及漏洞请通过维护者的私下渠道报告，不要发布凭据、私人截图或敏感日志：
+        https://github.com/chiimagnus/Roamer/blob/main/SECURITY.md
+  - type: textarea
+    id: actual-expected
+    attributes:
+      label: 实际结果与预期结果 / Actual vs expected
+      description: 说明实际发生了什么、原本应该发生什么；命令返回成功但 App 未响应也应说明。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小复现步骤 / Steps to reproduce
+      description: 包含调用的命令、前置条件及是否存在 Simulator 或 debugger 的共享状态。
+      placeholder: |
+        1. 启动唯一的 Apple Vision Pro Simulator ...
+        2. 执行 roamer ...
+        3. 观察 ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Roamer 版本或提交 / Version or commit
+      placeholder: 0.1.0 or abc1234
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境 / Environment
+      description: macOS、Mac 芯片、Xcode、visionOS Simulator runtime、booted Simulator 数量；如相关，请补充目标 App、输入模式或已有 debugger。
+      placeholder: |
+        macOS / Apple Silicon:
+        Xcode / visionOS Simulator:
+        Booted devices:
+        Target App / input mode / debugger (if relevant):
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏证据 / Redacted evidence
+      description: 可选的截图、录屏、错误消息、observation/scene/audio/recording 输出、独立 App oracle；请移除私人内容。
+    validations:
+      required: false

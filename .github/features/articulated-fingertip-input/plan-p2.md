@@ -79,9 +79,9 @@ Expected: 新增 ARKit 依赖与 usage description 后 Fixture 正常构建。
 - Modify: `Sources/RoamerCLI/CLI.swift`
 - Create as needed for pure validated action-model tests only: `Tests/RoamerCoreTests/SimulatorVirtualHandRuntimeTests.swift`
 - Modify: `README.md`
-- Modify: `docs/spatial-input.md`
+- Modify: `docs/features/spatial-input.md`
 - Modify: `docs/private-apis.md`
-- Modify: `docs/real-simulator-acceptance.md`
+- Modify: `docs/testing.md`
 - Possibly refactor in this same task only if P1 proves identical helper compilation is required: `Sources/RoamerCore/Runtime/SimulatorDebugOverlayRuntime.swift`
 
 **Step 1: 先冻结公共语义，不先写 Runtime**
@@ -130,9 +130,9 @@ Expected: 自动测试全绿、Release build 成功、无 whitespace error。
 **Step 6: 文档与同 task 清理**
 
 - README 只写用户可见的新 hand 行为与边界，不复制整份命令表。
-- `docs/spatial-input.md` 记录 hand 与 Paloma 是不同原生通道、坐标域与生命周期。
+- `docs/features/spatial-input.md` 记录 hand 与 Paloma 是不同原生通道、坐标域与生命周期。
 - `docs/private-apis.md` 记录已经验证的 RSS ABI/版本边界。
-- `docs/real-simulator-acceptance.md` 增加 hand 的独立成功证据。
+- `docs/testing.md` 增加 hand 的独立成功证据。
 - 删除 P1/P2 调试 prototype、重复 helper、旧临时命令；不创建兼容 alias。
 - 明确保留现有 `IndigoMessages` / `RoamerPrivateABI` Paloma builder，因为仍被正式空间手势使用。
 

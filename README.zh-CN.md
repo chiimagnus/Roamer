@@ -96,6 +96,15 @@ roamer record 10 /tmp/roamer-recording
 - **检查与调试：** `screenshot`, `observe`, `press`, `scene`, `observe --debug`
 - **采集与录制：** `audio status`, `audio capture`, `record`
 
+## 使用指南
+
+- [App 生命周期与截图](docs/features/simulator-control.md)
+- [空间输入](docs/features/spatial-input.md)和[键盘输入](docs/features/keyboard-input.md)
+- [Accessibility 检查](docs/features/accessibility.md)、[原生调试覆盖层](docs/features/debug-overlay.md)及[Scene 捕获](docs/features/scene-capture.md)
+- [音频采集与音画录制](docs/features/audio-feedback.md)
+
+[文档总索引](docs/README.md)另外提供架构、开发环境、测试、发布与私有接口边界。完整命令语法以 `roamer --help` 为准。
+
 ## 坐标规则
 
 空间手势只接受最新 `roamer screenshot` 原始图片的像素坐标。
@@ -111,7 +120,7 @@ head pose、窗口布局或场景发生变化后，应重新截图再取点。
 
 ## 当前限制
 
-- Roamer 只控制 Apple Vision Pro **Simulator**，不控制真实 Apple Vision Pro。
+- Roamer 只控制 Apple Vision Pro **Simulator**，不控制真实 Apple Vision Pro。即使 Mac 正通过 Mac Virtual Display／AirPlay 无线投屏到 AVP，也不代表具备 Simulator 控制通道。
 - 最终空间命中仍由 visionOS hit-testing 决定，不能“点穿”前景窗口。
 - `type` 当前只支持已验证的 visionOS English (US) 输入模式下的英文字母、数字和空格。
 - Xcode 27 Apple Vision Pro Simulator 当前不支持通过 Roamer 发送 Command modifier。
@@ -119,7 +128,7 @@ head pose、窗口布局或场景发生变化后，应重新截图再取点。
 
 ## 开发
 
-开发者文档全部使用中文，并按功能划分。先读 [AGENTS.md](AGENTS.md)，它负责模块导航和真实 Simulator 验收入口。
+开发者文档使用中文。从 [AGENTS.md](AGENTS.md) 与 [docs 索引](docs/README.md)开始；唯一的测试完成标准在 [testing.md](docs/testing.md)，负责单元、真实 Simulator、Fixture 和宿主安全验收。
 
 基础验证：
 

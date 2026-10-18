@@ -2,13 +2,17 @@
 
 负责 `audio status`、`audio capture` 和 `record` 的长期边界。
 
-## 行为
+## Invariants
 
 - `audio status` 只读当前 AVP Simulator 的输入/输出路由和可用宿主设备；查询失败直接报错，不用缓存或 plist 冒充当前结果。
 - `audio capture` 只采集启动时属于当前 AVP Simulator 的音频进程集合；集合内进程稍后开始输出时会原生刷新 tap，新启动的进程仍不会动态加入，也不会混入 Mac 其它 App。
 - `record` 使用 Simulator 原生 framebuffer 录像，并复用同一套音频采集；不建立第二套音频后端，也不回退桌面录屏。
 - 本模块不修改用户 Input / Output route，因此失败或中断时没有“恢复路由”步骤。
 - Roamer 整体要求 macOS 26.6+、Xcode 27+ 和 visionOS 27+ Simulator；CoreAudio Process Tap 的更早 availability 不再作为产品兼容基线。
+
+## 捕获状态与失败恢复
+
+CoreAudio Process Tap 负责本轮 Simulator 来源的 PCM，HostRoute 只提供路由状态。采集与合成视频有各自的生命周期；停止、中断和失败后必须释放本轮 tap、aggregate 和录制子进程，不向宿主录音后端回退。
 
 ## 输出与状态
 
@@ -38,4 +42,4 @@ CoreAudio Process Tap 独立负责 PCM；HostRoute 只提供路由状态。瞬�
 - A/V 可解码并同步；
 - audio route、macOS 前台 App 和鼠标前后不变。
 
-完整规则见 [真实 Simulator 验收规范](real-simulator-acceptance.md)。
+完整规则见 [测试与验收](../testing.md)。

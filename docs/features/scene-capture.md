@@ -2,6 +2,14 @@
 
 负责 `scene`：短暂 attach 目标 App，读取 Apple 原生 spatial scene debug representation，解析实体层级、变换和模型自身边界，detach 后生成 JSON、原始 plist、实际 screenshot 与几何调试图。
 
+## Invariants
+
+- 不接管其它 debugger，不从暂停／zombie 的目标继续；本次 attach 必须 detach 并确认真实恢复。
+- 数据必须来自本轮 Apple 原生 scene capture，不复用旧 plist、Fixture 或上一次结果。
+- `localTransform`、父链组合的 reference transform、模型自身 bounds 与 screenshot 坐标域不能混为一谈；跨 scene 不能自动合并坐标。
+- `.reality` 只清理能证明由本次创建、且规范化后处于目标临时目录内的资产；归属未知时宁可报错并保留。
+- 超时、中断、detach 和 cleanup 失败必须可见，不能让 CLI 的成功反馈掩盖外部遗留状态。
+
 ## 捕获顺序
 
 1. 绑定当前目标 PID，确认它未被其他 debugger 跟踪或暂停；
@@ -36,4 +44,4 @@
 
 真实验收要把 `scene.json` 与独立 `spatial.json` oracle 对照，确认 parent transform、零厚度平面和模型自身 bounds；同时核对实体变化、重新进入后的新 session、索引文件与四张布局图。
 
-完整规则见 [真实 Simulator 验收规范](real-simulator-acceptance.md)。
+完整规则见 [测试与验收](../testing.md)。

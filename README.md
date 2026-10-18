@@ -96,6 +96,15 @@ Run `roamer --help` for the complete command syntax.
 - **Inspection:** `screenshot`, `observe`, `press`, `scene`, `observe --debug`
 - **Capture:** `audio status`, `audio capture`, `record`
 
+## Guides
+
+- [App lifecycle and screenshots](docs/features/simulator-control.md)
+- [Spatial input](docs/features/spatial-input.md) and [keyboard input](docs/features/keyboard-input.md)
+- [Accessibility inspection](docs/features/accessibility.md), [debug overlays](docs/features/debug-overlay.md), and [Scene capture](docs/features/scene-capture.md)
+- [Audio capture and recording](docs/features/audio-feedback.md)
+
+The [documentation index](docs/README.md) also links developer architecture, setup, testing, release, and private API boundaries. Feature documentation is currently maintained in Chinese; the CLI help is the command syntax source of truth.
+
 ## Coordinate rule
 
 Spatial gestures use pixels from the latest `roamer screenshot` image.
@@ -111,7 +120,7 @@ If the head pose, window layout, or scene changes, take a new screenshot before 
 
 ## Current limits
 
-- Roamer controls Apple Vision Pro **Simulator**, not a physical Apple Vision Pro.
+- Roamer controls Apple Vision Pro **Simulator**, not a physical Apple Vision Pro. A Mac Virtual Display / AirPlay connection to the headset is not a Simulator control connection.
 - Final spatial hit-testing is still performed by visionOS. Roamer cannot click through a foreground window to a hidden one.
 - `type` currently supports letters, digits, and spaces in the verified visionOS English (US) input mode.
 - Xcode 27 Apple Vision Pro Simulator does not currently support the Command modifier through Roamer.
@@ -119,7 +128,7 @@ If the head pose, window layout, or scene changes, take a new screenshot before 
 
 ## Development
 
-Developer documentation is in Chinese and organized by feature. Start with [AGENTS.md](AGENTS.md), which links each module document and the real Simulator acceptance workflow.
+Developer documentation is in Chinese. Start with [AGENTS.md](AGENTS.md) and the [docs index](docs/README.md); the [testing standard](docs/testing.md) owns the full unit, Simulator, Fixture, and host-safety acceptance requirements.
 
 Basic verification:
 

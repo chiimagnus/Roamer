@@ -2,7 +2,7 @@
 
 负责 `status`、`screenshot`、`launch`、`terminate`、`reboot` 的长期约束。
 
-## 行为
+## Invariants
 
 - Roamer 只接受**一个**已启动的 Apple Vision Pro Simulator；没有或有多个都明确失败，不猜设备。
 - `launch` 只代表进程已启动，不代表 UI / Accessibility 已就绪。需要 AX 的流程继续执行 `wait`。
@@ -10,6 +10,12 @@
 - `reboot` 后旧 head pose 失效。状态按 Simulator boot identifier 分代，新一代回到 identity。
 - 有 deadline 的外部子进程必须同时约束进程退出和 stdout/stderr 排空，不能因后代仍持有管道而无限等待。
 - 不通过激活 Simulator.app、Device Hub 或宿主 UI 完成设备控制。
+
+## 内部机制与恢复
+
+`SimulatorService.bootedAVP()` 读取 `simctl` 的 booted 设备列表，仅筛选 AVP Simulator 类型；设备 UDID 与目标 App PID 是两个不同身份。`SimulatorStateStore` 的 head pose 以 UDID 和 boot identifier 关联，旧代状态不可用于新 boot。
+
+launch、reboot 和截图调用最终落在 `simctl`；外部进程 timeout、中断和失败必须暴露，不自动切换另一台设备，也不以存在输出文件代替截图可解码。
 
 ## 修改时
 
@@ -25,4 +31,4 @@
 - reboot 后 UDID 不变、boot identifier 更新、旧 pose 不再复用；
 - Roamer 操作前后 macOS 前台焦点和鼠标不变。
 
-完整规则见 [真实 Simulator 验收规范](real-simulator-acceptance.md)。
+完整规则见 [测试与验收](../testing.md)。

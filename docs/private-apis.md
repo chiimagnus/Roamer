@@ -13,13 +13,13 @@ Roamer 依赖 Xcode、CoreSimulator、SimulatorKit 和 RealitySimulation 私有�
 
 ## 功能归属
 
-- [Simulator 生命周期](simulator-control.md)：CoreSimulator / `simctl`、PID、截图和 boot generation。
-- [空间输入](spatial-input.md)：Simulator HID、Paloma/Indigo 消息与 `RoamerPrivateABI`。
-- [键盘输入](keyboard-input.md)：HID usage、modifier 和输入模式。
-- [Accessibility](accessibility.md)：AXPTranslator、deadline、node/PID 绑定。
-- [调试覆盖层](debug-overlay.md)：RealitySimulation、SimulatorKit、render/display fence 与恢复。
-- [Scene 捕获](scene-capture.md)：LLDB、view-debugger、原生 scene 数据和临时资产 ownership。
-- [Simulator 音频与音画录制](audio-feedback.md)：CoreSimulator HostRoute、音频采集与录制。
+- [Simulator 生命周期](features/simulator-control.md)：CoreSimulator / `simctl`、PID、截图和 boot generation。
+- [空间输入](features/spatial-input.md)：Simulator HID、Paloma/Indigo 消息与 `RoamerPrivateABI`。
+- [键盘输入](features/keyboard-input.md)：HID usage、modifier 和输入模式。
+- [Accessibility](features/accessibility.md)：AXPTranslator、deadline、node/PID 绑定。
+- [调试覆盖层](features/debug-overlay.md)：RealitySimulation、SimulatorKit、render/display fence 与恢复。
+- [Scene 捕获](features/scene-capture.md)：LLDB、view-debugger、原生 scene 数据和临时资产 ownership。
+- [Simulator 音频与音画录制](features/audio-feedback.md)：CoreSimulator HostRoute、音频采集与录制。
 
 不要把各功能的详细规则复制回本页。
 

@@ -2,6 +2,13 @@
 
 负责普通 `observe`、`wait` 和 `press`。`observe --debug` 的覆盖层规则见 [调试覆盖层](debug-overlay.md)。
 
+## Invariants
+
+- `observe` 绑定当前目标 PID；截图和 AX **不是同一原子帧**。AX 出错必须保留 `failed` / `unavailable`，不能伪装为空节点列表。
+- `wait` 使用一个覆盖设备／进程／AX 请求的绝对 deadline，只有**同一运行实例**的 AX 真实可读才成功。
+- `press` 使用含 PID 的 node ID，重启或替换实例后拒绝旧节点；原生 Press ACK 不保证业务动作已完成。
+- `nativeFrame` 与 screenshot pixels、scene XYZ 独立，禁止经验转换；输出目录必须是新的，失败证据不能用历史缓存补齐。
+
 ## Observation
 
 一次普通 `observe`：
@@ -31,10 +38,10 @@ screenshot 和 AX 不是原子同帧数据，输出必须继续如实表达这�
 
 ## 修改时
 
-AX selector、method encoding、attribute / action type 都属于私有 ABI。变化时按 [私有 API 边界](private-apis.md) 验证当前 SDK/runtime 并 fail fast；不要保留旧后端作为 fallback。
+AX selector、method encoding、attribute / action type 都属于私有 ABI。变化时按 [私有 API 边界](../private-apis.md) 验证当前 SDK/runtime 并 fail fast；不要保留旧后端作为 fallback。
 
 ## 验证
 
 真实验收至少覆盖冷启动 `wait`、短 deadline、普通 `observe`、真实 `press`、重启后的 stale node 拒绝，以及一个未经修改 App 的跨 App 读取。
 
-完整规则见 [真实 Simulator 验收规范](real-simulator-acceptance.md)。
+完整规则见 [测试与验收](../testing.md)。
