@@ -7,12 +7,15 @@
 - `audio status` 只读当前 AVP Simulator 的输入/输出路由和可用宿主设备；查询失败直接报错，不用缓存或 plist 冒充当前结果。
 - `audio capture` 只采集启动时属于当前 AVP Simulator 的音频进程集合；集合内进程稍后开始输出时会原生刷新 tap，新启动的进程仍不会动态加入，也不会混入 Mac 其它 App。
 - `record` 使用 Simulator 原生 framebuffer 录像，并复用同一套音频采集；不建立第二套音频后端，也不回退桌面录屏。
+- 最终 MOV 使用 AVFoundation passthrough 合成：保留 H.264 视频编码、原视频方向、原始 PCM 音频以及共同时间窗；只有真实导出结束且双轨可读才算完成。
 - 本模块不修改用户 Input / Output route，因此失败或中断时没有“恢复路由”步骤。
 - Roamer 整体要求 macOS 26.6+、Xcode 27+ 和 visionOS 27+ Simulator；CoreAudio Process Tap 的更早 availability 不再作为产品兼容基线。
 
 ## 捕获状态与失败恢复
 
 CoreAudio Process Tap 负责本轮 Simulator 来源的 PCM，HostRoute 只提供路由状态。采集与合成视频有各自的生命周期；停止、中断和失败后必须释放本轮 tap、aggregate 和录制子进程，不向宿主录音后端回退。
+
+最终合成使用 AVFoundation 的异步 `export(to:as:)`，导出任务由本轮 muxer 持有；SIGINT／SIGTERM 和调用方 Task 取消应取消**同一个**导出任务，不使用旧回调、旧状态轮询或 `cancelExport()`。在导出开始前已收到中断时必须立即拒绝，不能先对尚未运行的 export session 执行取消再启动（该次序曾触发原生异常）。合成失败不得发布 completed 状态，原始 `video.mov`、`audio.wav` 与失败 manifest 仍须保留。
 
 ## 输出与状态
 
@@ -39,7 +42,7 @@ CoreAudio Process Tap 独立负责 PCM；HostRoute 只提供路由状态。瞬�
 
 - Simulator tone 能被采到，宿主干扰被隔离；
 - 正常结束和 SIGINT 后无本轮资源残留；
-- A/V 可解码并同步；
+- A/V 可解码并同步；本地原生媒体集成回归还检查实际 H.264、PCM16、首帧裁切、方向、双轨、原始文件不变、导出失败、任务取消和独立并发导出；
 - audio route、macOS 前台 App 和鼠标前后不变。
 
 完整规则见 [测试与验收](../testing.md)。

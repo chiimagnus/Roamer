@@ -9,7 +9,7 @@ final class SimulatorRecordingMuxer: @unchecked Sendable {
     }
 
     private let lock = NSLock()
-    private var exportSession: AVAssetExportSession?
+    private var exportTask: Task<Void, Error>?
     private var interruptionRequested = false
 
     func mux(
@@ -19,6 +19,7 @@ final class SimulatorRecordingMuxer: @unchecked Sendable {
         videoTrimStartSeconds: Double,
         durationSeconds: Double
     ) async throws -> MediaInfo {
+        try checkInterruption()
         guard !FileManager.default.fileExists(atPath: outputURL.path) else {
             throw RoamerError.message("最终 recording 文件已存在：\(outputURL.path)")
         }
@@ -81,52 +82,57 @@ final class SimulatorRecordingMuxer: @unchecked Sendable {
         ) else {
             throw RoamerError.message("AVFoundation 无法创建 passthrough export session")
         }
-        exporter.outputURL = outputURL
-        exporter.outputFileType = .mov
         exporter.shouldOptimizeForNetworkUse = false
+        try checkInterruption()
 
-        let alreadyInterrupted = lock.withLock {
-            exportSession = exporter
+        let task = Task {
+            try await exporter.export(to: outputURL, as: .mov)
+        }
+        let shouldCancel = lock.withLock {
+            exportTask = task
             return interruptionRequested
         }
-        if alreadyInterrupted {
-            exporter.cancelExport()
+        if shouldCancel {
+            task.cancel()
+        }
+        defer {
+            lock.withLock { exportTask = nil }
         }
 
-        await withCheckedContinuation { continuation in
-            exporter.exportAsynchronously {
-                continuation.resume()
+        do {
+            try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                requestInterruption()
             }
+        } catch {
+            if lock.withLock({ interruptionRequested }) || Task.isCancelled || error is CancellationError {
+                throw RoamerError.message("Simulator A/V mux 已被中断")
+            }
+            throw RoamerError.message("Simulator A/V mux 失败：\(error)")
         }
 
-        let interrupted = lock.withLock {
-            exportSession = nil
-            return interruptionRequested
-        }
-
-        if interrupted || exporter.status == .cancelled {
-            throw RoamerError.message("Simulator A/V mux 已被中断")
-        }
-        guard exporter.status == .completed else {
-            let detail = exporter.error.map(String.init(describing:)) ?? "未知错误"
-            throw RoamerError.message(
-                "Simulator A/V mux 失败：status=\(exporter.status.rawValue)，\(detail)"
-            )
-        }
-
+        try checkInterruption()
         let info = try await Self.inspect(outputURL)
         guard info.videoTrackCount > 0, info.audioTrackCount > 0 else {
             throw RoamerError.message("最终 recording 缺少 video 或 audio track")
         }
+        try checkInterruption()
         return info
     }
 
     func requestInterruption() {
-        let exporter = lock.withLock {
+        let task = lock.withLock {
             interruptionRequested = true
-            return exportSession
+            return exportTask
         }
-        exporter?.cancelExport()
+        task?.cancel()
+    }
+
+    private func checkInterruption() throws {
+        if Task.isCancelled || lock.withLock({ interruptionRequested }) {
+            throw RoamerError.message("Simulator A/V mux 已被中断")
+        }
     }
 
     static func inspect(_ url: URL) async throws -> MediaInfo {

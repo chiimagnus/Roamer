@@ -33,7 +33,8 @@
 
 | 层次 | 当前入口 | 能证明／不能证明 |
 | --- | --- | --- |
-| Unit | `Tests/RoamerCoreTests` / `swift test` | 参数、投影、编解码、生命周期纯逻辑；不证明 Simulator 真正收到输入 |
+| Unit | `Tests/RoamerCoreTests` / `swift test` | 参数、投影、编解码和生命周期；不证明 Simulator 真正收到输入 |
+| 原生媒体集成 | `SimulatorRecordingTests` / `swift test` | 在 macOS 上生成真实 H.264／PCM16 并验证 passthrough MOV 合成、时间裁切、内容和取消；不证明 Simulator framebuffer 或 CoreAudio tap 已工作 |
 | Fixture / oracle | `Tests/SimulatorFixture` | App 内确实接收的手势、键盘、AX、实体、tone 与 session；不是 Roamer 的生产观察输出 |
 | 真实 Simulator | 原生 `simctl`、正式 `roamer`、截图／输出／独立 oracle | 当前受支持环境的完整链路；不证明实体 AVP 或其它 SDK 版本 |
 | macOS 宿主检查 | 前台 App、鼠标、路由、helper／debugger／tap 的前后状态 | 不抢焦点、不泄露非本轮资源；不能仅由 Fixture 内部日志断言 |
